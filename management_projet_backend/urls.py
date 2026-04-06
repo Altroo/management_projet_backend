@@ -63,7 +63,7 @@ urlpatterns = [
     # Maintenance state (unauthenticated)
     path("api/ws/maintenance/", GetMaintenanceView.as_view(), name="ws-maintenance"),
     # Admin panel (obscured path for security)
-    path("gestion-interne-gf62/", admin.site.urls),
+    path("gestion-interne-kp56/", admin.site.urls),
 ]
 
 # Always serve static/media — nginx proxies these to Django
