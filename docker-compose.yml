@@ -23,7 +23,7 @@ services:
     restart: always
     command: daphne -b 0.0.0.0 -p 8000 management_projet_backend.asgi:application
     ports:
-      - "8002:8000"
+      - "8003:8000"
     env_file:
       - .env
     volumes:
