@@ -81,7 +81,7 @@ TEMPLATES = [
 ]
 
 CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS", default="http://localhost:3002"
+    "CORS_ALLOWED_ORIGINS", default="http://localhost:3003"
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
 

@@ -48,6 +48,6 @@ CHANNEL_LAYERS = {
 }
 
 # Static CORS for tests
-CORS_ORIGIN_WHITELIST = ("http://localhost:3002",)
+CORS_ORIGIN_WHITELIST = ("http://localhost:3003",)
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
