@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
+from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 
 from account.models import CustomUser
@@ -140,3 +143,10 @@ class HistoricalCustomUserAdmin(admin.ModelAdmin):
 admin.site.register(CustomUser, CustomUserAdmin)
 
 admin.site.register(CustomUser.history.model, HistoricalCustomUserAdmin)
+
+
+for model in (Group, Site):
+    try:
+        admin.site.unregister(model)
+    except NotRegistered:
+        pass
