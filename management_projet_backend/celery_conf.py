@@ -14,8 +14,18 @@ app.conf.setdefault("worker_cancel_long_running_tasks_on_connection_loss", True)
 app.conf.task_serializer = "json"
 app.conf.result_serializer = "json"
 app.conf.accept_content = ["json"]
+from celery.schedules import crontab
+
 app.autodiscover_tasks(
     packages=[
         "account.tasks",
+        "notification.tasks",
     ]
 )
+
+app.conf.beat_schedule = {
+    "check-project-notifications-every-hour": {
+        "task": "notification.check_project_notifications",
+        "schedule": crontab(minute=0),
+    },
+}

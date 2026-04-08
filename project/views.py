@@ -1,6 +1,7 @@
 import logging
 
 from django.db.models import Sum, DecimalField
+from notification.tasks import notify_project_status_change
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
@@ -99,9 +100,7 @@ class BulkDeleteCategoryView(APIView):
             )
         ids = request.data.get("ids", [])
         if not ids or not isinstance(ids, list):
-            raise ValidationError(
-                {"ids": _("Une liste d'identifiants est requise.")}
-            )
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         Category.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -187,9 +186,7 @@ class BulkDeleteSubCategoryView(APIView):
             )
         ids = request.data.get("ids", [])
         if not ids or not isinstance(ids, list):
-            raise ValidationError(
-                {"ids": _("Une liste d'identifiants est requise.")}
-            )
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         SubCategory.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -257,9 +254,13 @@ class ProjectDetailEditDeleteView(APIView):
                 _("Vous n'avez pas les droits pour modifier ce projet.")
             )
         project = self._get_project(pk)
+        old_status = project.status
         serializer = ProjectSerializer(project, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by_user=project.created_by_user)
+        new_status = serializer.instance.status
+        if old_status != new_status:
+            notify_project_status_change(serializer.instance, old_status, new_status)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, pk: int):
@@ -284,9 +285,7 @@ class BulkDeleteProjectView(APIView):
             )
         ids = request.data.get("ids", [])
         if not ids or not isinstance(ids, list):
-            raise ValidationError(
-                {"ids": _("Une liste d'identifiants est requise.")}
-            )
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         Project.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

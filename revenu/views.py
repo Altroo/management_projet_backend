@@ -91,8 +91,6 @@ class BulkDeleteRevenueView(APIView):
             )
         ids = request.data.get("ids", [])
         if not ids or not isinstance(ids, list):
-            raise ValidationError(
-                {"ids": _("Une liste d'identifiants est requise.")}
-            )
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         Revenue.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

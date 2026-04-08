@@ -24,7 +24,14 @@ class ExpenseFilter(django_filters.FilterSet):
 
     class Meta:
         model = Expense
-        fields = ["project", "category", "sous_categorie", "date", "montant", "fournisseur"]
+        fields = [
+            "project",
+            "category",
+            "sous_categorie",
+            "date",
+            "montant",
+            "fournisseur",
+        ]
 
     def global_search(self, queryset, name, value):  # noqa: ARG002
         return queryset.filter(

@@ -42,8 +42,12 @@ class Revenue(models.Model):
         related_name="revenues_created",
         verbose_name=_("Créé par"),
     )
-    date_created = models.DateTimeField(auto_now_add=True, verbose_name=_("Date création"))
-    date_updated = models.DateTimeField(auto_now=True, verbose_name=_("Date modification"))
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
     history = HistoricalRecords(
         verbose_name=_("Historique Revenu"),
         verbose_name_plural=_("Historiques Revenus"),

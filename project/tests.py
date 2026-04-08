@@ -198,16 +198,12 @@ class TestCategoryDetailView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_put_updates_category(self):
-        response = self.staff_client.put(
-            self.url, {"name": "Updated"}, format="json"
-        )
+        response = self.staff_client.put(self.url, {"name": "Updated"}, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "Updated"
 
     def test_put_without_permission_returns_403(self):
-        response = self.readonly_client.put(
-            self.url, {"name": "Nope"}, format="json"
-        )
+        response = self.readonly_client.put(self.url, {"name": "Nope"}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_delete_returns_204(self):
@@ -241,9 +237,7 @@ class TestBulkDeleteCategoryView:
 
     def test_bulk_delete_without_permission_returns_403(self):
         c = make_category(name="BD3")
-        response = self.readonly_client.delete(
-            self.url, {"ids": [c.pk]}, format="json"
-        )
+        response = self.readonly_client.delete(self.url, {"ids": [c.pk]}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_bulk_delete_empty_ids_returns_400(self):
@@ -276,9 +270,7 @@ class TestSubCategoryListCreateView:
         cat2 = make_category(name="OtherCat")
         make_subcategory(name="S-P", category=self.category)
         make_subcategory(name="S-O", category=cat2)
-        response = self.staff_client.get(
-            self.url, {"category": self.category.pk}
-        )
+        response = self.staff_client.get(self.url, {"category": self.category.pk})
         assert response.status_code == status.HTTP_200_OK
         for item in response.data:
             assert item["category"] == self.category.pk
@@ -322,7 +314,9 @@ class TestSubCategoryDetailView:
 
     def test_put_updates(self):
         response = self.staff_client.put(
-            self.url, {"name": "Updated Sub", "category": self.category.pk}, format="json"
+            self.url,
+            {"name": "Updated Sub", "category": self.category.pk},
+            format="json",
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "Updated Sub"
@@ -360,9 +354,7 @@ class TestBulkDeleteSubCategoryView:
 
     def test_bulk_delete_without_permission_returns_403(self):
         s = make_subcategory(name="BDS3", category=self.category)
-        response = self.readonly_client.delete(
-            self.url, {"ids": [s.pk]}, format="json"
-        )
+        response = self.readonly_client.delete(self.url, {"ids": [s.pk]}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_bulk_delete_empty_ids_returns_400(self):
@@ -394,9 +386,7 @@ class TestProjectListCreateView:
                 date_debut=date(2025, 1, i + 1),
                 date_fin=date(2025, 12, 31),
             )
-        response = self.staff_client.get(
-            self.url, {"pagination": "true", "page": 1}
-        )
+        response = self.staff_client.get(self.url, {"pagination": "true", "page": 1})
         assert response.status_code == status.HTTP_200_OK
         assert "results" in response.data
         assert "count" in response.data
@@ -441,12 +431,18 @@ class TestProjectListCreateView:
 
     def test_filter_by_status(self):
         make_project(
-            nom="EC", status="En cours", created_by=self.staff_user,
-            date_debut=date(2025, 1, 1), date_fin=date(2025, 12, 31),
+            nom="EC",
+            status="En cours",
+            created_by=self.staff_user,
+            date_debut=date(2025, 1, 1),
+            date_fin=date(2025, 12, 31),
         )
         make_project(
-            nom="PC", status="Pas commencé", created_by=self.staff_user,
-            date_debut=date(2025, 2, 1), date_fin=date(2025, 12, 31),
+            nom="PC",
+            status="Pas commencé",
+            created_by=self.staff_user,
+            date_debut=date(2025, 2, 1),
+            date_fin=date(2025, 12, 31),
         )
         response = self.staff_client.get(self.url, {"status": "En cours"})
         assert response.status_code == status.HTTP_200_OK
@@ -455,12 +451,16 @@ class TestProjectListCreateView:
 
     def test_filter_by_search(self):
         make_project(
-            nom="Résidence X", created_by=self.staff_user,
-            date_debut=date(2025, 1, 1), date_fin=date(2025, 12, 31),
+            nom="Résidence X",
+            created_by=self.staff_user,
+            date_debut=date(2025, 1, 1),
+            date_fin=date(2025, 12, 31),
         )
         make_project(
-            nom="Bureau Y", created_by=self.staff_user,
-            date_debut=date(2025, 2, 1), date_fin=date(2025, 12, 31),
+            nom="Bureau Y",
+            created_by=self.staff_user,
+            date_debut=date(2025, 2, 1),
+            date_fin=date(2025, 12, 31),
         )
         response = self.staff_client.get(self.url, {"search": "Résidence"})
         assert response.status_code == status.HTTP_200_OK
@@ -476,9 +476,7 @@ class TestProjectDetailEditDeleteView:
         self.readonly_user, self.readonly_client = make_readonly_user()
         self.anon_client = APIClient()
         self.project = make_project(created_by=self.staff_user)
-        self.url = reverse(
-            "project:project-detail", kwargs={"pk": self.project.pk}
-        )
+        self.url = reverse("project:project-detail", kwargs={"pk": self.project.pk})
 
     def test_get_returns_200(self):
         response = self.staff_client.get(self.url)
@@ -554,9 +552,7 @@ class TestBulkDeleteProjectView:
 
     def test_bulk_delete_without_permission_returns_403(self):
         p = make_project(nom="BD-P3")
-        response = self.readonly_client.delete(
-            self.url, {"ids": [p.pk]}, format="json"
-        )
+        response = self.readonly_client.delete(self.url, {"ids": [p.pk]}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_bulk_delete_empty_ids_returns_400(self):
@@ -578,9 +574,7 @@ class TestProjectDashboardView:
         self.project = make_project(
             nom="Dashboard Proj", created_by=self.staff_user, budget_total="100000.00"
         )
-        self.url = reverse(
-            "project:project-dashboard", kwargs={"pk": self.project.pk}
-        )
+        self.url = reverse("project:project-dashboard", kwargs={"pk": self.project.pk})
 
     def test_returns_200(self):
         response = self.staff_client.get(self.url)
@@ -589,10 +583,18 @@ class TestProjectDashboardView:
     def test_response_structure(self):
         response = self.staff_client.get(self.url)
         for key in (
-            "project_id", "nom", "budget_total", "revenue_total",
-            "depenses_totales", "benefice", "marge",
-            "top_categories", "top_subcategories", "top_vendors",
-            "expense_history", "revenue_history",
+            "project_id",
+            "nom",
+            "budget_total",
+            "revenue_total",
+            "depenses_totales",
+            "benefice",
+            "marge",
+            "top_categories",
+            "top_subcategories",
+            "top_vendors",
+            "expense_history",
+            "revenue_history",
         ):
             assert key in response.data
 
@@ -620,8 +622,12 @@ class TestMultiProjectDashboardView:
         make_project(nom="MP1", created_by=self.staff_user)
         response = self.staff_client.get(self.url)
         for key in (
-            "total_budget", "total_revenue", "total_expenses",
-            "total_profit", "total_margin", "projects",
+            "total_budget",
+            "total_revenue",
+            "total_expenses",
+            "total_profit",
+            "total_margin",
+            "projects",
         ):
             assert key in response.data
 

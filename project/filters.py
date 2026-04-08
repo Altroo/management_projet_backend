@@ -15,9 +15,7 @@ class ProjectFilter(django_filters.FilterSet):
     date_debut_before = django_filters.DateFilter(
         field_name="date_debut", lookup_expr="lte"
     )
-    date_fin_after = django_filters.DateFilter(
-        field_name="date_fin", lookup_expr="gte"
-    )
+    date_fin_after = django_filters.DateFilter(field_name="date_fin", lookup_expr="gte")
     date_fin_before = django_filters.DateFilter(
         field_name="date_fin", lookup_expr="lte"
     )

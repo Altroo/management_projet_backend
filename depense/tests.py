@@ -152,9 +152,7 @@ class TestExpenseListCreateView:
         p2 = make_project(nom="P2", created_by=self.staff_user)
         make_expense(self.project, created_by=self.staff_user, description="E1")
         make_expense(p2, created_by=self.staff_user, description="E2")
-        response = self.staff_client.get(
-            self.url, {"project": self.project.pk}
-        )
+        response = self.staff_client.get(self.url, {"project": self.project.pk})
         assert response.status_code == status.HTTP_200_OK
         for item in response.data:
             assert item["project"] == self.project.pk
@@ -162,11 +160,15 @@ class TestExpenseListCreateView:
     def test_filter_by_category(self):
         cat = make_category(name="FilterCat")
         make_expense(
-            self.project, created_by=self.staff_user,
-            category=cat, description="With Cat",
+            self.project,
+            created_by=self.staff_user,
+            category=cat,
+            description="With Cat",
         )
         make_expense(
-            self.project, created_by=self.staff_user, description="No Cat",
+            self.project,
+            created_by=self.staff_user,
+            description="No Cat",
         )
         response = self.staff_client.get(self.url, {"category": cat.pk})
         assert response.status_code == status.HTTP_200_OK
@@ -186,12 +188,16 @@ class TestExpenseListCreateView:
 
     def test_filter_by_fournisseur(self):
         make_expense(
-            self.project, created_by=self.staff_user,
-            fournisseur="ABC Corp", description="F1",
+            self.project,
+            created_by=self.staff_user,
+            fournisseur="ABC Corp",
+            description="F1",
         )
         make_expense(
-            self.project, created_by=self.staff_user,
-            fournisseur="XYZ Ltd", description="F2",
+            self.project,
+            created_by=self.staff_user,
+            fournisseur="XYZ Ltd",
+            description="F2",
         )
         response = self.staff_client.get(self.url, {"fournisseur": "ABC Corp"})
         assert response.status_code == status.HTTP_200_OK
@@ -209,9 +215,7 @@ class TestExpenseDetailView:
         self.anon_client = APIClient()
         self.project = make_project(created_by=self.staff_user)
         self.expense = make_expense(self.project, created_by=self.staff_user)
-        self.url = reverse(
-            "depense:expense-detail", kwargs={"pk": self.expense.pk}
-        )
+        self.url = reverse("depense:expense-detail", kwargs={"pk": self.expense.pk})
 
     def test_get_returns_200(self):
         response = self.staff_client.get(self.url)
@@ -283,9 +287,7 @@ class TestBulkDeleteExpenseView:
 
     def test_bulk_delete_without_permission_returns_403(self):
         e = make_expense(self.project, description="BD3")
-        response = self.readonly_client.delete(
-            self.url, {"ids": [e.pk]}, format="json"
-        )
+        response = self.readonly_client.delete(self.url, {"ids": [e.pk]}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_bulk_delete_empty_ids_returns_400(self):

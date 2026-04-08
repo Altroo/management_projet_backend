@@ -23,8 +23,12 @@ class Category(models.Model):
         related_name="categories_created",
         verbose_name=_("Créé par"),
     )
-    date_created = models.DateTimeField(auto_now_add=True, verbose_name=_("Date création"))
-    date_updated = models.DateTimeField(auto_now=True, verbose_name=_("Date modification"))
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
     history = HistoricalRecords(
         verbose_name=_("Historique Catégorie"),
         verbose_name_plural=_("Historiques Catégories"),
@@ -61,8 +65,12 @@ class SubCategory(models.Model):
         related_name="subcategories_created",
         verbose_name=_("Créé par"),
     )
-    date_created = models.DateTimeField(auto_now_add=True, verbose_name=_("Date création"))
-    date_updated = models.DateTimeField(auto_now=True, verbose_name=_("Date modification"))
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
     history = HistoricalRecords(
         verbose_name=_("Historique Sous-Catégorie"),
         verbose_name_plural=_("Historiques Sous-Catégories"),
@@ -157,8 +165,12 @@ class Project(models.Model):
         related_name="projects_created",
         verbose_name=_("Créé par"),
     )
-    date_created = models.DateTimeField(auto_now_add=True, verbose_name=_("Date création"))
-    date_updated = models.DateTimeField(auto_now=True, verbose_name=_("Date modification"))
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
     history = HistoricalRecords(
         verbose_name=_("Historique Projet"),
         verbose_name_plural=_("Historiques Projets"),

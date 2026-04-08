@@ -81,12 +81,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
     depenses_totales = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
     )
-    benefice = serializers.DecimalField(
-        max_digits=14, decimal_places=2, read_only=True
-    )
-    marge = serializers.DecimalField(
-        max_digits=7, decimal_places=2, read_only=True
-    )
+    benefice = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    marge = serializers.DecimalField(max_digits=7, decimal_places=2, read_only=True)
 
     @staticmethod
     def get_created_by_user_name(obj):
@@ -135,12 +131,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     depenses_totales = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
     )
-    benefice = serializers.DecimalField(
-        max_digits=14, decimal_places=2, read_only=True
-    )
-    marge = serializers.DecimalField(
-        max_digits=7, decimal_places=2, read_only=True
-    )
+    benefice = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    marge = serializers.DecimalField(max_digits=7, decimal_places=2, read_only=True)
 
     @staticmethod
     def get_created_by_user_name(obj):

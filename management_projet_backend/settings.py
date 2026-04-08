@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "project.apps.ProjectConfig",
     "revenu.apps.RevenuConfig",
     "depense.apps.DepenseConfig",
+    "notification.apps.NotificationConfig",
     "axes",
 ]
 

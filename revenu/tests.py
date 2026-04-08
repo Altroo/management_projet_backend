@@ -138,9 +138,7 @@ class TestRevenueListCreateView:
         p2 = make_project(nom="P2", created_by=self.staff_user)
         make_revenue(self.project, created_by=self.staff_user, description="R1")
         make_revenue(p2, created_by=self.staff_user, description="R2")
-        response = self.staff_client.get(
-            self.url, {"project": self.project.pk}
-        )
+        response = self.staff_client.get(self.url, {"project": self.project.pk})
         assert response.status_code == status.HTTP_200_OK
         for item in response.data:
             assert item["project"] == self.project.pk
@@ -167,9 +165,7 @@ class TestRevenueDetailView:
         self.anon_client = APIClient()
         self.project = make_project(created_by=self.staff_user)
         self.revenue = make_revenue(self.project, created_by=self.staff_user)
-        self.url = reverse(
-            "revenu:revenue-detail", kwargs={"pk": self.revenue.pk}
-        )
+        self.url = reverse("revenu:revenue-detail", kwargs={"pk": self.revenue.pk})
 
     def test_get_returns_200(self):
         response = self.staff_client.get(self.url)
@@ -241,9 +237,7 @@ class TestBulkDeleteRevenueView:
 
     def test_bulk_delete_without_permission_returns_403(self):
         r = make_revenue(self.project, description="BD3")
-        response = self.readonly_client.delete(
-            self.url, {"ids": [r.pk]}, format="json"
-        )
+        response = self.readonly_client.delete(self.url, {"ids": [r.pk]}, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_bulk_delete_empty_ids_returns_400(self):
