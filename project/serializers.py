@@ -69,6 +69,40 @@ class SubCategorySerializer(serializers.ModelSerializer):
         ]
 
 
+class ExpenseTaxonomyCategorySerializer(serializers.ModelSerializer):
+    """Serializer for nested expense taxonomy used by expense form CRUD."""
+
+    subcategories = SubCategorySerializer(many=True, read_only=True)
+    created_by_user_name = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_created_by_user_name(obj):
+        if obj.created_by_user:
+            name = f"{obj.created_by_user.first_name} {obj.created_by_user.last_name}".strip()
+            return name or obj.created_by_user.email
+        return None
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "created_by_user",
+            "created_by_user_name",
+            "date_created",
+            "date_updated",
+            "subcategories",
+        ]
+        read_only_fields = [
+            "id",
+            "created_by_user",
+            "created_by_user_name",
+            "date_created",
+            "date_updated",
+            "subcategories",
+        ]
+
+
 class ProjectListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for project list view."""
 

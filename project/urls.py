@@ -7,6 +7,11 @@ from .views import (
     SubCategoryListCreateView,
     SubCategoryDetailView,
     BulkDeleteSubCategoryView,
+    ExpenseTaxonomyCategoryCreateView,
+    ExpenseTaxonomyCategoryDetailView,
+    ExpenseTaxonomyListView,
+    ExpenseTaxonomySubCategoryCreateView,
+    ExpenseTaxonomySubCategoryDetailView,
     ProjectListCreateView,
     ProjectDetailEditDeleteView,
     BulkDeleteProjectView,
@@ -44,6 +49,31 @@ urlpatterns = [
         "subcategories/<int:pk>/",
         SubCategoryDetailView.as_view(),
         name="subcategory-detail",
+    ),
+    path(
+        "expense-taxonomy/",
+        ExpenseTaxonomyListView.as_view(),
+        name="expense-taxonomy-list",
+    ),
+    path(
+        "expense-taxonomy/categories/",
+        ExpenseTaxonomyCategoryCreateView.as_view(),
+        name="expense-taxonomy-category-create",
+    ),
+    path(
+        "expense-taxonomy/categories/<int:pk>/",
+        ExpenseTaxonomyCategoryDetailView.as_view(),
+        name="expense-taxonomy-category-detail",
+    ),
+    path(
+        "expense-taxonomy/subcategories/",
+        ExpenseTaxonomySubCategoryCreateView.as_view(),
+        name="expense-taxonomy-subcategory-create",
+    ),
+    path(
+        "expense-taxonomy/subcategories/<int:pk>/",
+        ExpenseTaxonomySubCategoryDetailView.as_view(),
+        name="expense-taxonomy-subcategory-detail",
     ),
     # Projects
     path("", ProjectListCreateView.as_view(), name="project-list-create"),

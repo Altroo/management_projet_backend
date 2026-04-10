@@ -16,6 +16,7 @@ from .filters import ProjectFilter
 from .models import Category, SubCategory, Project
 from .serializers import (
     CategorySerializer,
+    ExpenseTaxonomyCategorySerializer,
     SubCategorySerializer,
     ProjectListSerializer,
     ProjectSerializer,
@@ -188,6 +189,118 @@ class BulkDeleteSubCategoryView(APIView):
         if not ids or not isinstance(ids, list):
             raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         SubCategory.objects.filter(pk__in=ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ExpenseTaxonomyListView(APIView):
+    """GET nested categories and subcategories for expense form CRUD."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = Category.objects.select_related("created_by_user").prefetch_related(
+            "subcategories__created_by_user"
+        )
+        serializer = ExpenseTaxonomyCategorySerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExpenseTaxonomyCategoryCreateView(APIView):
+    """POST create a category for expense form taxonomy management."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer une catégorie.")
+            )
+        serializer = CategorySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ExpenseTaxonomyCategoryDetailView(APIView):
+    """PUT, DELETE a category from expense form taxonomy management."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_category(pk: int) -> Category:
+        try:
+            return Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            raise Http404(_("Catégorie introuvable."))
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier cette catégorie.")
+            )
+        category = self._get_category(pk)
+        serializer = CategorySerializer(category, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=category.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer cette catégorie.")
+            )
+        self._get_category(pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ExpenseTaxonomySubCategoryCreateView(APIView):
+    """POST create a subcategory for expense form taxonomy management."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer une sous-catégorie.")
+            )
+        serializer = SubCategorySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ExpenseTaxonomySubCategoryDetailView(APIView):
+    """PUT, DELETE a subcategory from expense form taxonomy management."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_subcategory(pk: int) -> SubCategory:
+        try:
+            return SubCategory.objects.select_related("category").get(pk=pk)
+        except SubCategory.DoesNotExist:
+            raise Http404(_("Sous-catégorie introuvable."))
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier cette sous-catégorie.")
+            )
+        subcategory = self._get_subcategory(pk)
+        serializer = SubCategorySerializer(subcategory, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=subcategory.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer cette sous-catégorie.")
+            )
+        self._get_subcategory(pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
