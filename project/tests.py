@@ -9,7 +9,9 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
 from account.models import CustomUser
+from depense.models import Expense
 from project.models import Category, SubCategory, Project
+from revenu.models import Revenue
 
 pytestmark = pytest.mark.django_db
 
@@ -78,6 +80,30 @@ def make_project(created_by=None, **kwargs):
     }
     defaults.update(kwargs)
     return Project.objects.create(created_by_user=created_by, **defaults)
+
+
+def make_expense(project, created_by=None, **kwargs):
+    defaults = {
+        "date": date(2025, 6, 15),
+        "description": "Achat matériaux",
+        "montant": "5000.00",
+    }
+    defaults.update(kwargs)
+    return Expense.objects.create(
+        project=project, created_by_user=created_by, **defaults
+    )
+
+
+def make_revenue(project, created_by=None, **kwargs):
+    defaults = {
+        "date": date(2025, 6, 15),
+        "description": "Paiement client",
+        "montant": "10000.00",
+    }
+    defaults.update(kwargs)
+    return Revenue.objects.create(
+        project=project, created_by_user=created_by, **defaults
+    )
 
 
 # ── Model Tests ───────────────────────────────────────────────────────────────
@@ -627,9 +653,86 @@ class TestMultiProjectDashboardView:
             "total_expenses",
             "total_profit",
             "total_margin",
+            "top_expense_clients",
+            "top_revenue_clients",
+            "top_categories",
+            "top_subcategories",
+            "top_vendors",
+            "expense_history",
+            "revenue_history",
             "projects",
         ):
             assert key in response.data
+
+    def test_top_clients_and_breakdowns_are_grouped(self):
+        p1 = make_project(nom="MP1", nom_client="Client A", created_by=self.staff_user)
+        p2 = make_project(nom="MP2", nom_client="Client B", created_by=self.staff_user)
+        category = make_category(name="Lots techniques")
+        subcategory = make_subcategory(name="Electricité", category=category)
+        make_expense(p1, montant="300.00")
+        make_expense(
+            p2,
+            montant="900.00",
+            category=category,
+            sous_categorie=subcategory,
+            fournisseur="Abdelhak",
+        )
+        make_revenue(p1, montant="1200.00")
+        make_revenue(p2, montant="400.00")
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["top_expense_clients"][0]["client"] == "Client B"
+        assert response.data["top_revenue_clients"][0]["client"] == "Client A"
+        assert response.data["top_categories"][0]["category__name"] == "Lots techniques"
+        assert response.data["top_subcategories"][0]["sous_categorie__name"] == "Electricité"
+        assert response.data["top_vendors"][0]["fournisseur"] == "Abdelhak"
+        assert response.data["expense_history"]
+        assert response.data["revenue_history"]
+
+    def test_unauthenticated_returns_401(self):
+        response = self.anon_client.get(self.url)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestClientDashboardView:
+    def setup_method(self):
+        self.url = reverse("project:client-dashboard")
+        self.staff_user, self.staff_client = make_staff_user()
+        self.anon_client = APIClient()
+
+    def test_response_structure(self):
+        make_project(nom="Client Dashboard", created_by=self.staff_user)
+        response = self.staff_client.get(self.url)
+        for key in (
+            "total_revenue",
+            "total_service_fees",
+            "total_revenue_reelle",
+            "total_expenses",
+            "top_clients_revenue_reelle",
+            "projects",
+        ):
+            assert key in response.data
+
+    def test_revenue_reelle_includes_service_fees(self):
+        project = make_project(
+            nom="Client P", nom_client="Client A", created_by=self.staff_user
+        )
+        make_revenue(project, montant="1000.00")
+        make_expense(
+            project,
+            montant="500.00",
+            frais_de_service=True,
+            frais_de_service_valeur="10.00",
+            frais_de_service_type="percentage",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["total_service_fees"]) == Decimal("50.00")
+        assert Decimal(response.data["total_revenue_reelle"]) == Decimal("1050.00")
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)

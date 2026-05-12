@@ -17,6 +17,7 @@ from .views import (
     BulkDeleteProjectView,
     ProjectDashboardView,
     MultiProjectDashboardView,
+    ClientDashboardView,
 )
 
 app_name = "project"
@@ -80,6 +81,11 @@ urlpatterns = [
     path("bulk_delete/", BulkDeleteProjectView.as_view(), name="project-bulk-delete"),
     path("<int:pk>/", ProjectDetailEditDeleteView.as_view(), name="project-detail"),
     # Dashboard
+    path(
+        "dashboard/client/",
+        ClientDashboardView.as_view(),
+        name="client-dashboard",
+    ),
     path(
         "dashboard/<int:pk>/",
         ProjectDashboardView.as_view(),

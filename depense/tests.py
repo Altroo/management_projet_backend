@@ -133,6 +133,34 @@ class TestExpenseListCreateView:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["description"] == "Achat sable"
 
+    def test_create_with_percentage_service_fee(self):
+        payload = {
+            "project": self.project.pk,
+            "date": "2025-07-01",
+            "description": "Achat avec frais",
+            "montant": "3000.00",
+            "frais_de_service": True,
+            "frais_de_service_valeur": "10.00",
+            "frais_de_service_type": "percentage",
+        }
+        response = self.staff_client.post(self.url, payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["frais_de_service"] is True
+        assert response.data["frais_de_service_montant"] == "300.00"
+
+    def test_create_service_fee_requires_value(self):
+        payload = {
+            "project": self.project.pk,
+            "date": "2025-07-01",
+            "description": "Frais invalide",
+            "montant": "3000.00",
+            "frais_de_service": True,
+            "frais_de_service_type": "fixed",
+        }
+        response = self.staff_client.post(self.url, payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "frais_de_service_valeur" in response.data["details"]
+
     def test_create_without_permission_returns_403(self):
         payload = {
             "project": self.project.pk,
@@ -237,10 +265,14 @@ class TestExpenseDetailView:
             "date": "2025-08-01",
             "description": "Updated Expense",
             "montant": "8000.00",
+            "frais_de_service": True,
+            "frais_de_service_valeur": "120.00",
+            "frais_de_service_type": "fixed",
         }
         response = self.staff_client.put(self.url, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["description"] == "Updated Expense"
+        assert response.data["frais_de_service_montant"] == "120.00"
 
     def test_put_without_permission_returns_403(self):
         payload = {

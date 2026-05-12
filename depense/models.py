@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
@@ -8,6 +10,13 @@ from project.models import Category, SubCategory, Project
 
 class Expense(models.Model):
     """Entrée de dépense liée à un projet."""
+
+    SERVICE_FEE_TYPE_PERCENTAGE = "percentage"
+    SERVICE_FEE_TYPE_FIXED = "fixed"
+    SERVICE_FEE_TYPE_CHOICES = [
+        (SERVICE_FEE_TYPE_PERCENTAGE, _("Pourcentage")),
+        (SERVICE_FEE_TYPE_FIXED, _("Fixe")),
+    ]
 
     project = models.ForeignKey(
         Project,
@@ -51,6 +60,23 @@ class Expense(models.Model):
         decimal_places=2,
         verbose_name=_("Montant total (Dhs)"),
     )
+    frais_de_service = models.BooleanField(
+        default=False,
+        verbose_name=_("Frais de service"),
+    )
+    frais_de_service_valeur = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name=_("Valeur des frais de service"),
+    )
+    frais_de_service_type = models.CharField(
+        max_length=20,
+        choices=SERVICE_FEE_TYPE_CHOICES,
+        default=SERVICE_FEE_TYPE_FIXED,
+        verbose_name=_("Type des frais de service"),
+    )
     fournisseur = models.CharField(
         max_length=200,
         blank=True,
@@ -88,3 +114,14 @@ class Expense(models.Model):
 
     def __str__(self) -> str:
         return f"{self.description} - {self.montant} Dhs"
+
+    @property
+    def frais_de_service_montant(self):
+        """Montant calculé des frais de service."""
+        if not self.frais_de_service or self.frais_de_service_valeur is None:
+            return Decimal("0.00")
+        if self.frais_de_service_type == self.SERVICE_FEE_TYPE_PERCENTAGE:
+            amount = self.montant * self.frais_de_service_valeur / Decimal("100")
+        else:
+            amount = self.frais_de_service_valeur
+        return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)

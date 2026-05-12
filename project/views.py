@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 from django.db.models import Sum, DecimalField
 from notification.tasks import notify_project_status_change
@@ -23,6 +24,17 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _service_fee_total(expenses):
+    total = Decimal("0.00")
+    for expense in expenses:
+        total += expense.frais_de_service_montant
+    return total
+
+
+def _client_label(value):
+    return value or _("Sans client")
 
 
 # ── Categories ─────────────────────────────────────────────────────────────────
@@ -525,6 +537,56 @@ class MultiProjectDashboardView(APIView):
             round((total_expenses / total_budget) * 100, 2) if total_budget else 0
         )
 
+        top_expense_clients = [
+            {
+                "client": str(_client_label(item["project__nom_client"])),
+                "total": item["total"],
+            }
+            for item in Expense.objects.values("project__nom_client")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:5]
+        ]
+
+        top_revenue_clients = [
+            {
+                "client": str(_client_label(item["project__nom_client"])),
+                "total": item["total"],
+            }
+            for item in Revenue.objects.values("project__nom_client")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:5]
+        ]
+
+        top_categories = list(
+            Expense.objects.values("category__name")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:10]
+        )
+        top_subcategories = list(
+            Expense.objects.filter(sous_categorie__isnull=False)
+            .values("sous_categorie__name")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:10]
+        )
+        top_vendors = list(
+            Expense.objects.exclude(fournisseur__isnull=True)
+            .exclude(fournisseur="")
+            .values("fournisseur")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:10]
+        )
+
+        expense_history = list(
+            Expense.objects.values("date")
+            .annotate(total=Sum("montant"))
+            .order_by("date")
+        )
+        revenue_history = list(
+            Revenue.objects.values("date")
+            .annotate(total=Sum("montant"))
+            .order_by("date")
+        )
+
         # Per-project summary
         project_summaries = []
         for p in projects:
@@ -555,6 +617,92 @@ class MultiProjectDashboardView(APIView):
                 "total_profit": total_profit,
                 "total_margin": total_margin,
                 "budget_utilisation": budget_utilisation,
+                "top_expense_clients": top_expense_clients,
+                "top_revenue_clients": top_revenue_clients,
+                "top_categories": top_categories,
+                "top_subcategories": top_subcategories,
+                "top_vendors": top_vendors,
+                "expense_history": expense_history,
+                "revenue_history": revenue_history,
+                "projects": project_summaries,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ClientDashboardView(APIView):
+    """GET client-facing dashboard stats with service-fee adjusted revenue."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        from revenu.models import Revenue
+        from depense.models import Expense
+
+        projects = Project.objects.all()
+        total_revenue = Revenue.objects.aggregate(
+            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+        )["total"]
+        total_expenses = Expense.objects.aggregate(
+            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+        )["total"]
+        total_service_fees = _service_fee_total(
+            Expense.objects.filter(frais_de_service=True)
+        )
+        total_revenue_reelle = total_revenue + total_service_fees
+
+        client_totals = {}
+        project_summaries = []
+        for project in projects:
+            project_revenue = Revenue.objects.filter(project=project).aggregate(
+                total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+            )["total"]
+            project_expenses = Expense.objects.filter(project=project)
+            project_service_fees = _service_fee_total(
+                project_expenses.filter(frais_de_service=True)
+            )
+            project_revenue_reelle = project_revenue + project_service_fees
+            client = str(_client_label(project.nom_client))
+
+            client_totals.setdefault(
+                client,
+                {
+                    "client": client,
+                    "revenue": Decimal("0.00"),
+                    "service_fees": Decimal("0.00"),
+                    "revenue_reelle": Decimal("0.00"),
+                },
+            )
+            client_totals[client]["revenue"] += project_revenue
+            client_totals[client]["service_fees"] += project_service_fees
+            client_totals[client]["revenue_reelle"] += project_revenue_reelle
+
+            project_summaries.append(
+                {
+                    "id": project.id,
+                    "nom": project.nom,
+                    "client": client,
+                    "revenue": project_revenue,
+                    "service_fees": project_service_fees,
+                    "revenue_reelle": project_revenue_reelle,
+                }
+            )
+
+        top_clients_revenue_reelle = sorted(
+            client_totals.values(),
+            key=lambda item: item["revenue_reelle"],
+            reverse=True,
+        )[:5]
+
+        return Response(
+            {
+                "total_projects": projects.count(),
+                "total_revenue": total_revenue,
+                "total_service_fees": total_service_fees,
+                "total_revenue_reelle": total_revenue_reelle,
+                "total_expenses": total_expenses,
+                "top_clients_revenue_reelle": top_clients_revenue_reelle,
                 "projects": project_summaries,
             },
             status=status.HTTP_200_OK,
