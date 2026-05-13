@@ -235,6 +235,15 @@ SERVER_EMAIL = config("SERVER_EMAIL", default="")
 
 API_URL = config("API_URL")
 FRONTEND_URL = config("FRONTEND_URL", default="")
+EBH_SSO_APP_SLUG = config("EBH_SSO_APP_SLUG", default="management_projet")
+EBH_SSO_VERIFY_URL = config(
+    "EBH_SSO_VERIFY_URL",
+    default="http://localhost:8004/api/account/sso/verify/",
+)
+EBH_SSO_SHARED_SECRET = config(
+    "EBH_SSO_SHARED_SECRET",
+    default="development-ebh-sso-secret" if DEBUG else "",
+)
 
 # ──────────────────────────────────────────────
 # Security settings
