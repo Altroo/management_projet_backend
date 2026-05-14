@@ -616,6 +616,8 @@ class TestProjectDashboardView:
             "depenses_totales",
             "benefice",
             "marge",
+            "service_fees",
+            "revenue_reelle",
             "top_categories",
             "top_subcategories",
             "top_vendors",
@@ -628,6 +630,22 @@ class TestProjectDashboardView:
         url = reverse("project:project-dashboard", kwargs={"pk": 99999})
         response = self.staff_client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_internal_project_dashboard_exposes_service_totals(self):
+        make_revenue(self.project, montant="1000.00")
+        make_expense(
+            self.project,
+            montant="990.00",
+            frais_de_service=True,
+            frais_de_service_valeur="10.00",
+            frais_de_service_type="fixed",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["service_fees"]) == Decimal("10.00")
+        assert Decimal(response.data["revenue_reelle"]) == Decimal("1010.00")
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
@@ -653,6 +671,8 @@ class TestMultiProjectDashboardView:
             "total_expenses",
             "total_profit",
             "total_margin",
+            "total_service_fees",
+            "total_revenue_reelle",
             "top_expense_clients",
             "top_revenue_clients",
             "top_categories",
@@ -690,6 +710,25 @@ class TestMultiProjectDashboardView:
         assert response.data["top_vendors"][0]["fournisseur"] == "Abdelhak"
         assert response.data["expense_history"]
         assert response.data["revenue_history"]
+
+    def test_internal_dashboard_exposes_service_totals(self):
+        project = make_project(
+            nom="MP Fees", nom_client="Client Fees", created_by=self.staff_user
+        )
+        make_revenue(project, montant="1000.00")
+        make_expense(
+            project,
+            montant="990.00",
+            frais_de_service=True,
+            frais_de_service_valeur="10.00",
+            frais_de_service_type="fixed",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["total_service_fees"]) == Decimal("10.00")
+        assert Decimal(response.data["total_revenue_reelle"]) == Decimal("1010.00")
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
@@ -742,6 +781,8 @@ class TestClientDashboardView:
         assert response.status_code == status.HTTP_200_OK
         assert Decimal(response.data["total_expenses"]) == Decimal("550.00")
         assert response.data["top_expense_clients"][0]["total"] == Decimal("550.00")
+        assert "total_service_fees" not in response.data
+        assert "total_revenue_reelle" not in response.data
         assert "service_fees" not in response.data["projects"][0]
 
     def test_unauthenticated_returns_401(self):
@@ -776,6 +817,7 @@ class TestClientProjectDashboardView:
         assert Decimal(response.data["depenses_totales"]) == Decimal("1000.00")
         assert Decimal(response.data["benefice"]) == Decimal("0.00")
         assert "service_fees" not in response.data
+        assert "revenue_reelle" not in response.data
 
     def test_not_found_returns_404(self):
         url = reverse("project:client-project-dashboard", kwargs={"pk": 99999})

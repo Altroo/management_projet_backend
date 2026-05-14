@@ -30,6 +30,17 @@ def _client_label(value):
     return value or _("Sans client")
 
 
+def _service_fee_total(expenses):
+    return sum(
+        (
+            expense.frais_de_service_montant
+            for expense in expenses
+            if expense.frais_de_service
+        ),
+        Decimal("0.00"),
+    )
+
+
 def _expense_amount(expense, include_service_fees=False):
     amount = expense.montant or Decimal("0.00")
     if include_service_fees:
@@ -108,6 +119,7 @@ def _project_dashboard_payload(project, include_service_fees=False):
     )
     benefice = revenue_total - depenses_totales
     marge = round((benefice / revenue_total) * 100, 2) if revenue_total else 0
+    service_fees = _service_fee_total(expenses)
 
     revenue_history = list(
         Revenue.objects.filter(project=project)
@@ -116,7 +128,7 @@ def _project_dashboard_payload(project, include_service_fees=False):
         .order_by("date")
     )
 
-    return {
+    payload = {
         "project_id": project.id,
         "nom": project.nom,
         "budget_total": project.budget_total,
@@ -156,6 +168,10 @@ def _project_dashboard_payload(project, include_service_fees=False):
         ),
         "revenue_history": revenue_history,
     }
+    if not include_service_fees:
+        payload["service_fees"] = service_fees
+        payload["revenue_reelle"] = revenue_total + service_fees
+    return payload
 
 
 def _multi_project_dashboard_payload(include_service_fees=False):
@@ -181,6 +197,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
     budget_utilisation = (
         round((total_expenses / total_budget) * 100, 2) if total_budget else 0
     )
+    total_service_fees = _service_fee_total(expenses)
 
     if include_service_fees:
         top_expense_clients = _group_expenses(
@@ -235,7 +252,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
             }
         )
 
-    return {
+    payload = {
         "total_projects": projects.count(),
         "total_budget": total_budget,
         "total_revenue": total_revenue,
@@ -277,6 +294,10 @@ def _multi_project_dashboard_payload(include_service_fees=False):
         ),
         "projects": project_summaries,
     }
+    if not include_service_fees:
+        payload["total_service_fees"] = total_service_fees
+        payload["total_revenue_reelle"] = total_revenue + total_service_fees
+    return payload
 
 
 # ── Categories ─────────────────────────────────────────────────────────────────
