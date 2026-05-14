@@ -26,15 +26,257 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-def _service_fee_total(expenses):
-    total = Decimal("0.00")
-    for expense in expenses:
-        total += expense.frais_de_service_montant
-    return total
-
-
 def _client_label(value):
     return value or _("Sans client")
+
+
+def _expense_amount(expense, include_service_fees=False):
+    amount = expense.montant or Decimal("0.00")
+    if include_service_fees:
+        amount += expense.frais_de_service_montant
+    return amount
+
+
+def _expense_total(expenses, include_service_fees=False):
+    if not include_service_fees:
+        return expenses.aggregate(
+            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+        )["total"]
+    return sum(
+        (_expense_amount(expense, include_service_fees=True) for expense in expenses),
+        Decimal("0.00"),
+    )
+
+
+def _group_expenses(
+    expenses,
+    key_getter,
+    key_name,
+    include_service_fees=False,
+    limit=10,
+    skip_empty=False,
+    label_getter=None,
+):
+    totals = {}
+    for expense in expenses:
+        raw_key = key_getter(expense)
+        if skip_empty and not raw_key:
+            continue
+        key = label_getter(raw_key) if label_getter else raw_key
+        totals[key] = totals.get(key, Decimal("0.00")) + _expense_amount(
+            expense, include_service_fees=include_service_fees
+        )
+    return [
+        {key_name: key, "total": total}
+        for key, total in sorted(totals.items(), key=lambda item: item[1], reverse=True)[
+            :limit
+        ]
+    ]
+
+
+def _expense_history(expenses, include_service_fees=False):
+    if not include_service_fees:
+        return list(
+            expenses.values("date")
+            .annotate(total=Sum("montant"))
+            .order_by("date")
+        )
+
+    totals = {}
+    for expense in expenses:
+        totals[expense.date] = totals.get(expense.date, Decimal("0.00")) + _expense_amount(
+            expense, include_service_fees=True
+        )
+    return [
+        {"date": date, "total": total}
+        for date, total in sorted(totals.items(), key=lambda item: item[0])
+    ]
+
+
+def _project_dashboard_payload(project, include_service_fees=False):
+    from revenu.models import Revenue
+    from depense.models import Expense
+
+    expenses = Expense.objects.filter(project=project).select_related(
+        "project", "category", "sous_categorie"
+    )
+    revenue_total = Revenue.objects.filter(project=project).aggregate(
+        total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+    )["total"]
+    depenses_totales = _expense_total(
+        expenses, include_service_fees=include_service_fees
+    )
+    benefice = revenue_total - depenses_totales
+    marge = round((benefice / revenue_total) * 100, 2) if revenue_total else 0
+
+    revenue_history = list(
+        Revenue.objects.filter(project=project)
+        .values("date")
+        .annotate(total=Sum("montant"))
+        .order_by("date")
+    )
+
+    return {
+        "project_id": project.id,
+        "nom": project.nom,
+        "budget_total": project.budget_total,
+        "revenue_total": revenue_total,
+        "depenses_totales": depenses_totales,
+        "benefice": benefice,
+        "marge": marge,
+        "budget_utilisation": (
+            round((depenses_totales / project.budget_total) * 100, 2)
+            if project.budget_total
+            else 0
+        ),
+        "top_categories": _group_expenses(
+            expenses,
+            lambda expense: expense.category.name if expense.category else None,
+            "category__name",
+            include_service_fees=include_service_fees,
+        ),
+        "top_subcategories": _group_expenses(
+            expenses,
+            lambda expense: (
+                expense.sous_categorie.name if expense.sous_categorie else None
+            ),
+            "sous_categorie__name",
+            include_service_fees=include_service_fees,
+            skip_empty=True,
+        ),
+        "top_vendors": _group_expenses(
+            expenses,
+            lambda expense: expense.fournisseur,
+            "fournisseur",
+            include_service_fees=include_service_fees,
+            skip_empty=True,
+        ),
+        "expense_history": _expense_history(
+            expenses, include_service_fees=include_service_fees
+        ),
+        "revenue_history": revenue_history,
+    }
+
+
+def _multi_project_dashboard_payload(include_service_fees=False):
+    from revenu.models import Revenue
+    from depense.models import Expense
+
+    projects = Project.objects.all()
+    expenses = Expense.objects.select_related("project", "category", "sous_categorie")
+
+    total_budget = projects.aggregate(
+        total=Coalesce(Sum("budget_total"), 0, output_field=DecimalField())
+    )["total"]
+    total_revenue = Revenue.objects.aggregate(
+        total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+    )["total"]
+    total_expenses = _expense_total(
+        expenses, include_service_fees=include_service_fees
+    )
+    total_profit = total_revenue - total_expenses
+    total_margin = (
+        round((total_profit / total_revenue) * 100, 2) if total_revenue else 0
+    )
+    budget_utilisation = (
+        round((total_expenses / total_budget) * 100, 2) if total_budget else 0
+    )
+
+    if include_service_fees:
+        top_expense_clients = _group_expenses(
+            expenses,
+            lambda expense: expense.project.nom_client,
+            "client",
+            include_service_fees=True,
+            limit=5,
+            label_getter=lambda value: str(_client_label(value)),
+        )
+    else:
+        top_expense_clients = [
+            {
+                "client": str(_client_label(item["project__nom_client"])),
+                "total": item["total"],
+            }
+            for item in Expense.objects.values("project__nom_client")
+            .annotate(total=Sum("montant"))
+            .order_by("-total")[:5]
+        ]
+
+    top_revenue_clients = [
+        {
+            "client": str(_client_label(item["project__nom_client"])),
+            "total": item["total"],
+        }
+        for item in Revenue.objects.values("project__nom_client")
+        .annotate(total=Sum("montant"))
+        .order_by("-total")[:5]
+    ]
+
+    project_summaries = []
+    for project in projects:
+        p_revenue = Revenue.objects.filter(project=project).aggregate(
+            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
+        )["total"]
+        p_expenses_qs = Expense.objects.filter(project=project).select_related(
+            "project", "category", "sous_categorie"
+        )
+        p_expenses = _expense_total(
+            p_expenses_qs, include_service_fees=include_service_fees
+        )
+        project_summaries.append(
+            {
+                "id": project.id,
+                "nom": project.nom,
+                "budget_total": project.budget_total,
+                "revenue": p_revenue,
+                "expenses": p_expenses,
+                "profit": p_revenue - p_expenses,
+                "status": project.status,
+            }
+        )
+
+    return {
+        "total_projects": projects.count(),
+        "total_budget": total_budget,
+        "total_revenue": total_revenue,
+        "total_expenses": total_expenses,
+        "total_profit": total_profit,
+        "total_margin": total_margin,
+        "budget_utilisation": budget_utilisation,
+        "top_expense_clients": top_expense_clients,
+        "top_revenue_clients": top_revenue_clients,
+        "top_categories": _group_expenses(
+            expenses,
+            lambda expense: expense.category.name if expense.category else None,
+            "category__name",
+            include_service_fees=include_service_fees,
+        ),
+        "top_subcategories": _group_expenses(
+            expenses,
+            lambda expense: (
+                expense.sous_categorie.name if expense.sous_categorie else None
+            ),
+            "sous_categorie__name",
+            include_service_fees=include_service_fees,
+            skip_empty=True,
+        ),
+        "top_vendors": _group_expenses(
+            expenses,
+            lambda expense: expense.fournisseur,
+            "fournisseur",
+            include_service_fees=include_service_fees,
+            skip_empty=True,
+        ),
+        "expense_history": _expense_history(
+            expenses, include_service_fees=include_service_fees
+        ),
+        "revenue_history": list(
+            Revenue.objects.values("date")
+            .annotate(total=Sum("montant"))
+            .order_by("date")
+        ),
+        "projects": project_summaries,
+    }
 
 
 # ── Categories ─────────────────────────────────────────────────────────────────
@@ -430,80 +672,26 @@ class ProjectDashboardView(APIView):
         except Project.DoesNotExist:
             raise Http404(_("Projet introuvable."))
 
-        from revenu.models import Revenue
-        from depense.models import Expense
-
-        revenue_total = Revenue.objects.filter(project=project).aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        depenses_totales = Expense.objects.filter(project=project).aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        benefice = revenue_total - depenses_totales
-        marge = round((benefice / revenue_total) * 100, 2) if revenue_total else 0
-
-        # Top 10 categories
-        top_categories = list(
-            Expense.objects.filter(project=project)
-            .values("category__name")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
+        return Response(
+            _project_dashboard_payload(project),
+            status=status.HTTP_200_OK,
         )
 
-        # Top 10 subcategories
-        top_subcategories = list(
-            Expense.objects.filter(project=project, sous_categorie__isnull=False)
-            .values("sous_categorie__name")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
-        )
 
-        # Top 10 vendors
-        top_vendors = list(
-            Expense.objects.filter(project=project)
-            .exclude(fournisseur__isnull=True)
-            .exclude(fournisseur="")
-            .values("fournisseur")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
-        )
+class ClientProjectDashboardView(APIView):
+    """GET client-facing dashboard stats for a single project."""
 
-        # Expense history
-        expense_history = list(
-            Expense.objects.filter(project=project)
-            .values("date")
-            .annotate(total=Sum("montant"))
-            .order_by("date")
-        )
+    permission_classes = (permissions.IsAuthenticated,)
 
-        # Revenue history
-        revenue_history = list(
-            Revenue.objects.filter(project=project)
-            .values("date")
-            .annotate(total=Sum("montant"))
-            .order_by("date")
-        )
+    @staticmethod
+    def get(request, pk: int):
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            raise Http404(_("Projet introuvable."))
 
         return Response(
-            {
-                "project_id": project.id,
-                "nom": project.nom,
-                "budget_total": project.budget_total,
-                "revenue_total": revenue_total,
-                "depenses_totales": depenses_totales,
-                "benefice": benefice,
-                "marge": marge,
-                "budget_utilisation": (
-                    round((depenses_totales / project.budget_total) * 100, 2)
-                    if project.budget_total
-                    else 0
-                ),
-                "top_categories": top_categories,
-                "top_subcategories": top_subcategories,
-                "top_vendors": top_vendors,
-                "expense_history": expense_history,
-                "revenue_history": revenue_history,
-            },
+            _project_dashboard_payload(project, include_service_fees=True),
             status=status.HTTP_200_OK,
         )
 
@@ -515,195 +703,20 @@ class MultiProjectDashboardView(APIView):
 
     @staticmethod
     def get(request):
-        from revenu.models import Revenue
-        from depense.models import Expense
-
-        projects = Project.objects.all()
-
-        total_budget = projects.aggregate(
-            total=Coalesce(Sum("budget_total"), 0, output_field=DecimalField())
-        )["total"]
-        total_revenue = Revenue.objects.aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        total_expenses = Expense.objects.aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        total_profit = total_revenue - total_expenses
-        total_margin = (
-            round((total_profit / total_revenue) * 100, 2) if total_revenue else 0
-        )
-        budget_utilisation = (
-            round((total_expenses / total_budget) * 100, 2) if total_budget else 0
-        )
-
-        top_expense_clients = [
-            {
-                "client": str(_client_label(item["project__nom_client"])),
-                "total": item["total"],
-            }
-            for item in Expense.objects.values("project__nom_client")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:5]
-        ]
-
-        top_revenue_clients = [
-            {
-                "client": str(_client_label(item["project__nom_client"])),
-                "total": item["total"],
-            }
-            for item in Revenue.objects.values("project__nom_client")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:5]
-        ]
-
-        top_categories = list(
-            Expense.objects.values("category__name")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
-        )
-        top_subcategories = list(
-            Expense.objects.filter(sous_categorie__isnull=False)
-            .values("sous_categorie__name")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
-        )
-        top_vendors = list(
-            Expense.objects.exclude(fournisseur__isnull=True)
-            .exclude(fournisseur="")
-            .values("fournisseur")
-            .annotate(total=Sum("montant"))
-            .order_by("-total")[:10]
-        )
-
-        expense_history = list(
-            Expense.objects.values("date")
-            .annotate(total=Sum("montant"))
-            .order_by("date")
-        )
-        revenue_history = list(
-            Revenue.objects.values("date")
-            .annotate(total=Sum("montant"))
-            .order_by("date")
-        )
-
-        # Per-project summary
-        project_summaries = []
-        for p in projects:
-            p_revenue = Revenue.objects.filter(project=p).aggregate(
-                total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-            )["total"]
-            p_expenses = Expense.objects.filter(project=p).aggregate(
-                total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-            )["total"]
-            project_summaries.append(
-                {
-                    "id": p.id,
-                    "nom": p.nom,
-                    "budget_total": p.budget_total,
-                    "revenue": p_revenue,
-                    "expenses": p_expenses,
-                    "profit": p_revenue - p_expenses,
-                    "status": p.status,
-                }
-            )
-
         return Response(
-            {
-                "total_projects": projects.count(),
-                "total_budget": total_budget,
-                "total_revenue": total_revenue,
-                "total_expenses": total_expenses,
-                "total_profit": total_profit,
-                "total_margin": total_margin,
-                "budget_utilisation": budget_utilisation,
-                "top_expense_clients": top_expense_clients,
-                "top_revenue_clients": top_revenue_clients,
-                "top_categories": top_categories,
-                "top_subcategories": top_subcategories,
-                "top_vendors": top_vendors,
-                "expense_history": expense_history,
-                "revenue_history": revenue_history,
-                "projects": project_summaries,
-            },
+            _multi_project_dashboard_payload(),
             status=status.HTTP_200_OK,
         )
 
 
 class ClientDashboardView(APIView):
-    """GET client-facing dashboard stats with service-fee adjusted revenue."""
+    """GET client-facing dashboard stats with service fees folded into costs."""
 
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
     def get(request):
-        from revenu.models import Revenue
-        from depense.models import Expense
-
-        projects = Project.objects.all()
-        total_revenue = Revenue.objects.aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        total_expenses = Expense.objects.aggregate(
-            total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-        )["total"]
-        total_service_fees = _service_fee_total(
-            Expense.objects.filter(frais_de_service=True)
-        )
-        total_revenue_reelle = total_revenue + total_service_fees
-
-        client_totals = {}
-        project_summaries = []
-        for project in projects:
-            project_revenue = Revenue.objects.filter(project=project).aggregate(
-                total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-            )["total"]
-            project_expenses = Expense.objects.filter(project=project)
-            project_service_fees = _service_fee_total(
-                project_expenses.filter(frais_de_service=True)
-            )
-            project_revenue_reelle = project_revenue + project_service_fees
-            client = str(_client_label(project.nom_client))
-
-            client_totals.setdefault(
-                client,
-                {
-                    "client": client,
-                    "revenue": Decimal("0.00"),
-                    "service_fees": Decimal("0.00"),
-                    "revenue_reelle": Decimal("0.00"),
-                },
-            )
-            client_totals[client]["revenue"] += project_revenue
-            client_totals[client]["service_fees"] += project_service_fees
-            client_totals[client]["revenue_reelle"] += project_revenue_reelle
-
-            project_summaries.append(
-                {
-                    "id": project.id,
-                    "nom": project.nom,
-                    "client": client,
-                    "revenue": project_revenue,
-                    "service_fees": project_service_fees,
-                    "revenue_reelle": project_revenue_reelle,
-                }
-            )
-
-        top_clients_revenue_reelle = sorted(
-            client_totals.values(),
-            key=lambda item: item["revenue_reelle"],
-            reverse=True,
-        )[:5]
-
         return Response(
-            {
-                "total_projects": projects.count(),
-                "total_revenue": total_revenue,
-                "total_service_fees": total_service_fees,
-                "total_revenue_reelle": total_revenue_reelle,
-                "total_expenses": total_expenses,
-                "top_clients_revenue_reelle": top_clients_revenue_reelle,
-                "projects": project_summaries,
-            },
+            _multi_project_dashboard_payload(include_service_fees=True),
             status=status.HTTP_200_OK,
         )

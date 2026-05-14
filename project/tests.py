@@ -706,16 +706,25 @@ class TestClientDashboardView:
         make_project(nom="Client Dashboard", created_by=self.staff_user)
         response = self.staff_client.get(self.url)
         for key in (
+            "total_budget",
             "total_revenue",
-            "total_service_fees",
-            "total_revenue_reelle",
             "total_expenses",
-            "top_clients_revenue_reelle",
+            "total_profit",
+            "total_margin",
+            "top_expense_clients",
+            "top_revenue_clients",
+            "top_categories",
+            "top_subcategories",
+            "top_vendors",
+            "expense_history",
+            "revenue_history",
             "projects",
         ):
             assert key in response.data
+        assert "total_service_fees" not in response.data
+        assert "total_revenue_reelle" not in response.data
 
-    def test_revenue_reelle_includes_service_fees(self):
+    def test_expense_totals_include_service_fees_without_exposing_them(self):
         project = make_project(
             nom="Client P", nom_client="Client A", created_by=self.staff_user
         )
@@ -731,8 +740,47 @@ class TestClientDashboardView:
         response = self.staff_client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert Decimal(response.data["total_service_fees"]) == Decimal("50.00")
-        assert Decimal(response.data["total_revenue_reelle"]) == Decimal("1050.00")
+        assert Decimal(response.data["total_expenses"]) == Decimal("550.00")
+        assert response.data["top_expense_clients"][0]["total"] == Decimal("550.00")
+        assert "service_fees" not in response.data["projects"][0]
+
+    def test_unauthenticated_returns_401(self):
+        response = self.anon_client.get(self.url)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestClientProjectDashboardView:
+    def setup_method(self):
+        self.staff_user, self.staff_client = make_staff_user()
+        self.anon_client = APIClient()
+        self.project = make_project(
+            nom="Client Project", created_by=self.staff_user, budget_total="1000.00"
+        )
+        self.url = reverse(
+            "project:client-project-dashboard", kwargs={"pk": self.project.pk}
+        )
+
+    def test_project_totals_include_service_fees_without_exposing_them(self):
+        make_revenue(self.project, montant="1000.00")
+        make_expense(
+            self.project,
+            montant="990.00",
+            frais_de_service=True,
+            frais_de_service_valeur="10.00",
+            frais_de_service_type="fixed",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["depenses_totales"]) == Decimal("1000.00")
+        assert Decimal(response.data["benefice"]) == Decimal("0.00")
+        assert "service_fees" not in response.data
+
+    def test_not_found_returns_404(self):
+        url = reverse("project:client-project-dashboard", kwargs={"pk": 99999})
+        response = self.staff_client.get(url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)

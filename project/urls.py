@@ -18,6 +18,7 @@ from .views import (
     ProjectDashboardView,
     MultiProjectDashboardView,
     ClientDashboardView,
+    ClientProjectDashboardView,
 )
 
 app_name = "project"
@@ -85,6 +86,11 @@ urlpatterns = [
         "dashboard/client/",
         ClientDashboardView.as_view(),
         name="client-dashboard",
+    ),
+    path(
+        "dashboard/client/<int:pk>/",
+        ClientProjectDashboardView.as_view(),
+        name="client-project-dashboard",
     ),
     path(
         "dashboard/<int:pk>/",
