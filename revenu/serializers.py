@@ -49,6 +49,14 @@ class RevenueSerializer(serializers.ModelSerializer):
             "date_created",
             "date_updated",
         ]
+        read_only_fields = [
+            "id",
+            "project_name",
+            "created_by_user",
+            "created_by_user_name",
+            "date_created",
+            "date_updated",
+        ]
 
 
 class RevenueAttachmentSerializer(serializers.ModelSerializer):
@@ -102,12 +110,4 @@ class RevenueAttachmentSerializer(serializers.ModelSerializer):
             "uploaded_by_user",
             "uploaded_by_user_name",
             "date_created",
-        ]
-        read_only_fields = [
-            "id",
-            "project_name",
-            "created_by_user",
-            "created_by_user_name",
-            "date_created",
-            "date_updated",
         ]

@@ -27,8 +27,6 @@ from .views import (
     ProjectPaymentScheduleDetailView,
     ProjectPaymentScheduleListCreateView,
     ProjectReportPDFView,
-    ProjectStatusDetailView,
-    ProjectStatusListCreateView,
     SupplierDetailView,
     SupplierListCreateView,
     ClientDashboardView,
@@ -91,9 +89,6 @@ urlpatterns = [
         ExpenseTaxonomySubCategoryDetailView.as_view(),
         name="expense-taxonomy-subcategory-detail",
     ),
-    # Project statuses
-    path("statuses/", ProjectStatusListCreateView.as_view(), name="status-list-create"),
-    path("statuses/<int:pk>/", ProjectStatusDetailView.as_view(), name="status-detail"),
     # Clients
     path("clients/", ClientListCreateView.as_view(), name="client-list-create"),
     path("clients/bulk_delete/", BulkDeleteClientView.as_view(), name="client-bulk-delete"),

@@ -7,7 +7,6 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
-    ProjectStatus,
     SubCategory,
     Supplier,
 )
@@ -26,14 +25,6 @@ class SubCategoryAdmin(SimpleHistoryAdmin):
     list_filter = ("category",)
     search_fields = ("name",)
     ordering = ("name",)
-
-
-@admin.register(ProjectStatus)
-class ProjectStatusAdmin(SimpleHistoryAdmin):
-    list_display = ("id", "name", "color", "is_active", "ordering")
-    list_filter = ("is_active", "color")
-    search_fields = ("name",)
-    ordering = ("ordering", "name")
 
 
 @admin.register(Client)

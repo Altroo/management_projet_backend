@@ -21,7 +21,6 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
-    ProjectStatus,
     SubCategory,
     Supplier,
 )
@@ -35,7 +34,6 @@ from .serializers import (
     ProjectListSerializer,
     ProjectPaymentScheduleSerializer,
     ProjectSerializer,
-    ProjectStatusSerializer,
     SupplierSerializer,
 )
 
@@ -704,74 +702,6 @@ class BulkDeleteProjectView(APIView):
         if not ids or not isinstance(ids, list):
             raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         Project.objects.filter(pk__in=ids).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# ── Configurable Project Statuses ─────────────────────────────────────────────
-
-
-class ProjectStatusListCreateView(APIView):
-    """GET all project statuses, POST create a configurable status."""
-
-    permission_classes = (permissions.IsAuthenticated,)
-
-    @staticmethod
-    def get(request):
-        queryset = ProjectStatus.objects.select_related("created_by_user").all()
-        return _paginate_or_serialize(request, queryset, ProjectStatusSerializer)
-
-    @staticmethod
-    def post(request):
-        if not can_create(request.user):
-            raise PermissionDenied(
-                _("Vous n'avez pas les droits pour créer un statut de projet.")
-            )
-        serializer = ProjectStatusSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(created_by_user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class ProjectStatusDetailView(APIView):
-    """GET, PUT, DELETE a configurable project status."""
-
-    permission_classes = (permissions.IsAuthenticated,)
-
-    @staticmethod
-    def _get_status(pk: int) -> ProjectStatus:
-        try:
-            return ProjectStatus.objects.select_related("created_by_user").get(pk=pk)
-        except ProjectStatus.DoesNotExist:
-            raise Http404(_("Statut de projet introuvable."))
-
-    def get(self, request, pk: int):
-        serializer = ProjectStatusSerializer(
-            self._get_status(pk), context={"request": request}
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, pk: int):
-        if not can_update(request.user):
-            raise PermissionDenied(
-                _("Vous n'avez pas les droits pour modifier ce statut de projet.")
-            )
-        instance = self._get_status(pk)
-        serializer = ProjectStatusSerializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(created_by_user=instance.created_by_user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def delete(self, request, pk: int):
-        if not can_delete(request.user):
-            raise PermissionDenied(
-                _("Vous n'avez pas les droits pour supprimer ce statut de projet.")
-            )
-        instance = self._get_status(pk)
-        if Project.objects.filter(status=instance.name).exists():
-            raise ValidationError(
-                {"status": _("Ce statut est utilisé par au moins un projet.")}
-            )
-        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

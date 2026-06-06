@@ -5,11 +5,10 @@ from xml.sax.saxutils import escape
 from django.db.models import DecimalField, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from depense.models import Expense
+from revenu.models import Revenue
 
-
-def build_project_report_pdf(project):
-    from depense.models import Expense
-    from revenu.models import Revenue
+try:
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     from reportlab.lib.pagesizes import A4
@@ -23,6 +22,15 @@ def build_project_report_pdf(project):
         Table,
         TableStyle,
     )
+except ImportError:  # pragma: no cover - handled by the API view as a validation error.
+    REPORTLAB_AVAILABLE = False
+else:
+    REPORTLAB_AVAILABLE = True
+
+
+def build_project_report_pdf(project):
+    if not REPORTLAB_AVAILABLE:
+        raise ImportError("ReportLab is required to generate project PDF reports.")
 
     margin = 0.9 * cm
     page_width, _page_height = A4

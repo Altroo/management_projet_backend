@@ -6,7 +6,6 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
-    ProjectStatus,
     SubCategory,
     Supplier,
 )
@@ -121,37 +120,6 @@ class ExpenseTaxonomyCategorySerializer(serializers.ModelSerializer):
             "date_created",
             "date_updated",
             "subcategories",
-        ]
-
-
-class ProjectStatusSerializer(serializers.ModelSerializer):
-    """Serializer for configurable project statuses."""
-
-    created_by_user_name = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_created_by_user_name(obj):
-        return _created_by_user_name(obj.created_by_user)
-
-    class Meta:
-        model = ProjectStatus
-        fields = [
-            "id",
-            "name",
-            "color",
-            "is_active",
-            "ordering",
-            "created_by_user",
-            "created_by_user_name",
-            "date_created",
-            "date_updated",
-        ]
-        read_only_fields = [
-            "id",
-            "created_by_user",
-            "created_by_user_name",
-            "date_created",
-            "date_updated",
         ]
 
 
@@ -451,14 +419,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             "date_created",
             "date_updated",
         ]
-
-    def validate_status(self, value):
-        if not value:
-            return value
-        active_statuses = ProjectStatus.objects.filter(is_active=True)
-        if active_statuses.exists() and not active_statuses.filter(name=value).exists():
-            raise serializers.ValidationError("Statut de projet invalide.")
-        return value
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

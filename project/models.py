@@ -94,46 +94,6 @@ class SubCategory(models.Model):
         return self.name
 
 
-class ProjectStatus(models.Model):
-    """Statut de projet configurable."""
-
-    name = models.CharField(max_length=60, unique=True, verbose_name=_("Nom"))
-    color = models.CharField(
-        max_length=20,
-        default="default",
-        verbose_name=_("Couleur"),
-        help_text=_("Couleur UI: default, info, success, warning, error."),
-    )
-    is_active = models.BooleanField(default=True, verbose_name=_("Actif"))
-    ordering = models.PositiveIntegerField(default=0, verbose_name=_("Ordre"))
-    created_by_user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="project_statuses_created",
-        verbose_name=_("Créé par"),
-    )
-    date_created = models.DateTimeField(
-        auto_now_add=True, verbose_name=_("Date création")
-    )
-    date_updated = models.DateTimeField(
-        auto_now=True, verbose_name=_("Date modification")
-    )
-    history = HistoricalRecords(
-        verbose_name=_("Historique Statut Projet"),
-        verbose_name_plural=_("Historiques Statuts Projets"),
-    )
-
-    class Meta:
-        verbose_name = _("Statut de projet")
-        verbose_name_plural = _("Statuts de projets")
-        ordering = ("ordering", "name")
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Client(models.Model):
     """Annuaire client réutilisable."""
 
