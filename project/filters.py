@@ -48,8 +48,10 @@ class ProjectFilter(django_filters.FilterSet):
         return queryset.filter(
             Q(nom__icontains=value)
             | Q(nom_client__icontains=value)
+            | Q(client__nom__icontains=value)
             | Q(chef_de_projet__icontains=value)
             | Q(email_client__icontains=value)
+            | Q(client__email__icontains=value)
         )
 
     def filter_status(self, queryset, name, value):  # noqa: ARG002

@@ -19,7 +19,7 @@ class ExpenseFilter(django_filters.FilterSet):
     montant__lt = django_filters.NumberFilter(field_name="montant", lookup_expr="lt")
     montant__lte = django_filters.NumberFilter(field_name="montant", lookup_expr="lte")
     fournisseur = django_filters.CharFilter(
-        field_name="fournisseur", lookup_expr="icontains"
+        method="filter_fournisseur"
     )
 
     class Meta:
@@ -37,6 +37,12 @@ class ExpenseFilter(django_filters.FilterSet):
         return queryset.filter(
             Q(description__icontains=value)
             | Q(fournisseur__icontains=value)
+            | Q(supplier__nom__icontains=value)
             | Q(project__nom__icontains=value)
             | Q(element__icontains=value)
+        )
+
+    def filter_fournisseur(self, queryset, name, value):  # noqa: ARG002
+        return queryset.filter(
+            Q(fournisseur__icontains=value) | Q(supplier__nom__icontains=value)
         )

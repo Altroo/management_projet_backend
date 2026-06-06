@@ -1,7 +1,16 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Category, SubCategory, Project
+from .models import (
+    Category,
+    Client,
+    Project,
+    ProjectAttachment,
+    ProjectPaymentSchedule,
+    ProjectStatus,
+    SubCategory,
+    Supplier,
+)
 
 
 @admin.register(Category)
@@ -19,12 +28,58 @@ class SubCategoryAdmin(SimpleHistoryAdmin):
     ordering = ("name",)
 
 
+@admin.register(ProjectStatus)
+class ProjectStatusAdmin(SimpleHistoryAdmin):
+    list_display = ("id", "name", "color", "is_active", "ordering")
+    list_filter = ("is_active", "color")
+    search_fields = ("name",)
+    ordering = ("ordering", "name")
+
+
+@admin.register(Client)
+class ClientAdmin(SimpleHistoryAdmin):
+    list_display = ("id", "nom", "telephone", "email", "date_created")
+    search_fields = ("nom", "telephone", "email", "adresse")
+    ordering = ("nom",)
+
+
+@admin.register(Supplier)
+class SupplierAdmin(SimpleHistoryAdmin):
+    list_display = ("id", "nom", "contact", "specialite", "date_created")
+    search_fields = ("nom", "contact", "specialite")
+    ordering = ("nom",)
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    list_display = ("id", "nom", "status", "budget_total", "date_debut", "date_fin")
-    list_filter = ("status",)
-    search_fields = ("nom", "nom_client")
+    list_display = (
+        "id",
+        "nom",
+        "status",
+        "client",
+        "budget_total",
+        "date_debut",
+        "date_fin",
+    )
+    list_filter = ("status", "client")
+    search_fields = ("nom", "nom_client", "client__nom")
     ordering = ("-id",)
+
+
+@admin.register(ProjectAttachment)
+class ProjectAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("id", "project", "label", "uploaded_by_user", "date_created")
+    list_filter = ("project",)
+    search_fields = ("label", "file", "project__nom")
+    ordering = ("-date_created",)
+
+
+@admin.register(ProjectPaymentSchedule)
+class ProjectPaymentScheduleAdmin(SimpleHistoryAdmin):
+    list_display = ("id", "project", "due_date", "expected_amount", "description")
+    list_filter = ("project", "due_date")
+    search_fields = ("project__nom", "description")
+    ordering = ("due_date", "id")
 
 
 class HistoricalCategoryAdmin(admin.ModelAdmin):

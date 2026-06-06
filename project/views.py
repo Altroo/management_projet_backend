@@ -1,11 +1,12 @@
 import logging
 from decimal import Decimal
 
-from django.db.models import Sum, DecimalField
+from django.db.models import Q, Sum, DecimalField
 from notification.tasks import notify_project_status_change
 from django.db.models.functions import Coalesce
-from django.http import Http404
+from django.http import FileResponse, Http404
 from django.utils.translation import gettext_lazy as _
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework import permissions, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -14,13 +15,28 @@ from rest_framework.views import APIView
 from core.permissions import can_create, can_update, can_delete
 from management_projet_backend.utils import CustomPagination
 from .filters import ProjectFilter
-from .models import Category, SubCategory, Project
+from .models import (
+    Category,
+    Client,
+    Project,
+    ProjectAttachment,
+    ProjectPaymentSchedule,
+    ProjectStatus,
+    SubCategory,
+    Supplier,
+)
+from .pdf import build_project_report_pdf
 from .serializers import (
     CategorySerializer,
+    ClientSerializer,
     ExpenseTaxonomyCategorySerializer,
+    ProjectAttachmentSerializer,
     SubCategorySerializer,
     ProjectListSerializer,
+    ProjectPaymentScheduleSerializer,
     ProjectSerializer,
+    ProjectStatusSerializer,
+    SupplierSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,6 +44,17 @@ logger = logging.getLogger(__name__)
 
 def _client_label(value):
     return value or _("Sans client")
+
+
+def _paginate_or_serialize(request, queryset, serializer_class):
+    pagination = request.query_params.get("pagination", "false").lower() == "true"
+    if pagination:
+        paginator = CustomPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = serializer_class(page, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
+    serializer = serializer_class(queryset, many=True, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 def _service_fee_total(expenses):
@@ -592,7 +619,9 @@ class ProjectListCreateView(APIView):
         pagination = request.query_params.get("pagination", "false").lower() == "true"
 
         base_qs = (
-            Project.objects.all().select_related("created_by_user").order_by("-id")
+            Project.objects.all()
+            .select_related("created_by_user", "client")
+            .order_by("-id")
         )
         filterset = ProjectFilter(request.GET, queryset=base_qs)
         ordered_qs = filterset.qs
@@ -627,7 +656,7 @@ class ProjectDetailEditDeleteView(APIView):
     @staticmethod
     def _get_project(pk: int) -> Project:
         try:
-            return Project.objects.select_related("created_by_user").get(pk=pk)
+            return Project.objects.select_related("created_by_user", "client").get(pk=pk)
         except Project.DoesNotExist:
             raise Http404(_("Projet introuvable."))
 
@@ -676,6 +705,435 @@ class BulkDeleteProjectView(APIView):
             raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         Project.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Configurable Project Statuses ─────────────────────────────────────────────
+
+
+class ProjectStatusListCreateView(APIView):
+    """GET all project statuses, POST create a configurable status."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = ProjectStatus.objects.select_related("created_by_user").all()
+        return _paginate_or_serialize(request, queryset, ProjectStatusSerializer)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer un statut de projet.")
+            )
+        serializer = ProjectStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProjectStatusDetailView(APIView):
+    """GET, PUT, DELETE a configurable project status."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_status(pk: int) -> ProjectStatus:
+        try:
+            return ProjectStatus.objects.select_related("created_by_user").get(pk=pk)
+        except ProjectStatus.DoesNotExist:
+            raise Http404(_("Statut de projet introuvable."))
+
+    def get(self, request, pk: int):
+        serializer = ProjectStatusSerializer(
+            self._get_status(pk), context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier ce statut de projet.")
+            )
+        instance = self._get_status(pk)
+        serializer = ProjectStatusSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=instance.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer ce statut de projet.")
+            )
+        instance = self._get_status(pk)
+        if Project.objects.filter(status=instance.name).exists():
+            raise ValidationError(
+                {"status": _("Ce statut est utilisé par au moins un projet.")}
+            )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Clients ───────────────────────────────────────────────────────────────────
+
+
+class ClientListCreateView(APIView):
+    """GET clients directory, POST create a reusable client."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = Client.objects.select_related("created_by_user").all()
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(nom__icontains=search)
+                | Q(telephone__icontains=search)
+                | Q(email__icontains=search)
+                | Q(adresse__icontains=search)
+            )
+        return _paginate_or_serialize(request, queryset, ClientSerializer)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer un client.")
+            )
+        serializer = ClientSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ClientDetailView(APIView):
+    """GET, PUT, DELETE a client."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_client(pk: int) -> Client:
+        try:
+            return Client.objects.select_related("created_by_user").get(pk=pk)
+        except Client.DoesNotExist:
+            raise Http404(_("Client introuvable."))
+
+    def get(self, request, pk: int):
+        serializer = ClientSerializer(self._get_client(pk), context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier ce client.")
+            )
+        instance = self._get_client(pk)
+        serializer = ClientSerializer(
+            instance, data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=instance.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer ce client.")
+            )
+        self._get_client(pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkDeleteClientView(APIView):
+    """DELETE multiple clients by id list."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def delete(request):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer des clients.")
+            )
+        ids = request.data.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
+        Client.objects.filter(pk__in=ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Suppliers ─────────────────────────────────────────────────────────────────
+
+
+class SupplierListCreateView(APIView):
+    """GET suppliers directory, POST create a reusable supplier."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = Supplier.objects.select_related("created_by_user").all()
+        search = request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(nom__icontains=search)
+                | Q(contact__icontains=search)
+                | Q(specialite__icontains=search)
+            )
+        return _paginate_or_serialize(request, queryset, SupplierSerializer)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer un fournisseur.")
+            )
+        serializer = SupplierSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class SupplierDetailView(APIView):
+    """GET, PUT, DELETE a supplier."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_supplier(pk: int) -> Supplier:
+        try:
+            return Supplier.objects.select_related("created_by_user").get(pk=pk)
+        except Supplier.DoesNotExist:
+            raise Http404(_("Fournisseur introuvable."))
+
+    def get(self, request, pk: int):
+        serializer = SupplierSerializer(
+            self._get_supplier(pk), context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier ce fournisseur.")
+            )
+        instance = self._get_supplier(pk)
+        serializer = SupplierSerializer(
+            instance, data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=instance.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer ce fournisseur.")
+            )
+        self._get_supplier(pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkDeleteSupplierView(APIView):
+    """DELETE multiple suppliers by id list."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def delete(request):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer des fournisseurs.")
+            )
+        ids = request.data.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
+        Supplier.objects.filter(pk__in=ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Attachments and Payment Schedules ─────────────────────────────────────────
+
+
+class ProjectAttachmentListCreateView(APIView):
+    """GET/POST attachments for a project."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
+
+    @staticmethod
+    def _get_project(pk: int) -> Project:
+        try:
+            return Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            raise Http404(_("Projet introuvable."))
+
+    def get(self, request, pk: int):
+        self._get_project(pk)
+        queryset = ProjectAttachment.objects.filter(project_id=pk).select_related(
+            "uploaded_by_user"
+        )
+        serializer = ProjectAttachmentSerializer(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, pk: int):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour ajouter une pièce jointe.")
+            )
+        project = self._get_project(pk)
+        serializer = ProjectAttachmentSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(project=project, uploaded_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProjectAttachmentDetailView(APIView):
+    """DELETE a project attachment."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_attachment(pk: int) -> ProjectAttachment:
+        try:
+            return ProjectAttachment.objects.get(pk=pk)
+        except ProjectAttachment.DoesNotExist:
+            raise Http404(_("Pièce jointe introuvable."))
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer cette pièce jointe.")
+            )
+        attachment = self._get_attachment(pk)
+        attachment.file.delete(save=False)
+        attachment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectPaymentScheduleListCreateView(APIView):
+    """GET/POST project payment schedule entries."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = ProjectPaymentSchedule.objects.select_related(
+            "project", "created_by_user"
+        ).all()
+        project_id = request.query_params.get("project")
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        return _paginate_or_serialize(request, queryset, ProjectPaymentScheduleSerializer)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer une échéance.")
+            )
+        serializer = ProjectPaymentScheduleSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProjectPaymentScheduleDetailView(APIView):
+    """GET, PUT, DELETE a project payment schedule entry."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_schedule(pk: int) -> ProjectPaymentSchedule:
+        try:
+            return ProjectPaymentSchedule.objects.select_related(
+                "project", "created_by_user"
+            ).get(pk=pk)
+        except ProjectPaymentSchedule.DoesNotExist:
+            raise Http404(_("Échéance introuvable."))
+
+    def get(self, request, pk: int):
+        serializer = ProjectPaymentScheduleSerializer(
+            self._get_schedule(pk), context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier cette échéance.")
+            )
+        instance = self._get_schedule(pk)
+        serializer = ProjectPaymentScheduleSerializer(
+            instance, data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=instance.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer cette échéance.")
+            )
+        self._get_schedule(pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkDeleteProjectPaymentScheduleView(APIView):
+    """DELETE multiple payment schedule entries by id list."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def delete(request):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer des échéances.")
+            )
+        ids = request.data.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
+        ProjectPaymentSchedule.objects.filter(pk__in=ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectReportPDFView(APIView):
+    """Generate a project PDF report."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, pk: int):
+        try:
+            project = Project.objects.select_related("client").get(pk=pk)
+        except Project.DoesNotExist:
+            raise Http404(_("Projet introuvable."))
+
+        try:
+            pdf_buffer = build_project_report_pdf(project)
+        except ImportError:
+            raise ValidationError(
+                {
+                    "report": _(
+                        "La génération PDF nécessite la dépendance ReportLab."
+                    )
+                }
+            )
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename=f"rapport-projet-{project.id}.pdf",
+            content_type="application/pdf",
+        )
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────

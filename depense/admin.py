@@ -1,7 +1,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Expense
+from .models import Expense, ExpenseAttachment
 
 
 @admin.register(Expense)
@@ -14,10 +14,19 @@ class ExpenseAdmin(SimpleHistoryAdmin):
         "date",
         "category",
         "fournisseur",
+        "supplier",
     )
-    list_filter = ("project", "category")
-    search_fields = ("description", "fournisseur")
+    list_filter = ("project", "category", "supplier")
+    search_fields = ("description", "fournisseur", "supplier__nom")
     ordering = ("-date",)
+
+
+@admin.register(ExpenseAttachment)
+class ExpenseAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("id", "expense", "label", "uploaded_by_user", "date_created")
+    list_filter = ("expense__project",)
+    search_fields = ("label", "file", "expense__description")
+    ordering = ("-date_created",)
 
 
 class HistoricalExpenseAdmin(admin.ModelAdmin):

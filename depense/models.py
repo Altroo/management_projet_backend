@@ -1,11 +1,18 @@
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
+from uuid import uuid4
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from account.models import CustomUser
-from project.models import Category, SubCategory, Project
+from project.models import Category, SubCategory, Project, Supplier
+
+
+def expense_attachment_upload_to(instance, filename):
+    suffix = Path(filename).suffix
+    return f"expense_attachments/{instance.expense_id}/{uuid4().hex}{suffix}"
 
 
 class Expense(models.Model):
@@ -83,6 +90,14 @@ class Expense(models.Model):
         null=True,
         verbose_name=_("Fournisseur"),
     )
+    supplier = models.ForeignKey(
+        Supplier,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        verbose_name=_("Fournisseur référencé"),
+    )
     notes = models.TextField(
         blank=True,
         null=True,
@@ -125,3 +140,40 @@ class Expense(models.Model):
         else:
             amount = self.frais_de_service_valeur
         return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+class ExpenseAttachment(models.Model):
+    """Pièce jointe liée à une dépense."""
+
+    expense = models.ForeignKey(
+        Expense,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name=_("Dépense"),
+    )
+    file = models.FileField(
+        upload_to=expense_attachment_upload_to,
+        verbose_name=_("Fichier"),
+    )
+    label = models.CharField(
+        max_length=200, blank=True, null=True, verbose_name=_("Libellé")
+    )
+    uploaded_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expense_attachments_uploaded",
+        verbose_name=_("Ajouté par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+
+    class Meta:
+        verbose_name = _("Pièce jointe dépense")
+        verbose_name_plural = _("Pièces jointes dépenses")
+        ordering = ("-date_created", "-id")
+
+    def __str__(self) -> str:
+        return self.label or Path(self.file.name).name

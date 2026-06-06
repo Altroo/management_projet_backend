@@ -1,9 +1,17 @@
+from pathlib import Path
+from uuid import uuid4
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from account.models import CustomUser
 from project.models import Project
+
+
+def revenue_attachment_upload_to(instance, filename):
+    suffix = Path(filename).suffix
+    return f"revenue_attachments/{instance.revenue_id}/{uuid4().hex}{suffix}"
 
 
 class Revenue(models.Model):
@@ -60,3 +68,40 @@ class Revenue(models.Model):
 
     def __str__(self) -> str:
         return f"{self.description} - {self.montant} Dhs"
+
+
+class RevenueAttachment(models.Model):
+    """Pièce jointe liée à un revenu."""
+
+    revenue = models.ForeignKey(
+        Revenue,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name=_("Revenu"),
+    )
+    file = models.FileField(
+        upload_to=revenue_attachment_upload_to,
+        verbose_name=_("Fichier"),
+    )
+    label = models.CharField(
+        max_length=200, blank=True, null=True, verbose_name=_("Libellé")
+    )
+    uploaded_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="revenue_attachments_uploaded",
+        verbose_name=_("Ajouté par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+
+    class Meta:
+        verbose_name = _("Pièce jointe revenu")
+        verbose_name_plural = _("Pièces jointes revenus")
+        ordering = ("-date_created", "-id")
+
+    def __str__(self) -> str:
+        return self.label or Path(self.file.name).name

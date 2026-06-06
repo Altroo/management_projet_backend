@@ -1,7 +1,7 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Revenue
+from .models import Revenue, RevenueAttachment
 
 
 @admin.register(Revenue)
@@ -10,6 +10,14 @@ class RevenueAdmin(SimpleHistoryAdmin):
     list_filter = ("project",)
     search_fields = ("description",)
     ordering = ("-date",)
+
+
+@admin.register(RevenueAttachment)
+class RevenueAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("id", "revenue", "label", "uploaded_by_user", "date_created")
+    list_filter = ("revenue__project",)
+    search_fields = ("label", "file", "revenue__description")
+    ordering = ("-date_created",)
 
 
 class HistoricalRevenueAdmin(admin.ModelAdmin):

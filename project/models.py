@@ -1,9 +1,17 @@
+from pathlib import Path
+from uuid import uuid4
+
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from account.models import CustomUser
+
+
+def project_attachment_upload_to(instance, filename):
+    suffix = Path(filename).suffix
+    return f"project_attachments/{instance.project_id}/{uuid4().hex}{suffix}"
 
 
 class Category(models.Model):
@@ -86,6 +94,121 @@ class SubCategory(models.Model):
         return self.name
 
 
+class ProjectStatus(models.Model):
+    """Statut de projet configurable."""
+
+    name = models.CharField(max_length=60, unique=True, verbose_name=_("Nom"))
+    color = models.CharField(
+        max_length=20,
+        default="default",
+        verbose_name=_("Couleur"),
+        help_text=_("Couleur UI: default, info, success, warning, error."),
+    )
+    is_active = models.BooleanField(default=True, verbose_name=_("Actif"))
+    ordering = models.PositiveIntegerField(default=0, verbose_name=_("Ordre"))
+    created_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_statuses_created",
+        verbose_name=_("Créé par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
+    history = HistoricalRecords(
+        verbose_name=_("Historique Statut Projet"),
+        verbose_name_plural=_("Historiques Statuts Projets"),
+    )
+
+    class Meta:
+        verbose_name = _("Statut de projet")
+        verbose_name_plural = _("Statuts de projets")
+        ordering = ("ordering", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Client(models.Model):
+    """Annuaire client réutilisable."""
+
+    nom = models.CharField(max_length=200, unique=True, verbose_name=_("Nom"))
+    telephone = models.CharField(
+        max_length=30, blank=True, null=True, verbose_name=_("Téléphone")
+    )
+    email = models.EmailField(blank=True, null=True, verbose_name=_("Email"))
+    adresse = models.TextField(blank=True, null=True, verbose_name=_("Adresse"))
+    created_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="clients_created",
+        verbose_name=_("Créé par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
+    history = HistoricalRecords(
+        verbose_name=_("Historique Client"),
+        verbose_name_plural=_("Historiques Clients"),
+    )
+
+    class Meta:
+        verbose_name = _("Client")
+        verbose_name_plural = _("Clients")
+        ordering = ("nom",)
+
+    def __str__(self) -> str:
+        return self.nom
+
+
+class Supplier(models.Model):
+    """Annuaire fournisseur réutilisable."""
+
+    nom = models.CharField(max_length=200, unique=True, verbose_name=_("Nom"))
+    contact = models.CharField(
+        max_length=200, blank=True, null=True, verbose_name=_("Contact")
+    )
+    specialite = models.CharField(
+        max_length=200, blank=True, null=True, verbose_name=_("Spécialité")
+    )
+    created_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="suppliers_created",
+        verbose_name=_("Créé par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
+    history = HistoricalRecords(
+        verbose_name=_("Historique Fournisseur"),
+        verbose_name_plural=_("Historiques Fournisseurs"),
+    )
+
+    class Meta:
+        verbose_name = _("Fournisseur")
+        verbose_name_plural = _("Fournisseurs")
+        ordering = ("nom",)
+
+    def __str__(self) -> str:
+        return self.nom
+
+
 class Project(models.Model):
     """Projet de gestion avec budget, dates et informations client."""
 
@@ -94,6 +217,10 @@ class Project(models.Model):
         ("En cours", _("En cours")),
         ("Pas commencé", _("Pas commencé")),
         ("En attente", _("En attente")),
+        ("En pause", _("En pause")),
+        ("Annulé", _("Annulé")),
+        ("En attente de démarrage", _("En attente de démarrage")),
+        ("Livré", _("Livré")),
     ]
 
     nom = models.CharField(
@@ -123,11 +250,18 @@ class Project(models.Model):
         help_text=_("Date de fin prévue du projet"),
     )
     status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
+        max_length=60,
         default="Pas commencé",
         verbose_name=_("Statut"),
         db_index=True,
+    )
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projects",
+        verbose_name=_("Client"),
     )
     chef_de_projet = models.CharField(
         max_length=200,
@@ -222,3 +356,90 @@ class Project(models.Model):
         if rev == 0:
             return 0
         return round((self.benefice / rev) * 100, 2)
+
+
+class ProjectAttachment(models.Model):
+    """Pièce jointe liée à un projet."""
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name=_("Projet"),
+    )
+    file = models.FileField(
+        upload_to=project_attachment_upload_to,
+        verbose_name=_("Fichier"),
+    )
+    label = models.CharField(
+        max_length=200, blank=True, null=True, verbose_name=_("Libellé")
+    )
+    uploaded_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_attachments_uploaded",
+        verbose_name=_("Ajouté par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+
+    class Meta:
+        verbose_name = _("Pièce jointe projet")
+        verbose_name_plural = _("Pièces jointes projets")
+        ordering = ("-date_created", "-id")
+
+    def __str__(self) -> str:
+        return self.label or Path(self.file.name).name
+
+
+class ProjectPaymentSchedule(models.Model):
+    """Échéance prévisionnelle d'encaissement liée à un projet."""
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="payment_schedules",
+        verbose_name=_("Projet"),
+    )
+    due_date = models.DateField(verbose_name=_("Date prévue"), db_index=True)
+    expected_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        verbose_name=_("Montant prévu (Dhs)"),
+    )
+    description = models.CharField(
+        max_length=300,
+        blank=True,
+        null=True,
+        verbose_name=_("Description"),
+    )
+    notes = models.TextField(blank=True, null=True, verbose_name=_("Notes"))
+    created_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payment_schedules_created",
+        verbose_name=_("Créé par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
+    history = HistoricalRecords(
+        verbose_name=_("Historique Échéance Paiement"),
+        verbose_name_plural=_("Historiques Échéances Paiements"),
+    )
+
+    class Meta:
+        verbose_name = _("Échéance de paiement")
+        verbose_name_plural = _("Échéances de paiements")
+        ordering = ("due_date", "id")
+
+    def __str__(self) -> str:
+        return f"{self.project} - {self.due_date} - {self.expected_amount} Dhs"
