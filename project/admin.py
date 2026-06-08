@@ -30,8 +30,8 @@ class SubCategoryAdmin(SimpleHistoryAdmin):
 
 @admin.register(Client)
 class ClientAdmin(SimpleHistoryAdmin):
-    list_display = ("id", "nom", "telephone", "email", "date_created")
-    search_fields = ("nom", "telephone", "email", "adresse")
+    list_display = ("id", "nom", "telephone", "email", "ville", "date_created")
+    search_fields = ("nom", "telephone", "email", "ville", "adresse")
     ordering = ("nom",)
 
 
@@ -54,7 +54,7 @@ class ProjectAdmin(SimpleHistoryAdmin):
         "date_fin",
     )
     list_filter = ("status", "client")
-    search_fields = ("nom", "nom_client", "client__nom")
+    search_fields = ("nom", "nom_client", "ville_client", "client__nom", "client__ville")
     ordering = ("-id",)
 
 
@@ -178,7 +178,7 @@ class HistoricalProjectAdmin(admin.ModelAdmin):
         "history_user",
     )
     list_filter = ("history_type", "history_date", "status")
-    search_fields = ("nom", "nom_client")
+    search_fields = ("nom", "nom_client", "ville_client")
     readonly_fields = [
         field.name
         for field in Project._meta.get_fields()

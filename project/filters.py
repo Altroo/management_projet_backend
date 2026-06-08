@@ -52,6 +52,8 @@ class ProjectFilter(django_filters.FilterSet):
             | Q(chef_de_projet__icontains=value)
             | Q(email_client__icontains=value)
             | Q(client__email__icontains=value)
+            | Q(ville_client__icontains=value)
+            | Q(client__ville__icontains=value)
         )
 
     def filter_status(self, queryset, name, value):  # noqa: ARG002

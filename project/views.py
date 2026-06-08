@@ -788,6 +788,7 @@ class ClientListCreateView(APIView):
                 Q(nom__icontains=search)
                 | Q(telephone__icontains=search)
                 | Q(email__icontains=search)
+                | Q(ville__icontains=search)
                 | Q(adresse__icontains=search)
             )
         return _paginate_or_serialize(request, queryset, ClientSerializer)

@@ -104,6 +104,7 @@ class Client(models.Model):
         max_length=30, blank=True, null=True, verbose_name=_("Téléphone")
     )
     email = models.EmailField(blank=True, null=True, verbose_name=_("Email"))
+    ville = models.CharField(max_length=120, blank=True, null=True, verbose_name=_("Ville"))
     adresse = models.TextField(blank=True, null=True, verbose_name=_("Adresse"))
     created_by_user = models.ForeignKey(
         CustomUser,
@@ -247,6 +248,12 @@ class Project(models.Model):
         blank=True,
         null=True,
         verbose_name=_("Email du client"),
+    )
+    ville_client = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True,
+        verbose_name=_("Ville du client"),
     )
     notes = models.TextField(
         blank=True,

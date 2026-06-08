@@ -201,6 +201,7 @@ class ClientSerializer(serializers.ModelSerializer):
             "nom",
             "telephone",
             "email",
+            "ville",
             "adresse",
             "total_encaisse",
             "projects_count",
@@ -305,6 +306,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     created_by_user_name = serializers.SerializerMethodField()
     status_display = serializers.SerializerMethodField()
     client_name = serializers.CharField(source="client.nom", read_only=True, default=None)
+    client_city = serializers.CharField(source="client.ville", read_only=True, default=None)
     jours_restants = serializers.IntegerField(read_only=True)
     revenue_total = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
@@ -336,10 +338,12 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "status_display",
             "client",
             "client_name",
+            "client_city",
             "chef_de_projet",
             "nom_client",
             "telephone_client",
             "email_client",
+            "ville_client",
             "notes",
             "jours_restants",
             "revenue_total",
@@ -359,6 +363,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     created_by_user_name = serializers.SerializerMethodField()
     status_display = serializers.SerializerMethodField()
     client_name = serializers.CharField(source="client.nom", read_only=True, default=None)
+    client_city = serializers.CharField(source="client.ville", read_only=True, default=None)
     client_address = serializers.CharField(
         source="client.adresse", read_only=True, default=None
     )
@@ -393,11 +398,13 @@ class ProjectSerializer(serializers.ModelSerializer):
             "status_display",
             "client",
             "client_name",
+            "client_city",
             "client_address",
             "chef_de_projet",
             "nom_client",
             "telephone_client",
             "email_client",
+            "ville_client",
             "notes",
             "jours_restants",
             "revenue_total",
@@ -413,6 +420,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "id",
             "status_display",
             "client_name",
+            "client_city",
             "client_address",
             "jours_restants",
             "revenue_total",
@@ -435,6 +443,8 @@ class ProjectSerializer(serializers.ModelSerializer):
                 attrs["telephone_client"] = client.telephone
             if not attrs.get("email_client") and client.email:
                 attrs["email_client"] = client.email
+            if not attrs.get("ville_client") and client.ville:
+                attrs["ville_client"] = client.ville
         return attrs
 
 
