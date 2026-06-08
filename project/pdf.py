@@ -70,6 +70,7 @@ def build_project_report_pdf(project):
         .order_by("date", "id")
     )
     schedules = project.payment_schedules.all().order_by("due_date", "id")
+    real_budget_entries = project.real_budget_entries.all().order_by("date", "id")
 
     revenue_total = revenues.aggregate(
         total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
@@ -84,6 +85,19 @@ def build_project_report_pdf(project):
     expected_total = schedules.aggregate(
         total=Coalesce(Sum("expected_amount"), 0, output_field=DecimalField())
     )["total"]
+    real_budget_revenue = real_budget_entries.aggregate(
+        total=Coalesce(Sum("montant_client"), 0, output_field=DecimalField())
+    )["total"]
+    real_budget_cost = real_budget_entries.aggregate(
+        total=Coalesce(Sum("montant_fournisseur"), 0, output_field=DecimalField())
+    )["total"]
+    real_budget_profit = real_budget_revenue - real_budget_cost
+    real_budget_margin = (
+        round((real_budget_profit / real_budget_revenue) * 100, 2)
+        if real_budget_revenue
+        else 0
+    )
+    budget_gap = project.budget_total - real_budget_cost
     profit = revenue_total - expense_total
     margin_pct = round((profit / revenue_total) * 100, 2) if revenue_total else 0
     budget_usage = (
@@ -114,7 +128,7 @@ def build_project_report_pdf(project):
         Spacer(1, 0.35 * cm),
         _build_kpi_grid(
             [
-                ("Budget", f"{_money(project.budget_total)} MAD"),
+                ("Budget initial", f"{_money(project.budget_total)} MAD"),
                 ("Revenus reçus", f"{_money(revenue_total)} MAD"),
                 ("Dépenses", f"{_money(expense_total)} MAD"),
                 ("Bénéfice", f"{_money(profit)} MAD"),
@@ -129,11 +143,11 @@ def build_project_report_pdf(project):
         Spacer(1, 0.22 * cm),
         _build_kpi_grid(
             [
-                ("Budget utilisé", f"{budget_usage}%"),
-                ("Échéancier prévu", f"{_money(expected_total)} MAD"),
-                ("Écart prévisionnel", f"{_money(revenue_total - expected_total)} MAD"),
-                ("Frais de service", f"{_money(service_fee_total)} MAD"),
-                ("Pièces projet", str(project.attachments.count())),
+                ("Coût réel", f"{_money(real_budget_cost)} MAD"),
+                ("Revenu par étape", f"{_money(real_budget_revenue)} MAD"),
+                ("Marge réelle", f"{_money(real_budget_profit)} MAD"),
+                ("Taux marge réelle", f"{real_budget_margin}%"),
+                ("Écart budget", f"{_money(budget_gap)} MAD"),
             ],
             content_width,
             styles,
@@ -165,8 +179,49 @@ def build_project_report_pdf(project):
     story.append(Spacer(1, 0.35 * cm))
     story.extend(
         _section(
+            "Budget réel par étape",
+            _build_real_budget_table(
+                entries=real_budget_entries,
+                content_width=content_width,
+                styles=styles,
+                colors=colors,
+                navy=navy,
+                accent=accent,
+                border=border,
+            ),
+            styles,
+            accent,
+            cm,
+        )
+    )
+    story.append(Spacer(1, 0.35 * cm))
+    story.extend(
+        _section(
             "Revenus réels reçus",
             _build_revenue_table(revenues, content_width, styles, colors, navy, accent, border),
+            styles,
+            accent,
+            cm,
+        )
+    )
+    story.append(Spacer(1, 0.22 * cm))
+    story.extend(
+        _section(
+            "Suivi complémentaire",
+            _build_kpi_grid(
+                [
+                    ("Budget utilisé", f"{budget_usage}%"),
+                    ("Échéancier prévu", f"{_money(expected_total)} MAD"),
+                    ("Écart prévisionnel", f"{_money(revenue_total - expected_total)} MAD"),
+                    ("Frais de service", f"{_money(service_fee_total)} MAD"),
+                    ("Pièces projet", str(project.attachments.count())),
+                ],
+                content_width,
+                styles,
+                colors,
+                soft_bg,
+                border,
+            ),
             styles,
             accent,
             cm,
@@ -487,6 +542,37 @@ def _build_schedule_table(schedules, project, content_width, styles, colors, nav
             ]
         )
     return _data_table(rows, [0.16, 0.28, 0.14, 0.14, 0.15, 0.13], content_width, colors, navy, accent, border)
+
+
+def _build_real_budget_table(entries, content_width, styles, colors, navy, accent, border):
+    headers = ["Date", "Étape", "Description", "Client", "Fournisseur", "Marge", "Taux"]
+    rows = [[Paragraph(f"<b>{header}</b>", styles["HeaderCell"]) for header in headers]]
+    if entries:
+        for entry in entries:
+            rows.append(
+                [
+                    Paragraph(_date(entry.date), styles["Small"]),
+                    Paragraph(_pdf_text(entry.stage), styles["Small"]),
+                    Paragraph(_pdf_text(entry.description or "-"), styles["Small"]),
+                    Paragraph(_money(entry.montant_client), styles["SmallRight"]),
+                    Paragraph(_money(entry.montant_fournisseur), styles["SmallRight"]),
+                    Paragraph(_money(entry.benefice), styles["SmallRight"]),
+                    Paragraph(f"{entry.marge}%", styles["SmallRight"]),
+                ]
+            )
+    else:
+        rows.append(
+            [
+                Paragraph("-", styles["Small"]),
+                Paragraph("Aucune ligne de budget réel enregistrée.", styles["Small"]),
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]
+        )
+    return _data_table(rows, [0.11, 0.18, 0.25, 0.12, 0.14, 0.12, 0.08], content_width, colors, navy, accent, border)
 
 
 def _build_revenue_table(revenues, content_width, styles, colors, navy, accent, border):

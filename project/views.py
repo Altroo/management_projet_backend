@@ -13,7 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.permissions import can_create, can_update, can_delete
+from depense.models import Expense
 from management_projet_backend.utils import CustomPagination
+from revenu.models import Revenue
 from .filters import ProjectFilter
 from .models import (
     Category,
@@ -21,6 +23,7 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
+    ProjectRealBudgetEntry,
     SubCategory,
     Supplier,
 )
@@ -33,6 +36,7 @@ from .serializers import (
     SubCategorySerializer,
     ProjectListSerializer,
     ProjectPaymentScheduleSerializer,
+    ProjectRealBudgetEntrySerializer,
     ProjectSerializer,
     SupplierSerializer,
 )
@@ -129,13 +133,69 @@ def _expense_history(expenses, include_service_fees=False):
     ]
 
 
-def _project_dashboard_payload(project, include_service_fees=False):
-    from revenu.models import Revenue
-    from depense.models import Expense
+def _real_budget_decimal_total(queryset, field):
+    return queryset.aggregate(
+        total=Coalesce(Sum(field), 0, output_field=DecimalField())
+    )["total"]
 
+
+def _real_budget_summary(entries, initial_budget):
+    total_revenue = _real_budget_decimal_total(entries, "montant_client")
+    total_cost = _real_budget_decimal_total(entries, "montant_fournisseur")
+    profit = total_revenue - total_cost
+    margin = round((profit / total_revenue) * 100, 2) if total_revenue else 0
+    budget_gap = initial_budget - total_cost
+    budget_gap_percent = (
+        round((budget_gap / initial_budget) * 100, 2) if initial_budget else 0
+    )
+
+    by_stage = []
+    for item in (
+        entries.values("stage")
+        .annotate(
+            total_revenue=Coalesce(
+                Sum("montant_client"), 0, output_field=DecimalField()
+            ),
+            total_cost=Coalesce(
+                Sum("montant_fournisseur"), 0, output_field=DecimalField()
+            ),
+        )
+        .order_by("stage")
+    ):
+        stage_revenue = item["total_revenue"]
+        stage_cost = item["total_cost"]
+        stage_profit = stage_revenue - stage_cost
+        by_stage.append(
+            {
+                "stage": item["stage"],
+                "total_revenue": stage_revenue,
+                "total_cost": stage_cost,
+                "profit": stage_profit,
+                "margin": (
+                    round((stage_profit / stage_revenue) * 100, 2)
+                    if stage_revenue
+                    else 0
+                ),
+            }
+        )
+
+    return {
+        "budget_initial": initial_budget,
+        "real_budget_total_revenue": total_revenue,
+        "real_budget_total_cost": total_cost,
+        "real_budget_profit": profit,
+        "real_budget_margin": margin,
+        "budget_gap": budget_gap,
+        "budget_gap_percent": budget_gap_percent,
+        "real_budget_by_stage": by_stage,
+    }
+
+
+def _project_dashboard_payload(project, include_service_fees=False):
     expenses = Expense.objects.filter(project=project).select_related(
         "project", "category", "sous_categorie"
     )
+    real_budget_entries = ProjectRealBudgetEntry.objects.filter(project=project)
     revenue_total = Revenue.objects.filter(project=project).aggregate(
         total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
     )["total"]
@@ -196,15 +256,14 @@ def _project_dashboard_payload(project, include_service_fees=False):
     if not include_service_fees:
         payload["service_fees"] = service_fees
         payload["revenue_reelle"] = revenue_total + service_fees
+        payload.update(_real_budget_summary(real_budget_entries, project.budget_total))
     return payload
 
 
 def _multi_project_dashboard_payload(include_service_fees=False):
-    from revenu.models import Revenue
-    from depense.models import Expense
-
     projects = Project.objects.all()
     expenses = Expense.objects.select_related("project", "category", "sous_categorie")
+    real_budget_entries = ProjectRealBudgetEntry.objects.select_related("project")
 
     total_budget = projects.aggregate(
         total=Coalesce(Sum("budget_total"), 0, output_field=DecimalField())
@@ -265,17 +324,23 @@ def _multi_project_dashboard_payload(include_service_fees=False):
         p_expenses = _expense_total(
             p_expenses_qs, include_service_fees=include_service_fees
         )
-        project_summaries.append(
-            {
-                "id": project.id,
-                "nom": project.nom,
-                "budget_total": project.budget_total,
-                "revenue": p_revenue,
-                "expenses": p_expenses,
-                "profit": p_revenue - p_expenses,
-                "status": project.status,
-            }
-        )
+        project_summary = {
+            "id": project.id,
+            "nom": project.nom,
+            "budget_total": project.budget_total,
+            "revenue": p_revenue,
+            "expenses": p_expenses,
+            "profit": p_revenue - p_expenses,
+            "status": project.status,
+        }
+        if not include_service_fees:
+            project_summary.update(
+                _real_budget_summary(
+                    ProjectRealBudgetEntry.objects.filter(project=project),
+                    project.budget_total,
+                )
+            )
+        project_summaries.append(project_summary)
 
     payload = {
         "total_projects": projects.count(),
@@ -322,6 +387,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
     if not include_service_fees:
         payload["total_service_fees"] = total_service_fees
         payload["total_revenue_reelle"] = total_revenue + total_service_fees
+        payload.update(_real_budget_summary(real_budget_entries, total_budget))
     return payload
 
 
@@ -1033,6 +1099,106 @@ class BulkDeleteProjectPaymentScheduleView(APIView):
         if not ids or not isinstance(ids, list):
             raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
         ProjectPaymentSchedule.objects.filter(pk__in=ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectRealBudgetEntryListCreateView(APIView):
+    """GET/POST real budget entries for project stage profitability tracking."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request):
+        queryset = ProjectRealBudgetEntry.objects.select_related(
+            "project", "created_by_user"
+        ).all()
+        project_id = request.query_params.get("project")
+        stage = request.query_params.get("stage")
+        search = request.query_params.get("search")
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        if stage:
+            queryset = queryset.filter(stage__icontains=stage)
+        if search:
+            queryset = queryset.filter(
+                Q(stage__icontains=search)
+                | Q(description__icontains=search)
+                | Q(notes__icontains=search)
+                | Q(project__nom__icontains=search)
+            )
+        return _paginate_or_serialize(request, queryset, ProjectRealBudgetEntrySerializer)
+
+    @staticmethod
+    def post(request):
+        if not can_create(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour créer une ligne de budget réel.")
+            )
+        serializer = ProjectRealBudgetEntrySerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProjectRealBudgetEntryDetailView(APIView):
+    """GET, PUT, DELETE a real budget entry."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _get_entry(pk: int) -> ProjectRealBudgetEntry:
+        try:
+            return ProjectRealBudgetEntry.objects.select_related(
+                "project", "created_by_user"
+            ).get(pk=pk)
+        except ProjectRealBudgetEntry.DoesNotExist:
+            raise Http404(_("Ligne de budget réel introuvable."))
+
+    def get(self, request, pk: int):
+        serializer = ProjectRealBudgetEntrySerializer(
+            self._get_entry(pk), context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk: int):
+        if not can_update(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour modifier cette ligne de budget réel.")
+            )
+        instance = self._get_entry(pk)
+        serializer = ProjectRealBudgetEntrySerializer(
+            instance, data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by_user=instance.created_by_user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk: int):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer cette ligne de budget réel.")
+            )
+        self._get_entry(pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkDeleteProjectRealBudgetEntryView(APIView):
+    """DELETE multiple real budget entries by id list."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def delete(request):
+        if not can_delete(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour supprimer des lignes de budget réel.")
+            )
+        ids = request.data.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
+        ProjectRealBudgetEntry.objects.filter(pk__in=ids).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

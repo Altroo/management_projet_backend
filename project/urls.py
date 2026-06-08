@@ -6,6 +6,7 @@ from .views import (
     BulkDeleteCategoryView,
     BulkDeleteClientView,
     BulkDeleteProjectPaymentScheduleView,
+    BulkDeleteProjectRealBudgetEntryView,
     SubCategoryListCreateView,
     SubCategoryDetailView,
     BulkDeleteSubCategoryView,
@@ -26,6 +27,8 @@ from .views import (
     MultiProjectDashboardView,
     ProjectPaymentScheduleDetailView,
     ProjectPaymentScheduleListCreateView,
+    ProjectRealBudgetEntryDetailView,
+    ProjectRealBudgetEntryListCreateView,
     ProjectReportPDFView,
     SupplierDetailView,
     SupplierListCreateView,
@@ -116,6 +119,22 @@ urlpatterns = [
         "payment-schedules/<int:pk>/",
         ProjectPaymentScheduleDetailView.as_view(),
         name="payment-schedule-detail",
+    ),
+    # Real budget entries
+    path(
+        "real-budget-entries/",
+        ProjectRealBudgetEntryListCreateView.as_view(),
+        name="real-budget-entry-list-create",
+    ),
+    path(
+        "real-budget-entries/bulk_delete/",
+        BulkDeleteProjectRealBudgetEntryView.as_view(),
+        name="real-budget-entry-bulk-delete",
+    ),
+    path(
+        "real-budget-entries/<int:pk>/",
+        ProjectRealBudgetEntryDetailView.as_view(),
+        name="real-budget-entry-detail",
     ),
     # Projects
     path("", ProjectListCreateView.as_view(), name="project-list-create"),

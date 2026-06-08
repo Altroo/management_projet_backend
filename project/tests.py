@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from account.models import CustomUser
 from depense.models import Expense
-from project.models import Category, SubCategory, Project
+from project.models import Category, SubCategory, Project, ProjectRealBudgetEntry
 from revenu.models import Revenue
 
 pytestmark = pytest.mark.django_db
@@ -102,6 +102,20 @@ def make_revenue(project, created_by=None, **kwargs):
     }
     defaults.update(kwargs)
     return Revenue.objects.create(
+        project=project, created_by_user=created_by, **defaults
+    )
+
+
+def make_real_budget_entry(project, created_by=None, **kwargs):
+    defaults = {
+        "date": date(2025, 6, 20),
+        "stage": "Design",
+        "description": "Facture design",
+        "montant_client": "15000.00",
+        "montant_fournisseur": "9000.00",
+    }
+    defaults.update(kwargs)
+    return ProjectRealBudgetEntry.objects.create(
         project=project, created_by_user=created_by, **defaults
     )
 
@@ -590,6 +604,85 @@ class TestBulkDeleteProjectView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+class TestProjectRealBudgetEntryView:
+    def setup_method(self):
+        self.staff_user, self.staff_client = make_staff_user()
+        self.readonly_user, self.readonly_client = make_readonly_user()
+        self.anon_client = APIClient()
+        self.project = make_project(
+            nom="Budget Réel", created_by=self.staff_user, budget_total="100000.00"
+        )
+        self.url = reverse("project:real-budget-entry-list-create")
+
+    def test_create_returns_computed_profit_and_margin(self):
+        payload = {
+            "project": self.project.pk,
+            "date": "2025-06-20",
+            "stage": "Design",
+            "description": "Facture design",
+            "montant_client": "15000.00",
+            "montant_fournisseur": "9000.00",
+            "notes": "",
+        }
+
+        response = self.staff_client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Decimal(response.data["benefice"]) == Decimal("6000.00")
+        assert Decimal(response.data["marge"]) == Decimal("40.00")
+
+    def test_list_filters_by_project(self):
+        other_project = make_project(nom="Other Project", created_by=self.staff_user)
+        expected = make_real_budget_entry(self.project, created_by=self.staff_user)
+        make_real_budget_entry(
+            other_project, created_by=self.staff_user, stage="Construction"
+        )
+
+        response = self.staff_client.get(self.url, {"project": self.project.pk})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [item["id"] for item in response.data] == [expected.pk]
+
+    def test_create_without_permission_returns_403(self):
+        payload = {
+            "project": self.project.pk,
+            "date": "2025-06-20",
+            "stage": "Design",
+            "description": "Blocked",
+            "montant_client": "15000.00",
+            "montant_fournisseur": "9000.00",
+        }
+        response = self.readonly_client.post(self.url, payload, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_update_and_delete(self):
+        entry = make_real_budget_entry(self.project, created_by=self.staff_user)
+        detail_url = reverse("project:real-budget-entry-detail", kwargs={"pk": entry.pk})
+
+        update_payload = {
+            "project": self.project.pk,
+            "date": "2025-06-21",
+            "stage": "Construction",
+            "description": "Facture construction",
+            "montant_client": "20000.00",
+            "montant_fournisseur": "12000.00",
+            "notes": "RAS",
+        }
+        update_response = self.staff_client.put(detail_url, update_payload, format="json")
+
+        assert update_response.status_code == status.HTTP_200_OK
+        assert update_response.data["stage"] == "Construction"
+        assert Decimal(update_response.data["benefice"]) == Decimal("8000.00")
+
+        delete_response = self.staff_client.delete(detail_url)
+        assert delete_response.status_code == status.HTTP_204_NO_CONTENT
+        assert not ProjectRealBudgetEntry.objects.filter(pk=entry.pk).exists()
+
+    def test_unauthenticated_returns_401(self):
+        response = self.anon_client.get(self.url)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 # ── Dashboard Tests ───────────────────────────────────────────────────────────
 
 
@@ -618,6 +711,14 @@ class TestProjectDashboardView:
             "marge",
             "service_fees",
             "revenue_reelle",
+            "budget_initial",
+            "real_budget_total_revenue",
+            "real_budget_total_cost",
+            "real_budget_profit",
+            "real_budget_margin",
+            "budget_gap",
+            "budget_gap_percent",
+            "real_budget_by_stage",
             "top_categories",
             "top_subcategories",
             "top_vendors",
@@ -647,6 +748,31 @@ class TestProjectDashboardView:
         assert Decimal(response.data["service_fees"]) == Decimal("10.00")
         assert Decimal(response.data["revenue_reelle"]) == Decimal("1010.00")
 
+    def test_internal_project_dashboard_exposes_real_budget_summary(self):
+        make_real_budget_entry(
+            self.project,
+            stage="Design",
+            montant_client="15000.00",
+            montant_fournisseur="9000.00",
+        )
+        make_real_budget_entry(
+            self.project,
+            stage="Construction",
+            montant_client="20000.00",
+            montant_fournisseur="14000.00",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["budget_initial"]) == Decimal("100000.00")
+        assert Decimal(response.data["real_budget_total_revenue"]) == Decimal("35000.00")
+        assert Decimal(response.data["real_budget_total_cost"]) == Decimal("23000.00")
+        assert Decimal(response.data["real_budget_profit"]) == Decimal("12000.00")
+        assert response.data["real_budget_margin"] == Decimal("34.29")
+        assert Decimal(response.data["budget_gap"]) == Decimal("77000.00")
+        assert len(response.data["real_budget_by_stage"]) == 2
+
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -673,6 +799,14 @@ class TestMultiProjectDashboardView:
             "total_margin",
             "total_service_fees",
             "total_revenue_reelle",
+            "budget_initial",
+            "real_budget_total_revenue",
+            "real_budget_total_cost",
+            "real_budget_profit",
+            "real_budget_margin",
+            "budget_gap",
+            "budget_gap_percent",
+            "real_budget_by_stage",
             "top_expense_clients",
             "top_revenue_clients",
             "top_categories",
@@ -730,6 +864,35 @@ class TestMultiProjectDashboardView:
         assert Decimal(response.data["total_service_fees"]) == Decimal("10.00")
         assert Decimal(response.data["total_revenue_reelle"]) == Decimal("1010.00")
 
+    def test_internal_dashboard_exposes_real_budget_summary(self):
+        project = make_project(
+            nom="MP Budget Réel",
+            nom_client="Client Budget",
+            created_by=self.staff_user,
+            budget_total="100000.00",
+        )
+        make_real_budget_entry(
+            project,
+            stage="Design",
+            montant_client="15000.00",
+            montant_fournisseur="9000.00",
+        )
+        make_real_budget_entry(
+            project,
+            stage="Design",
+            montant_client="5000.00",
+            montant_fournisseur="3000.00",
+        )
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Decimal(response.data["real_budget_total_revenue"]) == Decimal("20000.00")
+        assert Decimal(response.data["real_budget_total_cost"]) == Decimal("12000.00")
+        assert Decimal(response.data["real_budget_profit"]) == Decimal("8000.00")
+        assert response.data["real_budget_by_stage"][0]["stage"] == "Design"
+        assert Decimal(response.data["projects"][0]["real_budget_total_cost"]) == Decimal("12000.00")
+
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -762,6 +925,7 @@ class TestClientDashboardView:
             assert key in response.data
         assert "total_service_fees" not in response.data
         assert "total_revenue_reelle" not in response.data
+        assert "real_budget_total_cost" not in response.data
 
     def test_expense_totals_include_service_fees_without_exposing_them(self):
         project = make_project(
@@ -784,6 +948,8 @@ class TestClientDashboardView:
         assert "total_service_fees" not in response.data
         assert "total_revenue_reelle" not in response.data
         assert "service_fees" not in response.data["projects"][0]
+        assert "real_budget_total_cost" not in response.data
+        assert "real_budget_total_cost" not in response.data["projects"][0]
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
@@ -818,6 +984,7 @@ class TestClientProjectDashboardView:
         assert Decimal(response.data["benefice"]) == Decimal("0.00")
         assert "service_fees" not in response.data
         assert "revenue_reelle" not in response.data
+        assert "real_budget_total_cost" not in response.data
 
     def test_not_found_returns_404(self):
         url = reverse("project:client-project-dashboard", kwargs={"pk": 99999})

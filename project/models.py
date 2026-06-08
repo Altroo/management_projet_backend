@@ -1,6 +1,8 @@
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from uuid import uuid4
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -403,3 +405,83 @@ class ProjectPaymentSchedule(models.Model):
 
     def __str__(self) -> str:
         return f"{self.project} - {self.due_date} - {self.expected_amount} Dhs"
+
+
+class ProjectRealBudgetEntry(models.Model):
+    """Opération réelle facturée au client et payée au fournisseur par étape."""
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="real_budget_entries",
+        verbose_name=_("Projet"),
+    )
+    date = models.DateField(
+        default=timezone.localdate,
+        verbose_name=_("Date"),
+        db_index=True,
+    )
+    stage = models.CharField(
+        max_length=200,
+        verbose_name=_("Étape du projet"),
+        db_index=True,
+    )
+    description = models.CharField(
+        max_length=300,
+        blank=True,
+        null=True,
+        verbose_name=_("Description"),
+    )
+    montant_client = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        verbose_name=_("Montant facturé au client (Dhs)"),
+    )
+    montant_fournisseur = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        verbose_name=_("Montant payé au fournisseur (Dhs)"),
+    )
+    notes = models.TextField(blank=True, null=True, verbose_name=_("Notes"))
+    created_by_user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="real_budget_entries_created",
+        verbose_name=_("Créé par"),
+    )
+    date_created = models.DateTimeField(
+        auto_now_add=True, verbose_name=_("Date création")
+    )
+    date_updated = models.DateTimeField(
+        auto_now=True, verbose_name=_("Date modification")
+    )
+    history = HistoricalRecords(
+        verbose_name=_("Historique Budget réel"),
+        verbose_name_plural=_("Historiques Budgets réels"),
+    )
+
+    class Meta:
+        verbose_name = _("Budget réel projet")
+        verbose_name_plural = _("Budgets réels projets")
+        ordering = ("-date", "-id")
+
+    def __str__(self) -> str:
+        return f"{self.project} - {self.stage} - {self.benefice} Dhs"
+
+    @property
+    def benefice(self):
+        return (self.montant_client or Decimal("0.00")) - (
+            self.montant_fournisseur or Decimal("0.00")
+        )
+
+    @property
+    def marge(self):
+        if not self.montant_client:
+            return Decimal("0.00")
+        return ((self.benefice / self.montant_client) * Decimal("100")).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )

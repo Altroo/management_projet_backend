@@ -1,4 +1,8 @@
 from rest_framework import serializers
+from django.db.models import DecimalField, Sum
+from django.db.models.functions import Coalesce
+
+from revenu.models import Revenue
 
 from .models import (
     Category,
@@ -6,6 +10,7 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
+    ProjectRealBudgetEntry,
     SubCategory,
     Supplier,
 )
@@ -503,10 +508,6 @@ class ProjectPaymentScheduleSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _actual_cumulative(obj):
-        from django.db.models import DecimalField, Sum
-        from django.db.models.functions import Coalesce
-        from revenu.models import Revenue
-
         return Revenue.objects.filter(
             project=obj.project,
             date__lte=obj.due_date,
@@ -516,9 +517,6 @@ class ProjectPaymentScheduleSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _expected_cumulative(obj):
-        from django.db.models import DecimalField, Sum
-        from django.db.models.functions import Coalesce
-
         return ProjectPaymentSchedule.objects.filter(
             project=obj.project,
             due_date__lte=obj.due_date,
@@ -529,10 +527,6 @@ class ProjectPaymentScheduleSerializer(serializers.ModelSerializer):
         ]
 
     def get_actual_amount(self, obj):
-        from django.db.models import DecimalField, Sum
-        from django.db.models.functions import Coalesce
-        from revenu.models import Revenue
-
         return Revenue.objects.filter(
             project=obj.project,
             date=obj.due_date,
@@ -575,6 +569,49 @@ class ProjectPaymentScheduleSerializer(serializers.ModelSerializer):
             "expected_cumulative",
             "actual_cumulative",
             "variance",
+            "created_by_user",
+            "created_by_user_name",
+            "date_created",
+            "date_updated",
+        ]
+
+
+class ProjectRealBudgetEntrySerializer(serializers.ModelSerializer):
+    """Serializer for actual project budget entries by stage."""
+
+    project_name = serializers.CharField(source="project.nom", read_only=True)
+    benefice = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    marge = serializers.DecimalField(max_digits=7, decimal_places=2, read_only=True)
+    created_by_user_name = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_created_by_user_name(obj):
+        return _created_by_user_name(obj.created_by_user)
+
+    class Meta:
+        model = ProjectRealBudgetEntry
+        fields = [
+            "id",
+            "project",
+            "project_name",
+            "date",
+            "stage",
+            "description",
+            "montant_client",
+            "montant_fournisseur",
+            "benefice",
+            "marge",
+            "notes",
+            "created_by_user",
+            "created_by_user_name",
+            "date_created",
+            "date_updated",
+        ]
+        read_only_fields = [
+            "id",
+            "project_name",
+            "benefice",
+            "marge",
             "created_by_user",
             "created_by_user_name",
             "date_created",

@@ -7,6 +7,7 @@ from .models import (
     Project,
     ProjectAttachment,
     ProjectPaymentSchedule,
+    ProjectRealBudgetEntry,
     SubCategory,
     Supplier,
 )
@@ -71,6 +72,23 @@ class ProjectPaymentScheduleAdmin(SimpleHistoryAdmin):
     list_filter = ("project", "due_date")
     search_fields = ("project__nom", "description")
     ordering = ("due_date", "id")
+
+
+@admin.register(ProjectRealBudgetEntry)
+class ProjectRealBudgetEntryAdmin(SimpleHistoryAdmin):
+    list_display = (
+        "id",
+        "project",
+        "date",
+        "stage",
+        "montant_client",
+        "montant_fournisseur",
+        "benefice",
+        "marge",
+    )
+    list_filter = ("project", "stage", "date")
+    search_fields = ("project__nom", "stage", "description")
+    ordering = ("-date", "-id")
 
 
 class HistoricalCategoryAdmin(admin.ModelAdmin):
