@@ -237,24 +237,21 @@ class SupplierSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _payments_qs(obj):
-        from django.db.models import Q
         from depense.models import Expense
 
         return (
-            Expense.objects.filter(Q(supplier=obj) | Q(fournisseur__iexact=obj.nom))
+            Expense.objects.filter(supplier=obj)
             .select_related("project")
             .distinct()
             .order_by("-date", "-id")
         )
 
     def get_total_paid(self, obj):
-        from django.db.models import DecimalField, Sum, Q
+        from django.db.models import DecimalField, Sum
         from django.db.models.functions import Coalesce
         from depense.models import Expense
 
-        return Expense.objects.filter(
-            Q(supplier=obj) | Q(fournisseur__iexact=obj.nom)
-        ).aggregate(total=Coalesce(Sum("montant"), 0, output_field=DecimalField()))[
+        return Expense.objects.filter(supplier=obj).aggregate(total=Coalesce(Sum("montant"), 0, output_field=DecimalField()))[
             "total"
         ]
 

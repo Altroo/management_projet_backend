@@ -608,7 +608,7 @@ def _build_expense_table(expenses, content_width, styles, colors, navy, accent, 
             category = expense.category.name if expense.category else "-"
             if expense.sous_categorie:
                 category = f"{category}<br/><font color='#64748b'>{expense.sous_categorie.name}</font>"
-            supplier = expense.supplier.nom if expense.supplier else expense.fournisseur
+            supplier = expense.supplier.nom if expense.supplier else "-"
             rows.append(
                 [
                     Paragraph(_date(expense.date), styles["Small"]),

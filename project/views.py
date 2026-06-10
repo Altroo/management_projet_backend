@@ -243,7 +243,7 @@ def _project_dashboard_payload(project, include_service_fees=False):
         ),
         "top_vendors": _group_expenses(
             expenses,
-            lambda expense: expense.fournisseur,
+            lambda expense: expense.supplier.nom if expense.supplier else None,
             "fournisseur",
             include_service_fees=include_service_fees,
             skip_empty=True,
@@ -262,7 +262,7 @@ def _project_dashboard_payload(project, include_service_fees=False):
 
 def _multi_project_dashboard_payload(include_service_fees=False):
     projects = Project.objects.all()
-    expenses = Expense.objects.select_related("project", "category", "sous_categorie")
+    expenses = Expense.objects.select_related("project", "category", "sous_categorie", "supplier")
     real_budget_entries = ProjectRealBudgetEntry.objects.select_related("project")
 
     total_budget = projects.aggregate(
@@ -369,7 +369,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
         ),
         "top_vendors": _group_expenses(
             expenses,
-            lambda expense: expense.fournisseur,
+            lambda expense: expense.supplier.nom if expense.supplier else None,
             "fournisseur",
             include_service_fees=include_service_fees,
             skip_empty=True,

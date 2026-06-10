@@ -18,9 +18,8 @@ class ExpenseFilter(django_filters.FilterSet):
     montant__gte = django_filters.NumberFilter(field_name="montant", lookup_expr="gte")
     montant__lt = django_filters.NumberFilter(field_name="montant", lookup_expr="lt")
     montant__lte = django_filters.NumberFilter(field_name="montant", lookup_expr="lte")
-    fournisseur = django_filters.CharFilter(
-        method="filter_fournisseur"
-    )
+    supplier = django_filters.NumberFilter(field_name="supplier_id")
+    fournisseur = django_filters.CharFilter(method="filter_fournisseur")
 
     class Meta:
         model = Expense
@@ -30,19 +29,17 @@ class ExpenseFilter(django_filters.FilterSet):
             "sous_categorie",
             "date",
             "montant",
+            "supplier",
             "fournisseur",
         ]
 
     def global_search(self, queryset, name, value):  # noqa: ARG002
         return queryset.filter(
             Q(description__icontains=value)
-            | Q(fournisseur__icontains=value)
             | Q(supplier__nom__icontains=value)
             | Q(project__nom__icontains=value)
             | Q(element__icontains=value)
         )
 
     def filter_fournisseur(self, queryset, name, value):  # noqa: ARG002
-        return queryset.filter(
-            Q(fournisseur__icontains=value) | Q(supplier__nom__icontains=value)
-        )
+        return queryset.filter(supplier__nom__icontains=value)

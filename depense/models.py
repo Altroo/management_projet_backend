@@ -84,12 +84,6 @@ class Expense(models.Model):
         default=SERVICE_FEE_TYPE_FIXED,
         verbose_name=_("Type des frais de service"),
     )
-    fournisseur = models.CharField(
-        max_length=200,
-        blank=True,
-        null=True,
-        verbose_name=_("Fournisseur"),
-    )
     supplier = models.ForeignKey(
         Supplier,
         on_delete=models.SET_NULL,

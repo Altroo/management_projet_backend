@@ -64,7 +64,6 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "frais_de_service_valeur",
             "frais_de_service_type",
             "frais_de_service_montant",
-            "fournisseur",
             "supplier",
             "supplier_name",
             "notes",
@@ -129,9 +128,6 @@ class ExpenseSerializer(serializers.ModelSerializer):
                     )
                 }
             )
-        supplier = attrs.get("supplier", getattr(self.instance, "supplier", None))
-        if supplier and not attrs.get("fournisseur"):
-            attrs["fournisseur"] = supplier.nom
         return attrs
 
 

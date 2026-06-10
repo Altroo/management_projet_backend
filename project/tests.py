@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from account.models import CustomUser
 from depense.models import Expense
-from project.models import Category, SubCategory, Project, ProjectRealBudgetEntry
+from project.models import Category, SubCategory, Project, ProjectRealBudgetEntry, Supplier
 from revenu.models import Revenue
 
 pytestmark = pytest.mark.django_db
@@ -80,6 +80,12 @@ def make_project(created_by=None, **kwargs):
     }
     defaults.update(kwargs)
     return Project.objects.create(created_by_user=created_by, **defaults)
+
+
+def make_supplier(nom="Supplier Test", created_by=None, **kwargs):
+    defaults = {"nom": nom}
+    defaults.update(kwargs)
+    return Supplier.objects.create(created_by_user=created_by, **defaults)
 
 
 def make_expense(project, created_by=None, **kwargs):
@@ -823,13 +829,14 @@ class TestMultiProjectDashboardView:
         p2 = make_project(nom="MP2", nom_client="Client B", created_by=self.staff_user)
         category = make_category(name="Lots techniques")
         subcategory = make_subcategory(name="Electricité", category=category)
+        supplier = make_supplier(nom="Abdelhak", created_by=self.staff_user)
         make_expense(p1, montant="300.00")
         make_expense(
             p2,
             montant="900.00",
             category=category,
             sous_categorie=subcategory,
-            fournisseur="Abdelhak",
+            supplier=supplier,
         )
         make_revenue(p1, montant="1200.00")
         make_revenue(p2, montant="400.00")

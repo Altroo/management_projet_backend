@@ -13,11 +13,10 @@ class ExpenseAdmin(SimpleHistoryAdmin):
         "montant",
         "date",
         "category",
-        "fournisseur",
         "supplier",
     )
     list_filter = ("project", "category", "supplier")
-    search_fields = ("description", "fournisseur", "supplier__nom")
+    search_fields = ("description", "supplier__nom")
     ordering = ("-date",)
 
 
@@ -45,7 +44,7 @@ class HistoricalExpenseAdmin(admin.ModelAdmin):
         "history_user",
     )
     list_filter = ("history_type", "history_date", "category")
-    search_fields = ("description", "fournisseur")
+    search_fields = ("description", "supplier__nom")
     readonly_fields = [
         field.name
         for field in Expense._meta.get_fields()

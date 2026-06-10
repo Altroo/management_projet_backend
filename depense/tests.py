@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from account.models import CustomUser
 from depense.models import Expense
-from project.models import Category, SubCategory, Project
+from project.models import Category, SubCategory, Project, Supplier
 
 pytestmark = pytest.mark.django_db
 
@@ -75,6 +75,12 @@ def make_project(created_by=None, **kwargs):
     return Project.objects.create(created_by_user=created_by, **defaults)
 
 
+def make_supplier(nom="Supplier Test", created_by=None, **kwargs):
+    defaults = {"nom": nom}
+    defaults.update(kwargs)
+    return Supplier.objects.create(created_by_user=created_by, **defaults)
+
+
 def make_expense(project, created_by=None, **kwargs):
     defaults = {
         "date": date(2025, 6, 15),
@@ -120,6 +126,7 @@ class TestExpenseListCreateView:
 
     def test_create_returns_201(self):
         cat = make_category(name="CatTest")
+        supplier = make_supplier(nom="Fournisseur X", created_by=self.staff_user)
         payload = {
             "project": self.project.pk,
             "date": "2025-07-01",
@@ -127,11 +134,13 @@ class TestExpenseListCreateView:
             "element": "Sable fin",
             "description": "Achat sable",
             "montant": "3000.00",
-            "fournisseur": "Fournisseur X",
+            "supplier": supplier.pk,
         }
         response = self.staff_client.post(self.url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["description"] == "Achat sable"
+        assert response.data["supplier"] == supplier.pk
+        assert response.data["supplier_name"] == "Fournisseur X"
 
     def test_create_with_percentage_service_fee(self):
         payload = {
@@ -215,22 +224,25 @@ class TestExpenseListCreateView:
         assert all("ciment" in r["description"].lower() for r in response.data)
 
     def test_filter_by_fournisseur(self):
+        supplier_abc = make_supplier(nom="ABC Corp", created_by=self.staff_user)
+        supplier_xyz = make_supplier(nom="XYZ Ltd", created_by=self.staff_user)
         make_expense(
             self.project,
             created_by=self.staff_user,
-            fournisseur="ABC Corp",
+            supplier=supplier_abc,
             description="F1",
         )
         make_expense(
             self.project,
             created_by=self.staff_user,
-            fournisseur="XYZ Ltd",
+            supplier=supplier_xyz,
             description="F2",
         )
         response = self.staff_client.get(self.url, {"fournisseur": "ABC Corp"})
         assert response.status_code == status.HTTP_200_OK
         for item in response.data:
-            assert item["fournisseur"] == "ABC Corp"
+            assert item["supplier"] == supplier_abc.pk
+            assert item["supplier_name"] == "ABC Corp"
 
 
 # ── Expense Detail/Edit/Delete ────────────────────────────────────────────────
