@@ -42,6 +42,12 @@ python manage.py runserver 8003
 python -m pytest
 ```
 
-## Screenshot
+## Screenshots
+
+Sanitized product workspace:
+
+![Management Projet product workspace](docs/screenshots/management-projet-showcase.png)
+
+Authentication screen:
 
 ![Management Projet login](docs/screenshots/management-projet-login.png)
