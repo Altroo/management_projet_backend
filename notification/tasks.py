@@ -60,6 +60,20 @@ def _create_and_broadcast(
     _broadcast(user.pk, notification)
 
 
+def _iter_active_notification_preferences():
+    """Yield preferences for every active user, creating missing rows on demand."""
+    for user in User.objects.filter(is_active=True).iterator():
+        pref, _ = NotificationPreference.objects.get_or_create(user=user)
+        pref.user = user
+        yield pref
+
+
+def _projects_relevant_for_user(projects, user):
+    if user.is_staff or getattr(user, "can_view", False):
+        return projects
+    return projects.filter(created_by_user=user)
+
+
 @shared_task(name="notification.check_project_notifications")
 def check_project_notifications() -> None:
     """Periodic task: check all project-related notification conditions."""
@@ -69,14 +83,11 @@ def check_project_notifications() -> None:
         total_depenses=Sum("expenses__montant")
     ).select_related()
 
-    for pref in NotificationPreference.objects.select_related("user").iterator():
+    for pref in _iter_active_notification_preferences():
         user = pref.user
 
         # Determine which projects are relevant for this user
-        if user.is_staff:
-            user_projects = projects
-        else:
-            user_projects = projects.filter(membres=user)
+        user_projects = _projects_relevant_for_user(projects, user)
 
         for project in user_projects:
             budget = project.budget_total or Decimal("0.00")
@@ -183,10 +194,10 @@ def notify_project_status_change(
     project: Project, old_status: str, new_status: str
 ) -> None:
     """Called synchronously when a project status changes."""
-    users = User.objects.filter(is_staff=True)
+    users = User.objects.filter(is_staff=True, is_active=True)
     for user in users:
-        pref = NotificationPreference.objects.filter(user=user).first()
-        if pref and not pref.notify_status_change:
+        pref, _ = NotificationPreference.objects.get_or_create(user=user)
+        if not pref.notify_status_change:
             continue
         _create_and_broadcast(
             user,
