@@ -191,7 +191,9 @@ def _real_budget_summary(entries, initial_budget):
     }
 
 
-def _project_dashboard_payload(project, include_service_fees=False):
+def _project_dashboard_payload(
+    project, include_service_fees=False, expose_internal_financials=True
+):
     expenses = Expense.objects.filter(project=project).select_related(
         "project", "category", "sous_categorie"
     )
@@ -253,14 +255,16 @@ def _project_dashboard_payload(project, include_service_fees=False):
         ),
         "revenue_history": revenue_history,
     }
-    if not include_service_fees:
+    if expose_internal_financials:
         payload["service_fees"] = service_fees
         payload["revenue_reelle"] = revenue_total + service_fees
         payload.update(_real_budget_summary(real_budget_entries, project.budget_total))
     return payload
 
 
-def _multi_project_dashboard_payload(include_service_fees=False):
+def _multi_project_dashboard_payload(
+    include_service_fees=False, expose_internal_financials=True
+):
     projects = Project.objects.all()
     expenses = Expense.objects.select_related("project", "category", "sous_categorie", "supplier")
     real_budget_entries = ProjectRealBudgetEntry.objects.select_related("project")
@@ -333,7 +337,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
             "profit": p_revenue - p_expenses,
             "status": project.status,
         }
-        if not include_service_fees:
+        if expose_internal_financials:
             project_summary.update(
                 _real_budget_summary(
                     ProjectRealBudgetEntry.objects.filter(project=project),
@@ -384,7 +388,7 @@ def _multi_project_dashboard_payload(include_service_fees=False):
         ),
         "projects": project_summaries,
     }
-    if not include_service_fees:
+    if expose_internal_financials:
         payload["total_service_fees"] = total_service_fees
         payload["total_revenue_reelle"] = total_revenue + total_service_fees
         payload.update(_real_budget_summary(real_budget_entries, total_budget))
@@ -1267,7 +1271,7 @@ class ClientProjectDashboardView(APIView):
             raise Http404(_("Projet introuvable."))
 
         return Response(
-            _project_dashboard_payload(project, include_service_fees=True),
+            _project_dashboard_payload(project, expose_internal_financials=False),
             status=status.HTTP_200_OK,
         )
 
@@ -1286,13 +1290,13 @@ class MultiProjectDashboardView(APIView):
 
 
 class ClientDashboardView(APIView):
-    """GET client-facing dashboard stats with service fees folded into costs."""
+    """GET client-facing dashboard stats without internal service-fee fields."""
 
     permission_classes = (permissions.IsAuthenticated,)
 
     @staticmethod
     def get(request):
         return Response(
-            _multi_project_dashboard_payload(include_service_fees=True),
+            _multi_project_dashboard_payload(expose_internal_financials=False),
             status=status.HTTP_200_OK,
         )

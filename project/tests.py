@@ -934,7 +934,7 @@ class TestClientDashboardView:
         assert "total_revenue_reelle" not in response.data
         assert "real_budget_total_cost" not in response.data
 
-    def test_expense_totals_include_service_fees_without_exposing_them(self):
+    def test_expense_totals_exclude_service_fees_and_hide_them(self):
         project = make_project(
             nom="Client P", nom_client="Client A", created_by=self.staff_user
         )
@@ -950,8 +950,9 @@ class TestClientDashboardView:
         response = self.staff_client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert Decimal(response.data["total_expenses"]) == Decimal("550.00")
-        assert response.data["top_expense_clients"][0]["total"] == Decimal("550.00")
+        assert Decimal(response.data["total_expenses"]) == Decimal("500.00")
+        assert response.data["top_expense_clients"][0]["total"] == Decimal("500.00")
+        assert Decimal(response.data["projects"][0]["expenses"]) == Decimal("500.00")
         assert "total_service_fees" not in response.data
         assert "total_revenue_reelle" not in response.data
         assert "service_fees" not in response.data["projects"][0]
@@ -974,7 +975,7 @@ class TestClientProjectDashboardView:
             "project:client-project-dashboard", kwargs={"pk": self.project.pk}
         )
 
-    def test_project_totals_include_service_fees_without_exposing_them(self):
+    def test_project_totals_exclude_service_fees_and_hide_them(self):
         make_revenue(self.project, montant="1000.00")
         make_expense(
             self.project,
@@ -987,8 +988,8 @@ class TestClientProjectDashboardView:
         response = self.staff_client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert Decimal(response.data["depenses_totales"]) == Decimal("1000.00")
-        assert Decimal(response.data["benefice"]) == Decimal("0.00")
+        assert Decimal(response.data["depenses_totales"]) == Decimal("990.00")
+        assert Decimal(response.data["benefice"]) == Decimal("10.00")
         assert "service_fees" not in response.data
         assert "revenue_reelle" not in response.data
         assert "real_budget_total_cost" not in response.data
