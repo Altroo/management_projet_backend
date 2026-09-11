@@ -13,7 +13,14 @@ from account.models import CustomUser
 from depense.models import Expense
 from revenu.models import Revenue
 from .models import Project
-from .pdf import _nice_max, _report_data, build_financial_report_pdf
+from .pdf import (
+    _build_totals,
+    _nice_max,
+    _report_data,
+    _styles,
+    _timeline_chart,
+    build_financial_report_pdf,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -164,3 +171,40 @@ def test_actual_report_builds_with_vector_charts():
 )
 def test_chart_axis_tracks_the_largest_plotted_value(largest_value, expected_max):
     assert _nice_max(largest_value) == expected_max
+
+
+def test_totals_use_two_separate_cards_with_contained_accents():
+    totals = _build_totals(
+        {"total_revenue": Decimal("1200"), "total_expenses": Decimal("725")},
+        {"total_revenue": "Total revenus", "total_expenses": "Total dépenses"},
+        520,
+        _styles(),
+    )
+
+    assert totals._colWidths[1] > 0
+    assert totals._cellvalues[0][0]._colWidths[0] == 4
+    assert totals._cellvalues[0][2]._colWidths[0] == 4
+
+
+def test_timeline_value_label_sits_above_its_marker():
+    drawing = _timeline_chart(
+        {
+            "bucket_labels": ["05/2026"],
+            "revenue_history": [0],
+            "expense_history": [20_000],
+        },
+        {"revenue": "Revenus", "expenses": "Dépenses"},
+        520,
+    )
+
+    label = next(
+        item
+        for item in drawing.contents
+        if getattr(item, "text", None) == "20.0k"
+    )
+    markers = [
+        item
+        for item in drawing.contents
+        if hasattr(item, "cx") and item.cx == label.x
+    ]
+    assert label.y > max(marker.cy for marker in markers)

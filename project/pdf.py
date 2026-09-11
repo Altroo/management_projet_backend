@@ -602,6 +602,7 @@ def _build_project_context(project, labels, width, styles):
             ]
         ],
         colWidths=[width / 3] * 3,
+        hAlign="LEFT",
     )
     table.setStyle(
         TableStyle(
@@ -621,35 +622,76 @@ def _build_project_context(project, labels, width, styles):
 
 
 def _build_totals(data, labels, width, styles):
-    cells = [
-        Paragraph(
-            f"<font size='8' color='{MUTED}'>{_text(labels['total_revenue']).upper()}</font>"
-            f"<br/><font size='17' color='{GREEN}'>{_money(data['total_revenue'])}</font>"
-            f"<font size='8' color='{MUTED}'> MAD</font>",
-            styles["Kpi"],
-        ),
-        Paragraph(
-            f"<font size='8' color='{MUTED}'>{_text(labels['total_expenses']).upper()}</font>"
-            f"<br/><font size='17' color='{RED}'>{_money(data['total_expenses'])}</font>"
-            f"<font size='8' color='{MUTED}'> MAD</font>",
-            styles["Kpi"],
-        ),
-    ]
-    table = Table([cells], colWidths=[width / 2] * 2)
+    gap = 0.28 * cm
+    card_width = (width - gap) / 2
+    table = Table(
+        [
+            [
+                _kpi_card(
+                    labels["total_revenue"],
+                    data["total_revenue"],
+                    GREEN,
+                    card_width,
+                    styles,
+                ),
+                "",
+                _kpi_card(
+                    labels["total_expenses"],
+                    data["total_expenses"],
+                    RED,
+                    card_width,
+                    styles,
+                ),
+            ]
+        ],
+        colWidths=[card_width, gap, card_width],
+        hAlign="LEFT",
+    )
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORDER)),
-                ("INNERGRID", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
-                ("LINEBEFORE", (0, 0), (0, 0), 4, colors.HexColor(GREEN)),
-                ("LINEBEFORE", (1, 0), (1, 0), 4, colors.HexColor(RED)),
-                ("TOPPADDING", (0, 0), (-1, -1), 13),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 13),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
             ]
         )
     )
     return table
+
+
+def _kpi_card(label, value, color, width, styles):
+    content = Paragraph(
+        f"<font size='8' color='{MUTED}'>{_text(label).upper()}</font>"
+        f"<br/><font size='17' color='{color}'>{_money(value)}</font>"
+        f"<font size='8' color='{MUTED}'> MAD</font>",
+        styles["Kpi"],
+    )
+    card = Table(
+        [["", content]],
+        colWidths=[4, width - 4],
+        hAlign="LEFT",
+    )
+    card.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), colors.HexColor(color)),
+                ("BACKGROUND", (1, 0), (1, 0), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORDER)),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (0, 0), 0),
+                ("BOTTOMPADDING", (0, 0), (0, 0), 0),
+                ("TOPPADDING", (1, 0), (1, 0), 13),
+                ("BOTTOMPADDING", (1, 0), (1, 0), 13),
+                ("LEFTPADDING", (1, 0), (1, 0), 8),
+                ("RIGHTPADDING", (1, 0), (1, 0), 8),
+            ]
+        )
+    )
+    return card
 
 
 def _section_heading(title, note, styles, width):
@@ -745,15 +787,18 @@ def _timeline_chart(data, labels, width):
             )
         )
 
-    for series, color, label_offset in (
-        (data["revenue_history"], GREEN, 8),
-        (data["expense_history"], RED, -12),
-    ):
+    series_specs = (
+        (data["revenue_history"], GREEN),
+        (data["expense_history"], RED),
+    )
+    series_points = []
+    for series, color in series_specs:
         points = []
         for index, value in enumerate(series):
             x = plot_x + (plot_width / 2 if count == 1 else index * step)
             y = plot_y + (float(value) / value_max * plot_height)
             points.append((x, y))
+        series_points.append(points)
         if len(points) > 1:
             drawing.add(
                 PolyLine(
@@ -762,7 +807,7 @@ def _timeline_chart(data, labels, width):
                     strokeWidth=2.2,
                 )
             )
-        for (x, y), value in zip(points, series):
+        for x, y in points:
             drawing.add(
                 Circle(
                     x,
@@ -773,12 +818,38 @@ def _timeline_chart(data, labels, width):
                     strokeWidth=1.8,
                 )
             )
+
+    for series_index, ((series, color), points) in enumerate(
+        zip(series_specs, series_points)
+    ):
+        other_series = series_specs[1 - series_index][0]
+        other_points = series_points[1 - series_index]
+        for point_index, ((x, y), value) in enumerate(zip(points, series)):
             if value:
+                label_y = y + 9
+                if other_series[point_index] and abs(
+                    other_points[point_index][1] - y
+                ) < 11:
+                    label_y += 10 * series_index
+                label = _chart_money(value)
+                label_width = max(14, len(label) * 3.2)
+                drawing.add(
+                    Rect(
+                        x - (label_width / 2) - 2,
+                        label_y - 2.5,
+                        label_width + 4,
+                        7.5,
+                        rx=2,
+                        ry=2,
+                        fillColor=colors.white,
+                        strokeColor=None,
+                    )
+                )
                 drawing.add(
                     String(
                         x,
-                        y + label_offset,
-                        _chart_money(value),
+                        label_y,
+                        label,
                         textAnchor="middle",
                         fontName="Helvetica-Bold",
                         fontSize=5.8,
