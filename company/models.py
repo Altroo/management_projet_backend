@@ -26,6 +26,13 @@ class CompanyProfile(models.Model):
         max_length=1000,
         verbose_name=_("Logo"),
     )
+    logo_cropped = models.ImageField(
+        upload_to=company_logo_upload_to,
+        blank=True,
+        null=True,
+        max_length=1000,
+        verbose_name=_("Logo recadré"),
+    )
     adresse = models.TextField(blank=True, null=True, verbose_name=_("Adresse"))
     telephone = models.CharField(
         max_length=30, blank=True, null=True, verbose_name=_("Téléphone")
@@ -38,6 +45,12 @@ class CompanyProfile(models.Model):
         blank=True,
         null=True,
         verbose_name=_("Registre de commerce"),
+    )
+    numero_du_compte = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("Numéro du compte"),
     )
     identifiant_fiscal = models.CharField(
         max_length=100,

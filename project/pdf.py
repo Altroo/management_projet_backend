@@ -1,3 +1,4 @@
+import math
 import os
 from collections import defaultdict
 from datetime import date, timedelta
@@ -12,11 +13,8 @@ from depense.models import Expense
 from revenu.models import Revenue
 
 try:
-    from reportlab.graphics.charts.barcharts import VerticalBarChart
-    from reportlab.graphics.charts.legends import Legend
-    from reportlab.graphics.charts.linecharts import HorizontalLineChart
     from reportlab.graphics.charts.piecharts import Pie
-    from reportlab.graphics.shapes import Drawing, Rect, String
+    from reportlab.graphics.shapes import Circle, Drawing, Line, PolyLine, Rect, String
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     from reportlab.lib.pagesizes import A4
@@ -48,6 +46,10 @@ TRANSLATIONS = {
         "period": "Période",
         "all_dates": "Toutes les dates",
         "generated": "Généré le",
+        "report_date": "DATE DU RAPPORT",
+        "issued_by": "RAPPORT ÉMIS PAR",
+        "amounts_in_mad": "Toutes les valeurs sont en MAD",
+        "other": "Autres",
         "total_revenue": "Total revenus",
         "total_expenses": "Total dépenses",
         "revenue": "Revenus",
@@ -71,6 +73,10 @@ TRANSLATIONS = {
         "period": "Period",
         "all_dates": "All dates",
         "generated": "Generated on",
+        "report_date": "REPORT DATE",
+        "issued_by": "REPORT ISSUED BY",
+        "amounts_in_mad": "All amounts are in MAD",
+        "other": "Other",
         "total_revenue": "Total revenue",
         "total_expenses": "Total expenses",
         "revenue": "Revenue",
@@ -127,13 +133,14 @@ def build_financial_report_pdf(
     styles = _styles()
     buffer = BytesIO()
     scope_name = project.nom if project else labels["all_projects"]
+    generated_at = timezone.localtime(timezone.now())
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
         rightMargin=margin,
         leftMargin=margin,
         topMargin=0.75 * cm,
-        bottomMargin=1.35 * cm,
+        bottomMargin=2.0 * cm,
         title=f"{labels['title']} - {scope_name}",
         author=company.raison_sociale,
     )
@@ -148,6 +155,7 @@ def build_financial_report_pdf(
             language,
             content_width,
             styles,
+            generated_at,
         ),
         Spacer(1, 0.35 * cm),
     ]
@@ -163,16 +171,26 @@ def build_financial_report_pdf(
             _build_totals(report_data, labels, content_width, styles),
             Spacer(1, 0.4 * cm),
             _chart_section(
-                labels["timeline"], _timeline_chart(report_data, labels), styles
+                "01",
+                labels["timeline"],
+                _timeline_chart(report_data, labels),
+                labels["amounts_in_mad"],
+                styles,
             ),
             Spacer(1, 0.35 * cm),
             _chart_section(
-                labels["categories"], _category_chart(report_data, labels), styles
+                "02",
+                labels["categories"],
+                _category_chart(report_data, labels),
+                labels["amounts_in_mad"],
+                styles,
             ),
             Spacer(1, 0.35 * cm),
             _chart_section(
+                "03",
                 labels["project_comparison"] if project else labels["comparison"],
                 _project_chart(report_data, labels, project is not None),
+                labels["amounts_in_mad"],
                 styles,
             ),
         ]
@@ -187,7 +205,6 @@ def build_financial_report_pdf(
             ]
         )
 
-    generated_at = timezone.localtime(timezone.now())
     footer = _footer(company.raison_sociale, generated_at, labels, language)
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     buffer.seek(0)
@@ -264,23 +281,31 @@ def _time_buckets(revenues, expenses, date_from, date_to, language):
     else:
         return [], [], []
 
-    use_days = (end - start).days <= 31
+    span_days = (end - start).days
+    granularity = "day" if span_days <= 14 else "week" if span_days <= 90 else "month"
     revenue_totals = defaultdict(lambda: Decimal("0.00"))
     expense_totals = defaultdict(lambda: Decimal("0.00"))
-    bucket_key = (
-        (lambda value: value) if use_days else (lambda value: (value.year, value.month))
-    )
+
+    def bucket_key(value):
+        if granularity == "day":
+            return value
+        if granularity == "week":
+            return (value - start).days // 7
+        return value.year, value.month
+
     for row in revenues:
         revenue_totals[bucket_key(row.date)] += row.montant
     for row in expenses:
         expense_totals[bucket_key(row.date)] += row.montant
 
     buckets = []
-    if use_days:
+    if granularity == "day":
         current = start
         while current <= end:
             buckets.append(current)
             current += timedelta(days=1)
+    elif granularity == "week":
+        buckets = list(range((span_days // 7) + 1))
     else:
         current = date(start.year, start.month, 1)
         last = date(end.year, end.month, 1)
@@ -292,9 +317,18 @@ def _time_buckets(revenues, expenses, date_from, date_to, language):
                 1,
             )
 
-    if use_days:
+    if granularity == "day":
         date_format = "%d/%m" if language == "fr" else "%m/%d"
         display_labels = [bucket.strftime(date_format) for bucket in buckets]
+    elif granularity == "week":
+        date_format = "%d/%m" if language == "fr" else "%m/%d"
+        display_labels = []
+        for bucket in buckets:
+            bucket_start = start + timedelta(days=bucket * 7)
+            bucket_end = min(bucket_start + timedelta(days=6), end)
+            display_labels.append(
+                f"{bucket_start.strftime(date_format)}-{bucket_end.strftime(date_format)}"
+            )
     else:
         display_labels = [f"{month:02d}/{year}" for year, month in buckets]
     return (
@@ -311,8 +345,8 @@ def _styles():
             "CompanyName",
             parent=styles["Normal"],
             fontName="Helvetica-Bold",
-            fontSize=11,
-            leading=14,
+            fontSize=12,
+            leading=15,
             textColor=colors.HexColor(NAVY),
         )
     )
@@ -320,8 +354,8 @@ def _styles():
         ParagraphStyle(
             "Meta",
             parent=styles["Normal"],
-            fontSize=7.6,
-            leading=9.5,
+            fontSize=8,
+            leading=10.5,
             textColor=colors.HexColor(MUTED),
         )
     )
@@ -330,8 +364,8 @@ def _styles():
             "ReportTitle",
             parent=styles["Heading1"],
             fontName="Helvetica-Bold",
-            fontSize=16,
-            leading=19,
+            fontSize=20,
+            leading=24,
             alignment=TA_RIGHT,
             textColor=colors.HexColor(ACCENT),
         )
@@ -379,87 +413,132 @@ def _styles():
 
 
 def _build_header(
-    company, scope_name, date_from, date_to, labels, language, width, styles
+    company,
+    scope_name,
+    date_from,
+    date_to,
+    labels,
+    language,
+    width,
+    styles,
+    generated_at,
 ):
-    contact_parts = [
-        company.adresse,
-        company.telephone,
-        company.email,
-        company.site_web,
-    ]
-    legal_parts = [
-        f"ICE: {company.ICE}" if company.ICE else None,
-        f"RC: {company.registre_de_commerce}" if company.registre_de_commerce else None,
-        f"IF: {company.identifiant_fiscal}" if company.identifiant_fiscal else None,
-        f"CNSS: {company.CNSS}" if company.CNSS else None,
-    ]
-    details = [part for part in contact_parts + legal_parts if part]
-    company_block = Paragraph(
-        f"<b>{_text(company.raison_sociale)}</b>"
-        + (
-            f"<br/><font color='{MUTED}'>{'<br/>'.join(_text(part) for part in details)}</font>"
-            if details
-            else ""
-        ),
-        styles["CompanyName"],
-    )
     period = _period_label(date_from, date_to, labels, language)
     report_block = Paragraph(
-        f"{labels['title']}<br/><font size='8' color='{MUTED}'>"
-        f"{_text(labels['scope'])}: {_text(scope_name)}<br/>"
-        f"{_text(labels['period'])}: {_text(period)}</font>",
+        f"{labels['title']}<br/>"
+        f"<font size='9' color='{NAVY}'>{_text(labels['report_date'])}: "
+        f"{_format_date(generated_at, language)}</font><br/>"
+        f"<font size='8' color='{MUTED}'>{_text(labels['scope'])}: "
+        f"{_text(scope_name)}<br/>{_text(labels['period'])}: {_text(period)}</font>",
         styles["ReportTitle"],
     )
-    table = Table(
-        [[_logo(company), company_block, report_block]],
-        colWidths=[width * 0.15, width * 0.42, width * 0.43],
+    top = Table(
+        [[_logo(company), report_block]], colWidths=[width * 0.46, width * 0.54]
     )
-    table.setStyle(
+    top.setStyle(
         TableStyle(
             [
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LINEBELOW", (0, 0), (-1, -1), 1.1, colors.HexColor(ACCENT)),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                ("LINEBELOW", (0, 0), (-1, -1), 1.5, colors.HexColor(ACCENT)),
+                ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
             ]
         )
     )
-    return table
+
+    identity_lines = [f"<b>{_text(company.raison_sociale)}</b>"]
+    if company.adresse:
+        identity_lines.append(_text(company.adresse))
+    legal_lines = [
+        f"ICE: {_text(company.ICE)}" if company.ICE else None,
+        (
+            f"RC: {_text(company.registre_de_commerce)}"
+            if company.registre_de_commerce
+            else None
+        ),
+        f"RIB: {_text(company.numero_du_compte)}" if company.numero_du_compte else None,
+        (
+            f"IF: {_text(company.identifiant_fiscal)}"
+            if company.identifiant_fiscal
+            else None
+        ),
+        f"CNSS: {_text(company.CNSS)}" if company.CNSS else None,
+    ]
+    contact_lines = [
+        _text(value)
+        for value in (company.telephone, company.email, company.site_web)
+        if value
+    ]
+    issuer_title = Paragraph(
+        f"<font color='{ACCENT}'><b>{_text(labels['issued_by'])}</b></font>",
+        styles["Small"],
+    )
+    issuer = Table(
+        [
+            [issuer_title, "", ""],
+            [
+                Paragraph("<br/>".join(identity_lines), styles["CompanyName"]),
+                Paragraph(
+                    "<br/>".join(item for item in legal_lines if item) or "-",
+                    styles["Small"],
+                ),
+                Paragraph("<br/>".join(contact_lines) or "-", styles["Small"]),
+            ],
+        ],
+        colWidths=[width * 0.42, width * 0.34, width * 0.24],
+    )
+    issuer.setStyle(
+        TableStyle(
+            [
+                ("SPAN", (0, 0), (-1, 0)),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.8, colors.HexColor(ACCENT)),
+                ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 9),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
+    return KeepTogether([top, Spacer(1, 0.18 * cm), issuer])
 
 
 def _logo(company):
-    if company.logo:
+    logo = company.logo_cropped or company.logo
+    if logo:
         try:
-            if os.path.exists(company.logo.path):
-                image = Image(company.logo.path)
-                image._restrictSize(2.4 * cm, 1.7 * cm)
+            if os.path.exists(logo.path):
+                image = Image(logo.path)
+                image._restrictSize(4.1 * cm, 2.7 * cm)
                 return image
         except (AttributeError, OSError, ValueError):
             pass
-    drawing = Drawing(64, 44)
+    drawing = Drawing(116, 70)
     drawing.add(
         Rect(
-            0,
-            0,
-            44,
-            44,
-            rx=8,
-            ry=8,
-            fillColor=colors.HexColor(ACCENT),
-            strokeColor=None,
+            1,
+            1,
+            68,
+            68,
+            fillColor=colors.white,
+            strokeColor=colors.HexColor(NAVY),
+            strokeWidth=1,
         )
     )
     drawing.add(
         String(
-            22,
-            17,
-            "EBH",
+            35,
+            28,
+            "LOGO",
             textAnchor="middle",
             fontName="Helvetica-Bold",
-            fontSize=12,
-            fillColor=colors.white,
+            fontSize=10,
+            fillColor=colors.HexColor(NAVY),
         )
     )
     return drawing
@@ -501,11 +580,15 @@ def _build_project_context(project, labels, width, styles):
 def _build_totals(data, labels, width, styles):
     cells = [
         Paragraph(
-            f"<font size='8' color='{MUTED}'>{_text(labels['total_revenue'])}</font><br/><font color='{GREEN}'>{_money(data['total_revenue'])} MAD</font>",
+            f"<font size='8' color='{MUTED}'>{_text(labels['total_revenue']).upper()}</font>"
+            f"<br/><font size='17' color='{GREEN}'>{_money(data['total_revenue'])}</font>"
+            f"<font size='8' color='{MUTED}'> MAD</font>",
             styles["Kpi"],
         ),
         Paragraph(
-            f"<font size='8' color='{MUTED}'>{_text(labels['total_expenses'])}</font><br/><font color='{RED}'>{_money(data['total_expenses'])} MAD</font>",
+            f"<font size='8' color='{MUTED}'>{_text(labels['total_expenses']).upper()}</font>"
+            f"<br/><font size='17' color='{RED}'>{_money(data['total_expenses'])}</font>"
+            f"<font size='8' color='{MUTED}'> MAD</font>",
             styles["Kpi"],
         ),
     ]
@@ -513,21 +596,46 @@ def _build_totals(data, labels, width, styles):
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
                 ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORDER)),
                 ("INNERGRID", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("LINEBEFORE", (0, 0), (0, 0), 4, colors.HexColor(GREEN)),
+                ("LINEBEFORE", (1, 0), (1, 0), 4, colors.HexColor(RED)),
+                ("TOPPADDING", (0, 0), (-1, -1), 13),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 13),
             ]
         )
     )
     return table
 
 
-def _chart_section(title, chart, styles):
-    return KeepTogether(
-        [Paragraph(title, styles["SectionTitle"]), Spacer(1, 0.08 * cm), chart]
+def _chart_section(number, title, chart, note, styles):
+    heading = Table(
+        [
+            [
+                Paragraph(f"<b>{number}</b>", styles["SmallHeader"]),
+                Paragraph(
+                    f"<b>{_text(title)}</b><br/><font size='7' color='{MUTED}'>"
+                    f"{_text(note)}</font>",
+                    styles["SectionTitle"],
+                ),
+            ]
+        ],
+        colWidths=[30, 490],
     )
+    heading.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), colors.HexColor(ACCENT)),
+                ("ALIGN", (0, 0), (0, 0), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (1, 0), (1, 0), 9),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+    return KeepTogether([heading, Spacer(1, 0.08 * cm), chart])
 
 
 def _empty_chart(labels):
@@ -540,7 +648,9 @@ def _empty_chart(labels):
             145,
             fillColor=colors.HexColor(SOFT_BG),
             strokeColor=colors.HexColor(BORDER),
-            strokeDashArray=[4, 3],
+            strokeWidth=0.6,
+            rx=8,
+            ry=8,
         )
     )
     drawing.add(
@@ -560,34 +670,69 @@ def _empty_chart(labels):
 def _timeline_chart(data, labels):
     if not data["bucket_labels"]:
         return _empty_chart(labels)
-    drawing = Drawing(520, 220)
-    chart = HorizontalLineChart()
-    chart.x, chart.y, chart.width, chart.height = 45, 45, 450, 140
-    chart.data = [tuple(data["revenue_history"]), tuple(data["expense_history"])]
-    chart.categoryAxis.categoryNames = data["bucket_labels"]
-    chart.categoryAxis.labels.fontName = "Helvetica"
-    chart.categoryAxis.labels.fontSize = 6
-    chart.categoryAxis.labels.angle = 35
-    chart.categoryAxis.labels.boxAnchor = "ne"
+    drawing = _chart_frame(235)
+    plot_x, plot_y, plot_width, plot_height = 52, 44, 448, 136
     values = data["revenue_history"] + data["expense_history"]
-    chart.valueAxis.valueMin = min([0, *values])
-    chart.valueAxis.valueMax = max([1, *values]) * 1.12
-    chart.valueAxis.labels.fontSize = 6.5
-    chart.lines[0].strokeColor = colors.HexColor(GREEN)
-    chart.lines[0].strokeWidth = 2
-    chart.lines[1].strokeColor = colors.HexColor(RED)
-    chart.lines[1].strokeWidth = 2
-    drawing.add(chart)
-    drawing.add(
-        _legend(
-            [
-                (colors.HexColor(GREEN), labels["revenue"]),
-                (colors.HexColor(RED), labels["expenses"]),
-            ],
-            335,
-            205,
+    value_max = _nice_max(max([1, *values]) * 1.2)
+    _draw_value_axis(drawing, plot_x, plot_y, plot_width, plot_height, value_max)
+    _draw_series_key(drawing, 330, 213, GREEN, labels["revenue"])
+    _draw_series_key(drawing, 420, 213, RED, labels["expenses"])
+
+    count = len(data["bucket_labels"])
+    step = plot_width / max(1, count - 1)
+    for index, bucket_label in enumerate(data["bucket_labels"]):
+        x = plot_x + (plot_width / 2 if count == 1 else index * step)
+        drawing.add(
+            String(
+                x,
+                25,
+                _short(bucket_label, 13),
+                textAnchor="middle",
+                fontName="Helvetica",
+                fontSize=5.8,
+                fillColor=colors.HexColor(MUTED),
+            )
         )
-    )
+
+    for series, color, label_offset in (
+        (data["revenue_history"], GREEN, 8),
+        (data["expense_history"], RED, -12),
+    ):
+        points = []
+        for index, value in enumerate(series):
+            x = plot_x + (plot_width / 2 if count == 1 else index * step)
+            y = plot_y + (float(value) / value_max * plot_height)
+            points.append((x, y))
+        if len(points) > 1:
+            drawing.add(
+                PolyLine(
+                    points,
+                    strokeColor=colors.HexColor(color),
+                    strokeWidth=2.2,
+                )
+            )
+        for (x, y), value in zip(points, series):
+            drawing.add(
+                Circle(
+                    x,
+                    y,
+                    3.2,
+                    fillColor=colors.white,
+                    strokeColor=colors.HexColor(color),
+                    strokeWidth=1.8,
+                )
+            )
+            drawing.add(
+                String(
+                    x,
+                    y + label_offset,
+                    _chart_money(value),
+                    textAnchor="middle",
+                    fontName="Helvetica-Bold",
+                    fontSize=5.8,
+                    fillColor=colors.HexColor(color),
+                )
+            )
     return drawing
 
 
@@ -597,25 +742,95 @@ def _category_chart(data, labels):
     ]
     if not positive_rows:
         return _empty_chart(labels)
-    visible = positive_rows[:7]
-    if len(positive_rows) > 7:
+    visible = positive_rows[:6]
+    if len(positive_rows) > 6:
         visible.append(
-            ("...", sum((row[1] for row in positive_rows[7:]), Decimal("0.00")))
+            (
+                labels["other"],
+                sum((row[1] for row in positive_rows[6:]), Decimal("0.00")),
+            )
         )
-    drawing = Drawing(520, 210)
+    drawing = _chart_frame(210)
     pie = Pie()
-    pie.x, pie.y, pie.width, pie.height = 65, 28, 155, 155
+    pie.x, pie.y, pie.width, pie.height = 32, 34, 160, 160
     pie.data = [float(value) for _name, value in visible]
     pie.labels = None
     pie.slices.strokeColor = colors.white
     pie.slices.strokeWidth = 1
     color_pairs = []
-    for index, (name, _value) in enumerate(visible):
+    for index, (name, value) in enumerate(visible):
         color = colors.HexColor(PALETTE[index % len(PALETTE)])
         pie.slices[index].fillColor = color
-        color_pairs.append((color, name))
+        color_pairs.append((color, name, value))
     drawing.add(pie)
-    drawing.add(_legend(color_pairs, 270, 175, column_max=8))
+    drawing.add(
+        Circle(
+            112,
+            114,
+            37,
+            fillColor=colors.white,
+            strokeColor=colors.white,
+        )
+    )
+    drawing.add(
+        String(
+            112,
+            116,
+            _chart_money(sum(value for _name, value in visible)),
+            textAnchor="middle",
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            fillColor=colors.HexColor(NAVY),
+        )
+    )
+    drawing.add(
+        String(
+            112,
+            103,
+            "MAD",
+            textAnchor="middle",
+            fontName="Helvetica",
+            fontSize=6,
+            fillColor=colors.HexColor(MUTED),
+        )
+    )
+    total = sum(value for _name, value in visible)
+    for index, (color, name, value) in enumerate(color_pairs):
+        y = 183 - (index * 24)
+        percentage = (value / total * 100) if total else Decimal("0")
+        drawing.add(
+            Rect(
+                226,
+                y - 2,
+                8,
+                8,
+                rx=2,
+                ry=2,
+                fillColor=color,
+                strokeColor=None,
+            )
+        )
+        drawing.add(
+            String(
+                241,
+                y,
+                _short(name, 27),
+                fontName="Helvetica-Bold",
+                fontSize=7,
+                fillColor=colors.HexColor(NAVY),
+            )
+        )
+        drawing.add(
+            String(
+                495,
+                y,
+                f"{_money(value)} MAD  |  {percentage:.1f}%",
+                textAnchor="end",
+                fontName="Helvetica",
+                fontSize=7,
+                fillColor=colors.HexColor(MUTED),
+            )
+        )
     return drawing
 
 
@@ -626,50 +841,152 @@ def _project_chart(data, labels, single_project):
     if not single_project:
         rows = sorted(
             rows, key=lambda row: row["revenue"] + row["expenses"], reverse=True
-        )[:10]
-    drawing = Drawing(520, 225)
-    chart = VerticalBarChart()
-    chart.x, chart.y, chart.width, chart.height = 45, 48, 450, 135
-    chart.data = [
-        tuple(float(row["revenue"]) for row in rows),
-        tuple(float(row["expenses"]) for row in rows),
+        )[:8]
+    drawing = _chart_frame(230)
+    plot_x, plot_y, plot_width, plot_height = 52, 60, 448, 115
+    values = [float(row["revenue"]) for row in rows] + [
+        float(row["expenses"]) for row in rows
     ]
-    chart.categoryAxis.categoryNames = [_short(row["project"].nom, 18) for row in rows]
-    chart.categoryAxis.labels.fontName = "Helvetica"
-    chart.categoryAxis.labels.fontSize = 6
-    chart.categoryAxis.labels.angle = 30 if len(rows) > 3 else 0
-    chart.categoryAxis.labels.boxAnchor = "ne" if len(rows) > 3 else "n"
-    values = list(chart.data[0]) + list(chart.data[1])
-    chart.valueAxis.valueMin = min([0, *values])
-    chart.valueAxis.valueMax = max([1, *values]) * 1.12
-    chart.valueAxis.labels.fontSize = 6.5
-    chart.bars[0].fillColor = colors.HexColor(GREEN)
-    chart.bars[1].fillColor = colors.HexColor(RED)
-    chart.barSpacing = 1
-    chart.groupSpacing = 8
-    drawing.add(chart)
+    value_max = _nice_max(max([1, *values]) * 1.2)
+    _draw_value_axis(drawing, plot_x, plot_y, plot_width, plot_height, value_max)
+    _draw_series_key(drawing, 330, 212, GREEN, labels["revenue"])
+    _draw_series_key(drawing, 420, 212, RED, labels["expenses"])
+
+    group_width = plot_width / len(rows)
+    bar_width = min(20, group_width * 0.28)
+    for index, row in enumerate(rows):
+        center_x = plot_x + ((index + 0.5) * group_width)
+        for value, color, x in (
+            (float(row["revenue"]), GREEN, center_x - bar_width - 1),
+            (float(row["expenses"]), RED, center_x + 1),
+        ):
+            bar_height = value / value_max * plot_height
+            drawing.add(
+                Rect(
+                    x,
+                    plot_y,
+                    bar_width,
+                    bar_height,
+                    rx=2,
+                    ry=2,
+                    fillColor=colors.HexColor(color),
+                    strokeColor=None,
+                )
+            )
+            drawing.add(
+                String(
+                    x + (bar_width / 2),
+                    plot_y + bar_height + 5,
+                    _chart_money(value),
+                    textAnchor="middle",
+                    fontName="Helvetica-Bold",
+                    fontSize=5.8,
+                    fillColor=colors.HexColor(color),
+                )
+            )
+        drawing.add(
+            String(
+                center_x,
+                44,
+                _short(row["project"].nom, 15),
+                textAnchor="middle",
+                fontName="Helvetica",
+                fontSize=5.8,
+                fillColor=colors.HexColor(MUTED),
+            )
+        )
+    return drawing
+
+
+def _chart_frame(height):
+    drawing = Drawing(520, height)
     drawing.add(
-        _legend(
-            [
-                (colors.HexColor(GREEN), labels["revenue"]),
-                (colors.HexColor(RED), labels["expenses"]),
-            ],
-            335,
-            210,
+        Rect(
+            0,
+            0,
+            520,
+            height - 2,
+            rx=8,
+            ry=8,
+            fillColor=colors.white,
+            strokeColor=colors.HexColor(BORDER),
+            strokeWidth=0.6,
         )
     )
     return drawing
 
 
-def _legend(color_pairs, x, y, column_max=2):
-    legend = Legend()
-    legend.x, legend.y = x, y
-    legend.fontName = "Helvetica"
-    legend.fontSize = 7
-    legend.dx, legend.dy, legend.deltay = 7, 7, 10
-    legend.columnMaximum = column_max
-    legend.colorNamePairs = color_pairs
-    return legend
+def _draw_value_axis(drawing, x, y, width, height, value_max):
+    for step in range(5):
+        value = value_max * step / 4
+        line_y = y + (height * step / 4)
+        drawing.add(
+            Line(
+                x,
+                line_y,
+                x + width,
+                line_y,
+                strokeColor=colors.HexColor("#e2e8f0"),
+                strokeWidth=0.45,
+            )
+        )
+        drawing.add(
+            String(
+                x - 7,
+                line_y - 2,
+                _chart_money(value),
+                textAnchor="end",
+                fontName="Helvetica",
+                fontSize=5.8,
+                fillColor=colors.HexColor(MUTED),
+            )
+        )
+    drawing.add(
+        String(
+            x,
+            y + height + 9,
+            "MAD",
+            fontName="Helvetica-Bold",
+            fontSize=6,
+            fillColor=colors.HexColor(MUTED),
+        )
+    )
+
+
+def _draw_series_key(drawing, x, y, color, label):
+    drawing.add(
+        Rect(
+            x,
+            y - 3,
+            9,
+            9,
+            rx=2,
+            ry=2,
+            fillColor=colors.HexColor(color),
+            strokeColor=None,
+        )
+    )
+    drawing.add(
+        String(
+            x + 14,
+            y,
+            label,
+            fontName="Helvetica-Bold",
+            fontSize=6.5,
+            fillColor=colors.HexColor(NAVY),
+        )
+    )
+
+
+def _nice_max(value):
+    if value <= 0:
+        return 1
+    magnitude = 10 ** math.floor(math.log10(value))
+    normalized = value / magnitude
+    nice = (
+        1 if normalized <= 1 else 2 if normalized <= 2 else 5 if normalized <= 5 else 10
+    )
+    return nice * magnitude
 
 
 def _summary_table(data, labels, width, styles):
@@ -766,6 +1083,16 @@ def _format_datetime(value, language):
 def _money(value):
     amount = Decimal(value or 0).quantize(Decimal("0.01"))
     return f"{amount:,.2f}".replace(",", " ")
+
+
+def _chart_money(value):
+    amount = float(value or 0)
+    absolute = abs(amount)
+    if absolute >= 1_000_000:
+        return f"{amount / 1_000_000:.1f}M"
+    if absolute >= 1_000:
+        return f"{amount / 1_000:.1f}k"
+    return f"{amount:,.0f}".replace(",", " ")
 
 
 def _text(value):

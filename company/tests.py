@@ -54,14 +54,19 @@ class TestCompanyProfileView:
             {
                 "raison_sociale": "Société Test",
                 "ICE": "001122334455667",
+                "numero_du_compte": "000111222333444",
                 "logo": png_file(),
+                "logo_cropped": png_file(),
             },
             format="multipart",
         )
         assert update.status_code == status.HTTP_200_OK
         assert update.data["logo_url"]
+        assert update.data["logo_cropped_url"]
+        assert update.data["numero_du_compte"] == "000111222333444"
 
         remove = client.patch(self.url, {"remove_logo": True}, format="json")
         assert remove.status_code == status.HTTP_200_OK
         assert remove.data["logo_url"] is None
+        assert remove.data["logo_cropped_url"] is None
         assert CompanyProfile.objects.get().raison_sociale == "Société Test"
