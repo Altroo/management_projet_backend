@@ -5,6 +5,7 @@ from django.db.models import Q, Sum, DecimalField
 from notification.tasks import notify_project_status_change
 from django.db.models.functions import Coalesce
 from django.http import FileResponse, Http404
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework import permissions, status
@@ -12,7 +13,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.permissions import can_create, can_update, can_delete
+from core.permissions import can_create, can_update, can_delete, can_print
 from depense.models import Expense
 from management_projet_backend.utils import CustomPagination
 from revenu.models import Revenue
@@ -27,7 +28,7 @@ from .models import (
     SubCategory,
     Supplier,
 )
-from .pdf import build_project_report_pdf
+from .pdf import build_financial_report_pdf, build_project_report_pdf
 from .serializers import (
     CategorySerializer,
     ClientSerializer,
@@ -1214,6 +1215,10 @@ class ProjectReportPDFView(APIView):
 
     @staticmethod
     def get(request, pk: int):
+        if not can_print(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour imprimer ce document.")
+            )
         try:
             project = Project.objects.select_related("client").get(pk=pk)
         except Project.DoesNotExist:
@@ -1229,12 +1234,83 @@ class ProjectReportPDFView(APIView):
                     )
                 }
             )
-        return FileResponse(
+        response = FileResponse(
             pdf_buffer,
-            as_attachment=True,
+            as_attachment=False,
             filename=f"rapport-projet-{project.id}.pdf",
             content_type="application/pdf",
         )
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response["Pragma"] = "no-cache"
+        return response
+
+
+class FinancialReportPDFView(APIView):
+    """Generate a sanitized global or single-project financial report."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def get(request, language: str = "fr"):
+        if not can_print(request.user):
+            raise PermissionDenied(
+                _("Vous n'avez pas les droits pour imprimer ce document.")
+            )
+
+        raw_date_from = request.query_params.get("date_from")
+        raw_date_to = request.query_params.get("date_to")
+        if bool(raw_date_from) != bool(raw_date_to):
+            raise ValidationError(
+                {"period": _("Les dates de début et de fin sont requises ensemble.")}
+            )
+        date_from = parse_date(raw_date_from) if raw_date_from else None
+        date_to = parse_date(raw_date_to) if raw_date_to else None
+        if raw_date_from and (not date_from or not date_to):
+            raise ValidationError({"period": _("Le format de date est invalide.")})
+        if date_from and date_to and date_from > date_to:
+            raise ValidationError(
+                {"period": _("La date de début doit précéder la date de fin.")}
+            )
+
+        project = None
+        raw_project_id = request.query_params.get("project_id")
+        if raw_project_id:
+            try:
+                project_id = int(raw_project_id)
+            except (TypeError, ValueError):
+                raise ValidationError({"project_id": _("Projet invalide.")})
+            try:
+                project = Project.objects.select_related("client").get(pk=project_id)
+            except Project.DoesNotExist:
+                raise Http404(_("Projet introuvable."))
+
+        try:
+            pdf_buffer = build_financial_report_pdf(
+                project=project,
+                date_from=date_from,
+                date_to=date_to,
+                language=language,
+            )
+        except ImportError:
+            raise ValidationError(
+                {"report": _("La génération PDF nécessite la dépendance ReportLab.")}
+            )
+
+        scope = f"projet-{project.id}" if project else "tous-projets"
+        period = (
+            f"-{date_from.isoformat()}-{date_to.isoformat()}"
+            if date_from and date_to
+            else ""
+        )
+        response = FileResponse(
+            pdf_buffer,
+            as_attachment=False,
+            filename=f"rapport-financier-{scope}{period}-{language}.pdf",
+            content_type="application/pdf",
+        )
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response["Pragma"] = "no-cache"
+        return response
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────

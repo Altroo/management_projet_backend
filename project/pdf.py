@@ -1,20 +1,29 @@
+import os
+from collections import defaultdict
+from datetime import date, timedelta
 from decimal import Decimal
 from io import BytesIO
 from xml.sax.saxutils import escape
 
-from django.db.models import DecimalField, Sum
-from django.db.models.functions import Coalesce
 from django.utils import timezone
+
+from company.views import get_company_profile
 from depense.models import Expense
 from revenu.models import Revenue
 
 try:
+    from reportlab.graphics.charts.barcharts import VerticalBarChart
+    from reportlab.graphics.charts.legends import Legend
+    from reportlab.graphics.charts.linecharts import HorizontalLineChart
+    from reportlab.graphics.charts.piecharts import Pie
+    from reportlab.graphics.shapes import Drawing, Rect, String
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm
     from reportlab.platypus import (
+        Image,
         KeepTogether,
         Paragraph,
         SimpleDocTemplate,
@@ -22,346 +31,465 @@ try:
         Table,
         TableStyle,
     )
-except ImportError:  # pragma: no cover - handled by the API view as a validation error.
+except ImportError:  # pragma: no cover - handled by the API view.
     REPORTLAB_AVAILABLE = False
 else:
     REPORTLAB_AVAILABLE = True
 
 
-def build_project_report_pdf(project):
+TRANSLATIONS = {
+    "fr": {
+        "title": "RAPPORT FINANCIER",
+        "all_projects": "Tous les projets",
+        "project": "Projet",
+        "client": "Client",
+        "status": "Statut",
+        "scope": "Périmètre",
+        "period": "Période",
+        "all_dates": "Toutes les dates",
+        "generated": "Généré le",
+        "total_revenue": "Total revenus",
+        "total_expenses": "Total dépenses",
+        "revenue": "Revenus",
+        "expenses": "Dépenses",
+        "timeline": "Évolution des revenus et dépenses",
+        "categories": "Dépenses par catégorie",
+        "comparison": "Comparaison revenus / dépenses par projet",
+        "project_comparison": "Comparaison des totaux du projet",
+        "summary": "Synthèse par projet",
+        "no_data": "Aucune donnée disponible pour la période sélectionnée.",
+        "uncategorized": "Sans catégorie",
+        "page": "Page",
+    },
+    "en": {
+        "title": "FINANCIAL REPORT",
+        "all_projects": "All projects",
+        "project": "Project",
+        "client": "Client",
+        "status": "Status",
+        "scope": "Scope",
+        "period": "Period",
+        "all_dates": "All dates",
+        "generated": "Generated on",
+        "total_revenue": "Total revenue",
+        "total_expenses": "Total expenses",
+        "revenue": "Revenue",
+        "expenses": "Expenses",
+        "timeline": "Revenue and expenses over time",
+        "categories": "Expenses by category",
+        "comparison": "Revenue / expenses comparison by project",
+        "project_comparison": "Project totals comparison",
+        "summary": "Project summary",
+        "no_data": "No data is available for the selected period.",
+        "uncategorized": "Uncategorized",
+        "page": "Page",
+    },
+}
+
+ACCENT = "#1d4ed8"
+NAVY = "#0f172a"
+MUTED = "#64748b"
+GREEN = "#047857"
+RED = "#b91c1c"
+BORDER = "#cbd5e1"
+SOFT_BG = "#f8fafc"
+PALETTE = (
+    "#1d4ed8",
+    "#047857",
+    "#b91c1c",
+    "#c2410c",
+    "#6d28d9",
+    "#0f766e",
+    "#be123c",
+    "#4d7c0f",
+)
+
+
+def build_project_report_pdf(project, language="fr"):
+    """Compatibility wrapper for the existing project report endpoint."""
+    return build_financial_report_pdf(project=project, language=language)
+
+
+def build_financial_report_pdf(
+    *, project=None, date_from=None, date_to=None, language="fr", company=None
+):
     if not REPORTLAB_AVAILABLE:
-        raise ImportError("ReportLab is required to generate project PDF reports.")
+        raise ImportError("ReportLab is required to generate PDF reports.")
+
+    language = language if language in TRANSLATIONS else "fr"
+    labels = TRANSLATIONS[language]
+    company = company or get_company_profile()
+    report_data = _report_data(project, date_from, date_to, labels, language)
 
     margin = 0.9 * cm
     page_width, _page_height = A4
     content_width = page_width - (2 * margin)
-    accent = colors.HexColor("#1d4ed8")
-    navy = colors.HexColor("#0f172a")
-    border = colors.HexColor("#cbd5e1")
-    muted = colors.HexColor("#64748b")
-    soft_bg = colors.HexColor("#f8fafc")
-
-    styles = _styles(
-        accent,
-        navy,
-        muted,
-        colors,
-        ParagraphStyle,
-        getSampleStyleSheet,
-        TA_CENTER,
-        TA_RIGHT,
-    )
+    styles = _styles()
     buffer = BytesIO()
+    scope_name = project.nom if project else labels["all_projects"]
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
         rightMargin=margin,
         leftMargin=margin,
-        topMargin=0.85 * cm,
+        topMargin=0.75 * cm,
         bottomMargin=1.35 * cm,
-        title=f"Rapport projet - {project.nom}",
-        author="E.B.H Gestion Projet",
+        title=f"{labels['title']} - {scope_name}",
+        author=company.raison_sociale,
     )
-
-    revenues = Revenue.objects.filter(project=project).order_by("date", "id")
-    expenses = (
-        Expense.objects.filter(project=project)
-        .select_related("category", "sous_categorie", "supplier")
-        .order_by("date", "id")
-    )
-    schedules = project.payment_schedules.all().order_by("due_date", "id")
-    real_budget_entries = project.real_budget_entries.all().order_by("date", "id")
-
-    revenue_total = revenues.aggregate(
-        total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-    )["total"]
-    expense_total = expenses.aggregate(
-        total=Coalesce(Sum("montant"), 0, output_field=DecimalField())
-    )["total"]
-    service_fee_total = sum(
-        (expense.frais_de_service_montant for expense in expenses if expense.frais_de_service),
-        Decimal("0.00"),
-    )
-    expected_total = schedules.aggregate(
-        total=Coalesce(Sum("expected_amount"), 0, output_field=DecimalField())
-    )["total"]
-    real_budget_revenue = real_budget_entries.aggregate(
-        total=Coalesce(Sum("montant_client"), 0, output_field=DecimalField())
-    )["total"]
-    real_budget_cost = real_budget_entries.aggregate(
-        total=Coalesce(Sum("montant_fournisseur"), 0, output_field=DecimalField())
-    )["total"]
-    real_budget_profit = real_budget_revenue - real_budget_cost
-    real_budget_margin = (
-        round((real_budget_profit / real_budget_revenue) * 100, 2)
-        if real_budget_revenue
-        else 0
-    )
-    budget_gap = project.budget_total - real_budget_cost
-    profit = revenue_total - expense_total
-    margin_pct = round((profit / revenue_total) * 100, 2) if revenue_total else 0
-    budget_usage = (
-        round((expense_total / project.budget_total) * 100, 2)
-        if project.budget_total
-        else 0
-    )
-    generated_at = timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")
 
     story = [
         _build_header(
-            project=project,
-            generated_at=generated_at,
-            content_width=content_width,
-            styles=styles,
-            colors=colors,
-            accent=accent,
-            soft_bg=soft_bg,
-        ),
-        Spacer(1, 0.35 * cm),
-        _build_project_client_grid(
-            project=project,
-            content_width=content_width,
-            styles=styles,
-            colors=colors,
-            accent=accent,
-        ),
-        Spacer(1, 0.35 * cm),
-        _build_kpi_grid(
-            [
-                ("Budget initial", f"{_money(project.budget_total)} MAD"),
-                ("Revenus reçus", f"{_money(revenue_total)} MAD"),
-                ("Dépenses", f"{_money(expense_total)} MAD"),
-                ("Bénéfice", f"{_money(profit)} MAD"),
-                ("Marge", f"{margin_pct}%"),
-            ],
+            company,
+            scope_name,
+            date_from,
+            date_to,
+            labels,
+            language,
             content_width,
             styles,
-            colors,
-            soft_bg,
-            border,
         ),
-        Spacer(1, 0.22 * cm),
-        _build_kpi_grid(
-            [
-                ("Coût réel", f"{_money(real_budget_cost)} MAD"),
-                ("Revenu par étape", f"{_money(real_budget_revenue)} MAD"),
-                ("Marge réelle", f"{_money(real_budget_profit)} MAD"),
-                ("Taux marge réelle", f"{real_budget_margin}%"),
-                ("Écart budget", f"{_money(budget_gap)} MAD"),
-            ],
-            content_width,
-            styles,
-            colors,
-            soft_bg,
-            border,
-        ),
-        Spacer(1, 0.45 * cm),
+        Spacer(1, 0.35 * cm),
     ]
-
-    story.extend(
-        _section(
-            "Échéancier de paiements",
-            _build_schedule_table(
-                schedules=schedules,
-                project=project,
-                content_width=content_width,
-                styles=styles,
-                colors=colors,
-                navy=navy,
-                accent=accent,
-                border=border,
-            ),
-            styles,
-            accent,
-            cm,
-        )
-    )
-    story.append(Spacer(1, 0.35 * cm))
-    story.extend(
-        _section(
-            "Budget réel par étape",
-            _build_real_budget_table(
-                entries=real_budget_entries,
-                content_width=content_width,
-                styles=styles,
-                colors=colors,
-                navy=navy,
-                accent=accent,
-                border=border,
-            ),
-            styles,
-            accent,
-            cm,
-        )
-    )
-    story.append(Spacer(1, 0.35 * cm))
-    story.extend(
-        _section(
-            "Revenus réels reçus",
-            _build_revenue_table(revenues, content_width, styles, colors, navy, accent, border),
-            styles,
-            accent,
-            cm,
-        )
-    )
-    story.append(Spacer(1, 0.22 * cm))
-    story.extend(
-        _section(
-            "Suivi complémentaire",
-            _build_kpi_grid(
-                [
-                    ("Budget utilisé", f"{budget_usage}%"),
-                    ("Échéancier prévu", f"{_money(expected_total)} MAD"),
-                    ("Écart prévisionnel", f"{_money(revenue_total - expected_total)} MAD"),
-                    ("Frais de service", f"{_money(service_fee_total)} MAD"),
-                    ("Pièces projet", str(project.attachments.count())),
-                ],
-                content_width,
-                styles,
-                colors,
-                soft_bg,
-                border,
-            ),
-            styles,
-            accent,
-            cm,
-        )
-    )
-    story.append(Spacer(1, 0.35 * cm))
-    story.extend(
-        _section(
-            "Dépenses du projet",
-            _build_expense_table(expenses, content_width, styles, colors, navy, accent, border),
-            styles,
-            accent,
-            cm,
-        )
-    )
-
-    if project.notes:
+    if project:
         story.extend(
             [
-                Spacer(1, 0.35 * cm),
-                KeepTogether(
-                    [
-                        Paragraph("Notes", styles["SectionTitle"]),
-                        _line_table(content_width, accent, colors),
-                        Spacer(1, 0.12 * cm),
-                        Paragraph(_pdf_text(project.notes), styles["Body"]),
-                    ]
-                ),
+                _build_project_context(project, labels, content_width, styles),
+                Spacer(1, 0.28 * cm),
+            ]
+        )
+    story.extend(
+        [
+            _build_totals(report_data, labels, content_width, styles),
+            Spacer(1, 0.4 * cm),
+            _chart_section(
+                labels["timeline"], _timeline_chart(report_data, labels), styles
+            ),
+            Spacer(1, 0.35 * cm),
+            _chart_section(
+                labels["categories"], _category_chart(report_data, labels), styles
+            ),
+            Spacer(1, 0.35 * cm),
+            _chart_section(
+                labels["project_comparison"] if project else labels["comparison"],
+                _project_chart(report_data, labels, project is not None),
+                styles,
+            ),
+        ]
+    )
+    if not project:
+        story.extend(
+            [
+                Spacer(1, 0.45 * cm),
+                Paragraph(labels["summary"], styles["SectionTitle"]),
+                Spacer(1, 0.1 * cm),
+                _summary_table(report_data, labels, content_width, styles),
             ]
         )
 
-    footer = _footer("Rapport projet")
+    generated_at = timezone.localtime(timezone.now())
+    footer = _footer(company.raison_sociale, generated_at, labels, language)
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     buffer.seek(0)
     return buffer
 
 
-def _build_header(project, generated_at, content_width, styles, colors, accent, soft_bg):
-    left = Paragraph(
-        "E.B.H<br/>Gestion Projet<br/><font color='#64748b'>Compte rendu client</font>",
-        styles["Brand"],
+def _report_data(project, date_from, date_to, labels, language):
+    revenues = Revenue.objects.select_related("project", "project__client").all()
+    expenses = Expense.objects.select_related(
+        "project", "project__client", "category"
+    ).all()
+    if project:
+        revenues = revenues.filter(project=project)
+        expenses = expenses.filter(project=project)
+    if date_from:
+        revenues = revenues.filter(date__gte=date_from)
+        expenses = expenses.filter(date__gte=date_from)
+    if date_to:
+        revenues = revenues.filter(date__lte=date_to)
+        expenses = expenses.filter(date__lte=date_to)
+
+    revenue_rows = list(revenues.order_by("date", "id"))
+    expense_rows = list(expenses.order_by("date", "id"))
+    total_revenue = sum((row.montant for row in revenue_rows), Decimal("0.00"))
+    total_expenses = sum((row.montant for row in expense_rows), Decimal("0.00"))
+
+    revenue_by_project = defaultdict(lambda: Decimal("0.00"))
+    expense_by_project = defaultdict(lambda: Decimal("0.00"))
+    projects_by_id = {}
+    for row in revenue_rows:
+        projects_by_id[row.project_id] = row.project
+        revenue_by_project[row.project_id] += row.montant
+    for row in expense_rows:
+        projects_by_id[row.project_id] = row.project
+        expense_by_project[row.project_id] += row.montant
+    if project:
+        projects_by_id[project.id] = project
+    project_rows = [
+        {
+            "project": item,
+            "revenue": revenue_by_project[item.id],
+            "expenses": expense_by_project[item.id],
+        }
+        for item in sorted(projects_by_id.values(), key=lambda value: value.nom.lower())
+    ]
+
+    category_totals = defaultdict(lambda: Decimal("0.00"))
+    for row in expense_rows:
+        category_totals[
+            row.category.name if row.category else labels["uncategorized"]
+        ] += row.montant
+    bucket_labels, revenue_history, expense_history = _time_buckets(
+        revenue_rows, expense_rows, date_from, date_to, language
     )
-    right = Paragraph(
-        f"RAPPORT PROJET<br/><font size='8' color='#64748b'>RP-{project.id:05d} · Généré le {generated_at}</font>",
+    return {
+        "total_revenue": total_revenue,
+        "total_expenses": total_expenses,
+        "project_rows": project_rows,
+        "category_totals": sorted(
+            category_totals.items(), key=lambda item: item[1], reverse=True
+        ),
+        "bucket_labels": bucket_labels,
+        "revenue_history": revenue_history,
+        "expense_history": expense_history,
+    }
+
+
+def _time_buckets(revenues, expenses, date_from, date_to, language):
+    all_dates = [row.date for row in revenues] + [row.date for row in expenses]
+    if date_from and date_to:
+        start, end = date_from, date_to
+    elif all_dates:
+        start, end = min(all_dates), max(all_dates)
+    else:
+        return [], [], []
+
+    use_days = (end - start).days <= 31
+    revenue_totals = defaultdict(lambda: Decimal("0.00"))
+    expense_totals = defaultdict(lambda: Decimal("0.00"))
+    bucket_key = (
+        (lambda value: value) if use_days else (lambda value: (value.year, value.month))
+    )
+    for row in revenues:
+        revenue_totals[bucket_key(row.date)] += row.montant
+    for row in expenses:
+        expense_totals[bucket_key(row.date)] += row.montant
+
+    buckets = []
+    if use_days:
+        current = start
+        while current <= end:
+            buckets.append(current)
+            current += timedelta(days=1)
+    else:
+        current = date(start.year, start.month, 1)
+        last = date(end.year, end.month, 1)
+        while current <= last:
+            buckets.append((current.year, current.month))
+            current = date(
+                current.year + (1 if current.month == 12 else 0),
+                1 if current.month == 12 else current.month + 1,
+                1,
+            )
+
+    if use_days:
+        date_format = "%d/%m" if language == "fr" else "%m/%d"
+        display_labels = [bucket.strftime(date_format) for bucket in buckets]
+    else:
+        display_labels = [f"{month:02d}/{year}" for year, month in buckets]
+    return (
+        display_labels,
+        [float(revenue_totals[bucket]) for bucket in buckets],
+        [float(expense_totals[bucket]) for bucket in buckets],
+    )
+
+
+def _styles():
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            "CompanyName",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            leading=14,
+            textColor=colors.HexColor(NAVY),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "Meta",
+            parent=styles["Normal"],
+            fontSize=7.6,
+            leading=9.5,
+            textColor=colors.HexColor(MUTED),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "ReportTitle",
+            parent=styles["Heading1"],
+            fontName="Helvetica-Bold",
+            fontSize=16,
+            leading=19,
+            alignment=TA_RIGHT,
+            textColor=colors.HexColor(ACCENT),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "SectionTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            leading=14,
+            textColor=colors.HexColor(NAVY),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "Kpi",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=15,
+            leading=19,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor(NAVY),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "Small",
+            parent=styles["Normal"],
+            fontSize=7.6,
+            leading=9.4,
+            textColor=colors.HexColor(NAVY),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            "SmallHeader",
+            parent=styles["Small"],
+            fontName="Helvetica-Bold",
+            textColor=colors.white,
+        )
+    )
+    styles.add(ParagraphStyle("SmallRight", parent=styles["Small"], alignment=TA_RIGHT))
+    return styles
+
+
+def _build_header(
+    company, scope_name, date_from, date_to, labels, language, width, styles
+):
+    contact_parts = [
+        company.adresse,
+        company.telephone,
+        company.email,
+        company.site_web,
+    ]
+    legal_parts = [
+        f"ICE: {company.ICE}" if company.ICE else None,
+        f"RC: {company.registre_de_commerce}" if company.registre_de_commerce else None,
+        f"IF: {company.identifiant_fiscal}" if company.identifiant_fiscal else None,
+        f"CNSS: {company.CNSS}" if company.CNSS else None,
+    ]
+    details = [part for part in contact_parts + legal_parts if part]
+    company_block = Paragraph(
+        f"<b>{_text(company.raison_sociale)}</b>"
+        + (
+            f"<br/><font color='{MUTED}'>{'<br/>'.join(_text(part) for part in details)}</font>"
+            if details
+            else ""
+        ),
+        styles["CompanyName"],
+    )
+    period = _period_label(date_from, date_to, labels, language)
+    report_block = Paragraph(
+        f"{labels['title']}<br/><font size='8' color='{MUTED}'>"
+        f"{_text(labels['scope'])}: {_text(scope_name)}<br/>"
+        f"{_text(labels['period'])}: {_text(period)}</font>",
         styles["ReportTitle"],
     )
-    table = Table([[left, right]], colWidths=[content_width * 0.36, content_width * 0.64])
+    table = Table(
+        [[_logo(company), company_block, report_block]],
+        colWidths=[width * 0.15, width * 0.42, width * 0.43],
+    )
     table.setStyle(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("BACKGROUND", (0, 0), (0, 0), soft_bg),
-                ("LINEBELOW", (0, 0), (-1, -1), 1.1, accent),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("LINEBELOW", (0, 0), (-1, -1), 1.1, colors.HexColor(ACCENT)),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
             ]
         )
     )
     return table
 
 
-def _build_project_client_grid(project, content_width, styles, colors, accent):
-    client = project.client
-    client_name = client.nom if client else project.nom_client
-    client_phone = client.telephone if client else project.telephone_client
-    client_email = client.email if client else project.email_client
-    client_address = client.adresse if client else None
-
-    project_rows = [
-        ["Projet", project.nom],
-        ["Statut", project.status],
-        ["Chef de projet", project.chef_de_projet or "-"],
-        ["Début", _date(project.date_debut)],
-        ["Fin prévue", _date(project.date_fin)],
-    ]
-    client_rows = [
-        ["Client", client_name or "-"],
-        ["Téléphone", client_phone or "-"],
-        ["Email", client_email or "-"],
-        ["Adresse", client_address or "-"],
-    ]
-    left = _info_block("PROJET", project_rows, content_width * 0.48, styles, colors, accent)
-    right = _info_block("CLIENT", client_rows, content_width * 0.48, styles, colors, accent)
-    table = Table([[left, right]], colWidths=[content_width * 0.5, content_width * 0.5])
-    table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
+def _logo(company):
+    if company.logo:
+        try:
+            if os.path.exists(company.logo.path):
+                image = Image(company.logo.path)
+                image._restrictSize(2.4 * cm, 1.7 * cm)
+                return image
+        except (AttributeError, OSError, ValueError):
+            pass
+    drawing = Drawing(64, 44)
+    drawing.add(
+        Rect(
+            0,
+            0,
+            44,
+            44,
+            rx=8,
+            ry=8,
+            fillColor=colors.HexColor(ACCENT),
+            strokeColor=None,
         )
     )
-    return table
-
-
-def _info_block(title, rows, width, styles, colors, accent):
-    content = [[Paragraph(title, styles["SectionTitle"])]]
-    content.append([_line_table(width, accent, colors)])
-    for label, value in rows:
-        content.append(
-            [
-                Paragraph(
-                    f"<b>{_pdf_text(label)}</b><br/>{_pdf_text(value)}",
-                    styles["Meta"],
-                )
-            ]
-        )
-    table = Table(content, colWidths=[width])
-    table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ]
+    drawing.add(
+        String(
+            22,
+            17,
+            "EBH",
+            textAnchor="middle",
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            fillColor=colors.white,
         )
     )
-    return table
+    return drawing
 
 
-def _build_kpi_grid(items, content_width, styles, colors, soft_bg, border):
+def _build_project_context(project, labels, width, styles):
+    client_name = project.client.nom if project.client else project.nom_client
     cells = [
-        Paragraph(f"<font color='#64748b'>{_pdf_text(label)}</font><br/><b>{_pdf_text(value)}</b>", styles["KpiValue"])
-        for label, value in items
+        (labels["project"], project.nom),
+        (labels["client"], client_name or "-"),
+        (labels["status"], project.status),
     ]
-    table = Table([cells], colWidths=[content_width / len(cells)] * len(cells))
+    table = Table(
+        [
+            [
+                Paragraph(f"<b>{_text(label)}</b><br/>{_text(value)}", styles["Small"])
+                for label, value in cells
+            ]
+        ],
+        colWidths=[width / 3] * 3,
+    )
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), soft_bg),
-                ("BOX", (0, 0), (-1, -1), 0.45, border),
-                ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#e5e7eb")),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
+                ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+                ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor(BORDER)),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 7),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
                 ("TOPPADDING", (0, 0), (-1, -1), 7),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
             ]
@@ -370,327 +498,280 @@ def _build_kpi_grid(items, content_width, styles, colors, soft_bg, border):
     return table
 
 
-def _styles(
-    accent,
-    navy,
-    muted,
-    colors,
-    ParagraphStyle,
-    getSampleStyleSheet,
-    TA_CENTER,
-    TA_RIGHT,
-):
-    styles = getSampleStyleSheet()
-    styles.add(
-        ParagraphStyle(
-            "Brand",
-            parent=styles["Normal"],
-            fontName="Helvetica-Bold",
-            fontSize=11,
-            leading=14,
-            textColor=navy,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "ReportTitle",
-            parent=styles["Heading1"],
-            fontName="Helvetica-Bold",
-            fontSize=18,
-            leading=22,
-            textColor=accent,
-            alignment=TA_RIGHT,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "Meta",
-            parent=styles["Normal"],
-            fontSize=8,
-            leading=10,
-            textColor=muted,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "MetaRight",
-            parent=styles["Meta"],
-            alignment=TA_RIGHT,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "SectionTitle",
-            parent=styles["Normal"],
-            fontName="Helvetica-Bold",
-            fontSize=10.5,
-            leading=13,
-            textColor=navy,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "Body",
-            parent=styles["Normal"],
-            fontSize=8.2,
-            leading=10.5,
-            textColor=colors.HexColor("#111827"),
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "Small",
-            parent=styles["Normal"],
-            fontSize=7.4,
-            leading=9.2,
-            textColor=colors.HexColor("#111827"),
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "SmallCenter",
-            parent=styles["Small"],
-            alignment=TA_CENTER,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "SmallRight",
-            parent=styles["Small"],
-            alignment=TA_RIGHT,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "HeaderCell",
-            parent=styles["Normal"],
-            fontName="Helvetica-Bold",
-            fontSize=7.4,
-            leading=9,
-            textColor=colors.white,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "KpiLabel",
-            parent=styles["Normal"],
-            fontSize=7.4,
-            leading=9,
-            textColor=muted,
-        )
-    )
-    styles.add(
-        ParagraphStyle(
-            "KpiValue",
-            parent=styles["Normal"],
-            fontName="Helvetica-Bold",
-            fontSize=10,
-            leading=12,
-            textColor=navy,
-        )
-    )
-    return styles
-
-
-def _section(title, table, styles, accent, cm):
-    return [
-        KeepTogether(
-            [
-                Paragraph(title, styles["SectionTitle"]),
-                Spacer(1, 0.06 * cm),
-            ]
+def _build_totals(data, labels, width, styles):
+    cells = [
+        Paragraph(
+            f"<font size='8' color='{MUTED}'>{_text(labels['total_revenue'])}</font><br/><font color='{GREEN}'>{_money(data['total_revenue'])} MAD</font>",
+            styles["Kpi"],
         ),
-        table,
+        Paragraph(
+            f"<font size='8' color='{MUTED}'>{_text(labels['total_expenses'])}</font><br/><font color='{RED}'>{_money(data['total_expenses'])} MAD</font>",
+            styles["Kpi"],
+        ),
     ]
-
-
-def _build_schedule_table(schedules, project, content_width, styles, colors, navy, accent, border):
-    headers = ["Date prévue", "Description", "Prévu", "Cumul prévu", "Cumul encaissé", "Écart"]
-    rows = [[Paragraph(f"<b>{header}</b>", styles["HeaderCell"]) for header in headers]]
-    expected_cumulative = Decimal("0.00")
-    if schedules:
-        from revenu.models import Revenue
-
-        for schedule in schedules:
-            expected_cumulative += schedule.expected_amount
-            actual_cumulative = Revenue.objects.filter(
-                project=project,
-                date__lte=schedule.due_date,
-            ).aggregate(total=Coalesce(Sum("montant"), 0, output_field=DecimalField()))[
-                "total"
-            ]
-            variance = actual_cumulative - expected_cumulative
-            rows.append(
-                [
-                    Paragraph(_date(schedule.due_date), styles["Small"]),
-                    Paragraph(_pdf_text(schedule.description or "-"), styles["Small"]),
-                    Paragraph(_money(schedule.expected_amount), styles["SmallRight"]),
-                    Paragraph(_money(expected_cumulative), styles["SmallRight"]),
-                    Paragraph(_money(actual_cumulative), styles["SmallRight"]),
-                    Paragraph(_money(variance), styles["SmallRight"]),
-                ]
-            )
-    else:
-        rows.append(
-            [
-                Paragraph("-", styles["Small"]),
-                Paragraph("Aucune échéance définie.", styles["Small"]),
-                "",
-                "",
-                "",
-                "",
-            ]
-        )
-    return _data_table(rows, [0.16, 0.28, 0.14, 0.14, 0.15, 0.13], content_width, colors, navy, accent, border)
-
-
-def _build_real_budget_table(entries, content_width, styles, colors, navy, accent, border):
-    headers = ["Date", "Étape", "Description", "Client", "Fournisseur", "Marge", "Taux"]
-    rows = [[Paragraph(f"<b>{header}</b>", styles["HeaderCell"]) for header in headers]]
-    if entries:
-        for entry in entries:
-            rows.append(
-                [
-                    Paragraph(_date(entry.date), styles["Small"]),
-                    Paragraph(_pdf_text(entry.stage), styles["Small"]),
-                    Paragraph(_pdf_text(entry.description or "-"), styles["Small"]),
-                    Paragraph(_money(entry.montant_client), styles["SmallRight"]),
-                    Paragraph(_money(entry.montant_fournisseur), styles["SmallRight"]),
-                    Paragraph(_money(entry.benefice), styles["SmallRight"]),
-                    Paragraph(f"{entry.marge}%", styles["SmallRight"]),
-                ]
-            )
-    else:
-        rows.append(
-            [
-                Paragraph("-", styles["Small"]),
-                Paragraph("Aucune ligne de budget réel enregistrée.", styles["Small"]),
-                "",
-                "",
-                "",
-                "",
-                "",
-            ]
-        )
-    return _data_table(rows, [0.11, 0.18, 0.25, 0.12, 0.14, 0.12, 0.08], content_width, colors, navy, accent, border)
-
-
-def _build_revenue_table(revenues, content_width, styles, colors, navy, accent, border):
-    headers = ["Date", "Description", "Montant", "Notes"]
-    rows = [[Paragraph(f"<b>{header}</b>", styles["HeaderCell"]) for header in headers]]
-    if revenues:
-        for revenue in revenues:
-            rows.append(
-                [
-                    Paragraph(_date(revenue.date), styles["Small"]),
-                    Paragraph(_pdf_text(revenue.description), styles["Small"]),
-                    Paragraph(_money(revenue.montant), styles["SmallRight"]),
-                    Paragraph(_pdf_text(revenue.notes or "-"), styles["Small"]),
-                ]
-            )
-    else:
-        rows.append(
-            [
-                Paragraph("-", styles["Small"]),
-                Paragraph("Aucun revenu enregistré.", styles["Small"]),
-                "",
-                "",
-            ]
-        )
-    return _data_table(rows, [0.16, 0.42, 0.18, 0.24], content_width, colors, navy, accent, border)
-
-
-def _build_expense_table(expenses, content_width, styles, colors, navy, accent, border):
-    headers = ["Date", "Catégorie", "Description", "Fournisseur", "Montant", "Frais"]
-    rows = [[Paragraph(f"<b>{header}</b>", styles["HeaderCell"]) for header in headers]]
-    if expenses:
-        for expense in expenses:
-            category = expense.category.name if expense.category else "-"
-            if expense.sous_categorie:
-                category = f"{category}<br/><font color='#64748b'>{expense.sous_categorie.name}</font>"
-            supplier = expense.supplier.nom if expense.supplier else "-"
-            rows.append(
-                [
-                    Paragraph(_date(expense.date), styles["Small"]),
-                    Paragraph(category, styles["Small"]),
-                    Paragraph(_pdf_text(expense.description), styles["Small"]),
-                    Paragraph(_pdf_text(supplier or "-"), styles["Small"]),
-                    Paragraph(_money(expense.montant), styles["SmallRight"]),
-                    Paragraph(_money(expense.frais_de_service_montant), styles["SmallRight"]),
-                ]
-            )
-    else:
-        rows.append(
-            [
-                Paragraph("-", styles["Small"]),
-                Paragraph("-", styles["Small"]),
-                Paragraph("Aucune dépense enregistrée.", styles["Small"]),
-                "",
-                "",
-                "",
-            ]
-        )
-    return _data_table(rows, [0.12, 0.22, 0.28, 0.17, 0.12, 0.09], content_width, colors, navy, accent, border)
-
-
-def _data_table(rows, weights, content_width, colors, navy, accent, border):
-    col_widths = [content_width * weight for weight in weights]
-    table = Table(rows, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
+    table = Table([cells], colWidths=[width / 2] * 2)
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), navy),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(BORDER)),
+                ("INNERGRID", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
+    return table
+
+
+def _chart_section(title, chart, styles):
+    return KeepTogether(
+        [Paragraph(title, styles["SectionTitle"]), Spacer(1, 0.08 * cm), chart]
+    )
+
+
+def _empty_chart(labels):
+    drawing = Drawing(520, 150)
+    drawing.add(
+        Rect(
+            0,
+            0,
+            520,
+            145,
+            fillColor=colors.HexColor(SOFT_BG),
+            strokeColor=colors.HexColor(BORDER),
+            strokeDashArray=[4, 3],
+        )
+    )
+    drawing.add(
+        String(
+            260,
+            70,
+            labels["no_data"],
+            textAnchor="middle",
+            fontName="Helvetica",
+            fontSize=9,
+            fillColor=colors.HexColor(MUTED),
+        )
+    )
+    return drawing
+
+
+def _timeline_chart(data, labels):
+    if not data["bucket_labels"]:
+        return _empty_chart(labels)
+    drawing = Drawing(520, 220)
+    chart = HorizontalLineChart()
+    chart.x, chart.y, chart.width, chart.height = 45, 45, 450, 140
+    chart.data = [tuple(data["revenue_history"]), tuple(data["expense_history"])]
+    chart.categoryAxis.categoryNames = data["bucket_labels"]
+    chart.categoryAxis.labels.fontName = "Helvetica"
+    chart.categoryAxis.labels.fontSize = 6
+    chart.categoryAxis.labels.angle = 35
+    chart.categoryAxis.labels.boxAnchor = "ne"
+    values = data["revenue_history"] + data["expense_history"]
+    chart.valueAxis.valueMin = min([0, *values])
+    chart.valueAxis.valueMax = max([1, *values]) * 1.12
+    chart.valueAxis.labels.fontSize = 6.5
+    chart.lines[0].strokeColor = colors.HexColor(GREEN)
+    chart.lines[0].strokeWidth = 2
+    chart.lines[1].strokeColor = colors.HexColor(RED)
+    chart.lines[1].strokeWidth = 2
+    drawing.add(chart)
+    drawing.add(
+        _legend(
+            [
+                (colors.HexColor(GREEN), labels["revenue"]),
+                (colors.HexColor(RED), labels["expenses"]),
+            ],
+            335,
+            205,
+        )
+    )
+    return drawing
+
+
+def _category_chart(data, labels):
+    positive_rows = [
+        (name, value) for name, value in data["category_totals"] if value > 0
+    ]
+    if not positive_rows:
+        return _empty_chart(labels)
+    visible = positive_rows[:7]
+    if len(positive_rows) > 7:
+        visible.append(
+            ("...", sum((row[1] for row in positive_rows[7:]), Decimal("0.00")))
+        )
+    drawing = Drawing(520, 210)
+    pie = Pie()
+    pie.x, pie.y, pie.width, pie.height = 65, 28, 155, 155
+    pie.data = [float(value) for _name, value in visible]
+    pie.labels = None
+    pie.slices.strokeColor = colors.white
+    pie.slices.strokeWidth = 1
+    color_pairs = []
+    for index, (name, _value) in enumerate(visible):
+        color = colors.HexColor(PALETTE[index % len(PALETTE)])
+        pie.slices[index].fillColor = color
+        color_pairs.append((color, name))
+    drawing.add(pie)
+    drawing.add(_legend(color_pairs, 270, 175, column_max=8))
+    return drawing
+
+
+def _project_chart(data, labels, single_project):
+    rows = data["project_rows"]
+    if not rows:
+        return _empty_chart(labels)
+    if not single_project:
+        rows = sorted(
+            rows, key=lambda row: row["revenue"] + row["expenses"], reverse=True
+        )[:10]
+    drawing = Drawing(520, 225)
+    chart = VerticalBarChart()
+    chart.x, chart.y, chart.width, chart.height = 45, 48, 450, 135
+    chart.data = [
+        tuple(float(row["revenue"]) for row in rows),
+        tuple(float(row["expenses"]) for row in rows),
+    ]
+    chart.categoryAxis.categoryNames = [_short(row["project"].nom, 18) for row in rows]
+    chart.categoryAxis.labels.fontName = "Helvetica"
+    chart.categoryAxis.labels.fontSize = 6
+    chart.categoryAxis.labels.angle = 30 if len(rows) > 3 else 0
+    chart.categoryAxis.labels.boxAnchor = "ne" if len(rows) > 3 else "n"
+    values = list(chart.data[0]) + list(chart.data[1])
+    chart.valueAxis.valueMin = min([0, *values])
+    chart.valueAxis.valueMax = max([1, *values]) * 1.12
+    chart.valueAxis.labels.fontSize = 6.5
+    chart.bars[0].fillColor = colors.HexColor(GREEN)
+    chart.bars[1].fillColor = colors.HexColor(RED)
+    chart.barSpacing = 1
+    chart.groupSpacing = 8
+    drawing.add(chart)
+    drawing.add(
+        _legend(
+            [
+                (colors.HexColor(GREEN), labels["revenue"]),
+                (colors.HexColor(RED), labels["expenses"]),
+            ],
+            335,
+            210,
+        )
+    )
+    return drawing
+
+
+def _legend(color_pairs, x, y, column_max=2):
+    legend = Legend()
+    legend.x, legend.y = x, y
+    legend.fontName = "Helvetica"
+    legend.fontSize = 7
+    legend.dx, legend.dy, legend.deltay = 7, 7, 10
+    legend.columnMaximum = column_max
+    legend.colorNamePairs = color_pairs
+    return legend
+
+
+def _summary_table(data, labels, width, styles):
+    headers = [
+        labels["project"],
+        labels["client"],
+        labels["status"],
+        labels["revenue"],
+        labels["expenses"],
+    ]
+    rows = [[Paragraph(_text(value), styles["SmallHeader"]) for value in headers]]
+    for item in data["project_rows"]:
+        project = item["project"]
+        client_name = project.client.nom if project.client else project.nom_client
+        rows.append(
+            [
+                Paragraph(_text(project.nom), styles["Small"]),
+                Paragraph(_text(client_name or "-"), styles["Small"]),
+                Paragraph(_text(project.status), styles["Small"]),
+                Paragraph(_money(item["revenue"]), styles["SmallRight"]),
+                Paragraph(_money(item["expenses"]), styles["SmallRight"]),
+            ]
+        )
+    if len(rows) == 1:
+        rows.append([Paragraph(labels["no_data"], styles["Small"]), "", "", "", ""])
+    table = Table(
+        rows,
+        colWidths=[width * value for value in (0.25, 0.24, 0.17, 0.17, 0.17)],
+        repeatRows=1,
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(NAVY)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor(BORDER)),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("GRID", (0, 0), (-1, -1), 0.25, border),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor(SOFT_BG)],
+                ),
                 ("LEFTPADDING", (0, 0), (-1, -1), 5),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 5),
                 ("TOPPADDING", (0, 0), (-1, -1), 5),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
-                ("LINEBELOW", (0, 0), (-1, 0), 1, accent),
-                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
             ]
         )
     )
     return table
 
 
-def _line_table(width, accent, colors):
-    table = Table([[""]], colWidths=[width])
-    table.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.8, accent)]))
-    return table
+def _footer(company_name, generated_at, labels, language):
+    generated_text = _format_datetime(generated_at, language)
 
-
-def _footer(title):
     def _draw(canvas, doc):
-        from reportlab.lib import colors
-        from reportlab.lib.units import cm
-
         canvas.saveState()
         width, _height = doc.pagesize
-        canvas.setStrokeColor(colors.HexColor("#d1d5db"))
+        canvas.setStrokeColor(colors.HexColor(BORDER))
         canvas.setLineWidth(0.5)
         canvas.line(doc.leftMargin, 1.0 * cm, width - doc.rightMargin, 1.0 * cm)
-        canvas.setFont("Helvetica", 7.5)
-        canvas.setFillColor(colors.HexColor("#64748b"))
-        canvas.drawString(doc.leftMargin, 0.55 * cm, "E.B.H Gestion Projet")
-        canvas.drawCentredString(width / 2, 0.55 * cm, title)
-        canvas.drawRightString(width - doc.rightMargin, 0.55 * cm, f"Page {canvas.getPageNumber()}")
+        canvas.setFillColor(colors.HexColor(MUTED))
+        canvas.setFont("Helvetica", 7)
+        canvas.drawString(
+            doc.leftMargin,
+            0.62 * cm,
+            f"{company_name} - {labels['generated']} {generated_text}",
+        )
+        canvas.drawRightString(
+            width - doc.rightMargin,
+            0.62 * cm,
+            f"{labels['page']} {canvas.getPageNumber()}",
+        )
         canvas.restoreState()
 
     return _draw
 
 
-def _date(value):
-    return value.strftime("%d/%m/%Y") if value else "-"
+def _period_label(date_from, date_to, labels, language):
+    if not date_from or not date_to:
+        return labels["all_dates"]
+    return f"{_format_date(date_from, language)} - {_format_date(date_to, language)}"
+
+
+def _format_date(value, language):
+    return value.strftime("%d/%m/%Y" if language == "fr" else "%m/%d/%Y")
+
+
+def _format_datetime(value, language):
+    return value.strftime("%d/%m/%Y %H:%M" if language == "fr" else "%m/%d/%Y %H:%M")
 
 
 def _money(value):
-    amount = value if value is not None else Decimal("0.00")
-    return f"{amount:,.2f}".replace(",", " ").replace(".", ",")
+    amount = Decimal(value or 0).quantize(Decimal("0.01"))
+    return f"{amount:,.2f}".replace(",", " ")
 
 
-def _pdf_text(value):
-    return escape(str(value if value is not None else "-"), {"'": "&apos;", '"': "&quot;"})
+def _text(value):
+    return escape(str(value or "-"))
+
+
+def _short(value, length):
+    value = str(value)
+    return value if len(value) <= length else f"{value[: length - 3]}..."

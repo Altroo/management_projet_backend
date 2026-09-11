@@ -18,6 +18,11 @@ def can_view(user: "CustomUser") -> bool:
     return user.is_staff or user.can_view
 
 
+def can_print(user: "CustomUser") -> bool:
+    """Staff always allowed; others need can_print flag (defaults True)."""
+    return user.is_staff or user.can_print
+
+
 def can_create(user: "CustomUser") -> bool:
     """Staff always allowed; others need can_create flag (defaults False)."""
     return user.is_staff or user.can_create

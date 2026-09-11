@@ -18,6 +18,7 @@ from .views import (
     ExpenseTaxonomyListView,
     ExpenseTaxonomySubCategoryCreateView,
     ExpenseTaxonomySubCategoryDetailView,
+    FinancialReportPDFView,
     ProjectAttachmentDetailView,
     ProjectAttachmentListCreateView,
     ProjectListCreateView,
@@ -139,6 +140,18 @@ urlpatterns = [
     # Projects
     path("", ProjectListCreateView.as_view(), name="project-list-create"),
     path("bulk_delete/", BulkDeleteProjectView.as_view(), name="project-bulk-delete"),
+    path(
+        "reports/pdf/fr/",
+        FinancialReportPDFView.as_view(),
+        {"language": "fr"},
+        name="financial-report-pdf-fr",
+    ),
+    path(
+        "reports/pdf/en/",
+        FinancialReportPDFView.as_view(),
+        {"language": "en"},
+        name="financial-report-pdf-en",
+    ),
     path(
         "<int:pk>/attachments/",
         ProjectAttachmentListCreateView.as_view(),

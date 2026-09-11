@@ -54,6 +54,8 @@ urlpatterns = [
     path("api/health/", health_check, name="health-check"),
     # Account
     path("api/account/", include("account.urls")),
+    # Company profile
+    path("api/company/", include("company.urls")),
     # Projects
     path("api/project/", include("project.urls")),
     # Revenues

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "simple_history",
     "django_filters",
     "account.apps.AccountConfig",
+    "company.apps.CompanyConfig",
     "project.apps.ProjectConfig",
     "revenu.apps.RevenuConfig",
     "depense.apps.DepenseConfig",
