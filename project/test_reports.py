@@ -13,7 +13,7 @@ from account.models import CustomUser
 from depense.models import Expense
 from revenu.models import Revenue
 from .models import Project
-from .pdf import _report_data, build_financial_report_pdf
+from .pdf import _nice_max, _report_data, build_financial_report_pdf
 
 pytestmark = pytest.mark.django_db
 
@@ -152,3 +152,15 @@ def test_actual_report_builds_with_vector_charts():
     )
 
     assert buffer.read(5) == b"%PDF-"
+
+
+@pytest.mark.parametrize(
+    ("largest_value", "expected_max"),
+    [
+        (1_698_000, 2_000_000),
+        (20_000, 25_000),
+        (26_815, 30_000),
+    ],
+)
+def test_chart_axis_tracks_the_largest_plotted_value(largest_value, expected_max):
+    assert _nice_max(largest_value) == expected_max
