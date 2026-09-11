@@ -711,11 +711,10 @@ def _section_heading(title, note, styles, width):
     heading.setStyle(
         TableStyle(
             [
-                ("LINEBEFORE", (0, 0), (0, 0), 3, colors.HexColor(ACCENT)),
-                ("LINEBELOW", (0, 0), (-1, -1), 0.6, colors.HexColor(BORDER)),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.8, colors.HexColor(ACCENT)),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("ALIGN", (1, 0), (1, 0), "RIGHT"),
-                ("LEFTPADDING", (0, 0), (0, 0), 8),
+                ("LEFTPADDING", (0, 0), (0, 0), 0),
                 ("RIGHTPADDING", (1, 0), (1, 0), 0),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
