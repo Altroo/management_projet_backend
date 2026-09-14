@@ -54,6 +54,7 @@ TRANSLATIONS = {
         "other": "Autres",
         "total_revenue": "Total revenus",
         "total_expenses": "Total dépenses",
+        "cash_remaining": "Reste en caisse",
         "revenue": "Revenus",
         "expenses": "Dépenses",
         "timeline": "Évolution des revenus et dépenses",
@@ -95,6 +96,7 @@ TRANSLATIONS = {
         "other": "Other",
         "total_revenue": "Total revenue",
         "total_expenses": "Total expenses",
+        "cash_remaining": "Cash remaining",
         "revenue": "Revenue",
         "expenses": "Expenses",
         "timeline": "Revenue and expenses over time",
@@ -284,6 +286,7 @@ def _report_data(project, date_from, date_to, labels, language):
     expense_rows = list(expenses.order_by("date", "id"))
     total_revenue = sum((row.montant for row in revenue_rows), Decimal("0.00"))
     total_expenses = sum((row.montant for row in expense_rows), Decimal("0.00"))
+    cash_remaining = total_revenue - total_expenses
 
     revenue_by_project = defaultdict(lambda: Decimal("0.00"))
     expense_by_project = defaultdict(lambda: Decimal("0.00"))
@@ -316,6 +319,7 @@ def _report_data(project, date_from, date_to, labels, language):
     return {
         "total_revenue": total_revenue,
         "total_expenses": total_expenses,
+        "cash_remaining": cash_remaining,
         "revenue_rows": revenue_rows,
         "expense_rows": expense_rows,
         "project_rows": project_rows,
@@ -691,7 +695,8 @@ def _build_project_context(project, labels, width, styles):
 
 def _build_totals(data, labels, width, styles):
     gap = 0.28 * cm
-    card_width = (width - gap) / 2
+    card_width = (width - (2 * gap)) / 3
+    cash_color = ACCENT if data["cash_remaining"] >= 0 else RED
     table = Table(
         [
             [
@@ -710,9 +715,17 @@ def _build_totals(data, labels, width, styles):
                     card_width,
                     styles,
                 ),
+                "",
+                _kpi_card(
+                    labels["cash_remaining"],
+                    data["cash_remaining"],
+                    cash_color,
+                    card_width,
+                    styles,
+                ),
             ]
         ],
-        colWidths=[card_width, gap, card_width],
+        colWidths=[card_width, gap, card_width, gap, card_width],
         hAlign="LEFT",
     )
     table.setStyle(

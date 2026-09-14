@@ -140,6 +140,7 @@ def test_report_data_filters_boundaries_and_excludes_service_fee():
 
     assert data["total_revenue"] == Decimal("1200.00")
     assert data["total_expenses"] == Decimal("400.00")
+    assert data["cash_remaining"] == Decimal("800.00")
     assert [row.description for row in data["revenue_rows"]] == ["Included revenue"]
     assert [row.description for row in data["expense_rows"]] == ["Included expense"]
 
@@ -248,17 +249,27 @@ def test_chart_axis_tracks_the_largest_plotted_value(largest_value, expected_max
     assert _nice_max(largest_value) == expected_max
 
 
-def test_totals_use_two_separate_cards_with_contained_accents():
+def test_totals_include_cash_remaining_as_revenue_minus_expenses():
     totals = _build_totals(
-        {"total_revenue": Decimal("1200"), "total_expenses": Decimal("725")},
-        {"total_revenue": "Total revenus", "total_expenses": "Total dépenses"},
+        {
+            "total_revenue": Decimal("1200"),
+            "total_expenses": Decimal("725"),
+            "cash_remaining": Decimal("475"),
+        },
+        {
+            "total_revenue": "Total revenus",
+            "total_expenses": "Total dépenses",
+            "cash_remaining": "Reste en caisse",
+        },
         520,
         _styles(),
     )
 
     assert totals._colWidths[1] > 0
+    assert totals._colWidths[3] > 0
     assert totals._cellvalues[0][0]._colWidths[0] == 4
     assert totals._cellvalues[0][2]._colWidths[0] == 4
+    assert totals._cellvalues[0][4]._colWidths[0] == 4
 
 
 def test_timeline_value_label_sits_above_its_marker():
