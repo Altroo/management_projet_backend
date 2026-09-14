@@ -129,6 +129,7 @@ GREEN = "#087f5b"
 RED = "#c0362c"
 BORDER = "#d9d6cf"
 SOFT_BG = "#f8f6f1"
+TABLE_HEADER_BG = "#eee8dc"
 PALETTE = (
     "#a8834f",
     "#087f5b",
@@ -460,7 +461,9 @@ def _styles():
             "SmallHeader",
             parent=styles["Small"],
             fontName="Helvetica-Bold",
-            textColor=colors.white,
+            fontSize=7.2,
+            leading=9,
+            textColor=colors.HexColor(NAVY),
         )
     )
     styles.add(ParagraphStyle("SmallRight", parent=styles["Small"], alignment=TA_RIGHT))
@@ -909,7 +912,13 @@ def _transaction_table(
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(NAVY)),
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor(TABLE_HEADER_BG),
+                ),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.8, colors.HexColor(ACCENT)),
                 ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor(accent)),
                 (
                     "ROWBACKGROUNDS",
@@ -917,10 +926,15 @@ def _transaction_table(
                     (-1, -2),
                     [colors.white, colors.HexColor(SOFT_BG)],
                 ),
-                ("LINEBEFORE", (0, 1), (0, -2), 2.2, colors.HexColor(accent)),
+                ("LINEBEFORE", (0, 0), (0, -1), 2.2, colors.HexColor(accent)),
                 ("LINEBELOW", (0, 1), (-1, -2), 0.35, colors.HexColor(BORDER)),
                 ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#eee8dc")),
+                (
+                    "BACKGROUND",
+                    (0, -1),
+                    (-1, -1),
+                    colors.HexColor(TABLE_HEADER_BG),
+                ),
                 ("LINEABOVE", (0, -1), (-1, -1), 0.9, colors.HexColor(accent)),
                 ("SPAN", (0, -1), (-2, -1)),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),

@@ -15,7 +15,9 @@ from revenu.models import Revenue
 from .models import Category, Project, SubCategory, Supplier
 from .pdf import (
     GREEN,
+    NAVY,
     RED,
+    TABLE_HEADER_BG,
     TRANSLATIONS,
     _build_totals,
     _nice_max,
@@ -190,6 +192,14 @@ def test_transaction_tables_include_payment_and_expense_details():
     )
 
     assert advances_table.repeatRows == 1
+    assert advances_table._cellvalues[0][0].style.textColor.hexval() == NAVY.replace(
+        "#", "0x"
+    )
+    assert any(
+        command[3].hexval() == TABLE_HEADER_BG.replace("#", "0x")
+        for command in advances_table._bkgrndcmds
+        if command[:3] == ("BACKGROUND", (0, 0), (-1, 0))
+    )
     assert advances_table._cellvalues[1][1].getPlainText() == "Projet Rapport"
     assert "Deuxième avance" in advances_table._cellvalues[1][3].getPlainText()
     assert "Virement bancaire" in advances_table._cellvalues[1][3].getPlainText()
