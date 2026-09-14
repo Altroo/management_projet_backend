@@ -12,13 +12,17 @@ from rest_framework_simplejwt.tokens import AccessToken
 from account.models import CustomUser
 from depense.models import Expense
 from revenu.models import Revenue
-from .models import Project
+from .models import Category, Project, SubCategory, Supplier
 from .pdf import (
+    GREEN,
+    RED,
+    TRANSLATIONS,
     _build_totals,
     _nice_max,
     _report_data,
     _styles,
     _timeline_chart,
+    _transaction_table,
     build_financial_report_pdf,
 )
 
@@ -134,6 +138,67 @@ def test_report_data_filters_boundaries_and_excludes_service_fee():
 
     assert data["total_revenue"] == Decimal("1200.00")
     assert data["total_expenses"] == Decimal("400.00")
+    assert [row.description for row in data["revenue_rows"]] == ["Included revenue"]
+    assert [row.description for row in data["expense_rows"]] == ["Included expense"]
+
+
+def test_transaction_tables_include_payment_and_expense_details():
+    project = make_project()
+    category = Category.objects.create(name="Matériaux")
+    subcategory = SubCategory.objects.create(name="Marbre", category=category)
+    supplier = Supplier.objects.create(nom="Fournisseur Atlas")
+    advance = Revenue.objects.create(
+        project=project,
+        date=date(2026, 4, 3),
+        description="Deuxième avance",
+        notes="Virement bancaire",
+        montant="15000.00",
+    )
+    expense = Expense.objects.create(
+        project=project,
+        date=date(2026, 4, 6),
+        category=category,
+        sous_categorie=subcategory,
+        supplier=supplier,
+        element="Plan de travail",
+        description="Achat de marbre",
+        notes="Bon de livraison reçu",
+        montant="7200.00",
+    )
+    labels = TRANSLATIONS["fr"]
+    styles = _styles()
+
+    advances_table = _transaction_table(
+        "advances",
+        [advance],
+        labels,
+        "fr",
+        520,
+        styles,
+        GREEN,
+        single_project=False,
+    )
+    expenses_table = _transaction_table(
+        "expenses",
+        [expense],
+        labels,
+        "fr",
+        520,
+        styles,
+        RED,
+        single_project=False,
+    )
+
+    assert advances_table.repeatRows == 1
+    assert advances_table._cellvalues[1][1].getPlainText() == "Projet Rapport"
+    assert "Deuxième avance" in advances_table._cellvalues[1][3].getPlainText()
+    assert "Virement bancaire" in advances_table._cellvalues[1][3].getPlainText()
+    assert expenses_table.repeatRows == 1
+    assert "Matériaux" in expenses_table._cellvalues[1][2].getPlainText()
+    assert "Marbre" in expenses_table._cellvalues[1][2].getPlainText()
+    assert expenses_table._cellvalues[1][3].getPlainText() == "Fournisseur Atlas"
+    assert "Plan de travail" in expenses_table._cellvalues[1][4].getPlainText()
+    assert "Bon de livraison reçu" in expenses_table._cellvalues[1][4].getPlainText()
 
 
 def test_actual_report_builds_with_vector_charts():
@@ -198,13 +263,9 @@ def test_timeline_value_label_sits_above_its_marker():
     )
 
     label = next(
-        item
-        for item in drawing.contents
-        if getattr(item, "text", None) == "20.0k"
+        item for item in drawing.contents if getattr(item, "text", None) == "20.0k"
     )
     markers = [
-        item
-        for item in drawing.contents
-        if hasattr(item, "cx") and item.cx == label.x
+        item for item in drawing.contents if hasattr(item, "cx") and item.cx == label.x
     ]
     assert label.y > max(marker.cy for marker in markers)
