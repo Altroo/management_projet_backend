@@ -24,6 +24,8 @@ MODEL_PATHS = {
 MODELS = {}
 TOKENIZERS = {}
 INFERENCE_LOCK = threading.Lock()
+MIN_GENERATION_TOKENS = 64
+MAX_GENERATION_TOKENS = 256
 
 
 def load_models():
@@ -51,7 +53,19 @@ def translate(texts, target_language):
                 truncation=True,
                 max_length=512,
             )
-            generated = model.generate(**encoded, num_beams=8, do_sample=False)
+            source_tokens = int(encoded["attention_mask"].sum(dim=1).max().item())
+            generation_limit = min(
+                max((source_tokens * 2) + 16, MIN_GENERATION_TOKENS),
+                MAX_GENERATION_TOKENS,
+            )
+            generated = model.generate(
+                **encoded,
+                num_beams=4,
+                do_sample=False,
+                early_stopping=True,
+                max_length=generation_limit,
+                no_repeat_ngram_size=3,
+            )
             translated.extend(
                 tokenizer.batch_decode(generated, skip_special_tokens=True)
             )
