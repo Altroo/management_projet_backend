@@ -3,7 +3,6 @@ import json
 import logging
 import re
 import time
-import unicodedata
 
 from django.conf import settings
 from django.core.cache import caches
@@ -309,7 +308,7 @@ class AiAssistantService:
         context="other",
         application="management_projet",
         protected_terms=(),
-        quality_review=False,
+        polish=False,
     ):
         started = time.monotonic()
         unique_texts = list(
@@ -354,15 +353,6 @@ class AiAssistantService:
                         translated,
                         application,
                     )
-            if quality_review:
-                self._review_translations_with_qwen(
-                    unique_texts,
-                    translated,
-                    target_language,
-                    context,
-                    application,
-                    known_names,
-                )
         except (InvalidModelResponse, ModelUnavailable, ModelTimeout) as exc:
             self._log(
                 application,
@@ -375,94 +365,18 @@ class AiAssistantService:
             raise
         self._log(
             application,
-            "translate_batch_quality" if quality_review else "translate_batch",
+            "translate_batch",
             sum(map(len, unique_texts)),
             round((time.monotonic() - started) * 1000),
             not missing,
             None,
         )
+        if polish and target_language == "en":
+            return {
+                source: self._polish_english_translation(suggestion)
+                for source, suggestion in translated.items()
+            }
         return translated
-
-    def _review_translations_with_qwen(
-        self,
-        source_texts,
-        translated,
-        target_language,
-        context,
-        application,
-        known_names,
-    ):
-        if target_language != "en":
-            return
-
-        candidates = []
-        for source in source_texts:
-            draft = translated[source]
-            if not self._needs_english_quality_review(source, draft):
-                continue
-            protected = protect_text(source, known_names)
-            cache_key = self._cache_key(
-                application=application,
-                action="translate_quality",
-                text=source,
-                source_language="auto",
-                target_language=target_language,
-                context=context,
-                protection_hash=self._protection_hash(protected),
-            )
-            cached_value = self.cache.get(cache_key)
-            if cached_value:
-                translated[source] = cached_value["suggested_text"]
-            else:
-                candidates.append((source, cache_key, protected))
-
-        for chunk in self._chunks(candidates):
-            self._translate_chunk_with_qwen(
-                chunk,
-                target_language,
-                context,
-                translated,
-                application,
-            )
-
-    @staticmethod
-    def _needs_english_quality_review(source, draft):
-        normalized_source = "".join(
-            character
-            for character in unicodedata.normalize("NFKD", source.lower())
-            if not unicodedata.combining(character)
-        )
-        normalized_draft = draft.lower()
-        source_terms = (
-            "1er",
-            "1ere",
-            "2eme",
-            "acompte",
-            "avance",
-            "avancement",
-            "complement de commande",
-            "gros oeuvre",
-            "realisation",
-        )
-        draft_phrases = (
-            "command supplement",
-            "large amount of work",
-            "performance of interior",
-            "production of technical services",
-            "progress towards the implementation",
-            "regulation of the progress",
-            "the work of the major works",
-            "by itself",
-            " pours ",
-        )
-        has_bad_ordinal = bool(
-            re.search(r"\b(?:1th|2th|3th|\d+(?:er|ere|eme|ère|ème))\b", normalized_draft)
-        )
-        return (
-            has_bad_ordinal
-            or any(term in normalized_source for term in source_terms)
-            or any(phrase in f" {normalized_draft} " for phrase in draft_phrases)
-        )
 
     @staticmethod
     def _chunks(items, max_items=15, max_chars=6000):
@@ -576,7 +490,7 @@ class AiAssistantService:
                     if not isinstance(suggested, str) or not suggested.strip():
                         raise InvalidModelResponse()
                     restored.append(
-                        self._normalize_english_ordinals(
+                        self._polish_english_translation(
                             protected.restore(suggested), target_language
                         )
                     )
@@ -611,6 +525,40 @@ class AiAssistantService:
             value,
             flags=re.IGNORECASE,
         )
+
+    @classmethod
+    def _polish_english_translation(cls, value, target_language="en"):
+        if target_language != "en":
+            return value
+
+        polished = cls._normalize_english_ordinals(value, target_language)
+        replacements = (
+            (r"\b1st customer down payment\b", "1st client advance payment"),
+            (r"\bcommand supplement\b", "Additional order"),
+            (
+                r"\bregulation of the progress of the major work of\b",
+                "Progress payment for structural work on",
+            ),
+            (
+                r"\bprogress towards the implementation of\b",
+                "Progress payment for",
+            ),
+            (
+                r"\bperformance of interior finishing and furnishings\b",
+                "Interior finishing and furnishing work",
+            ),
+            (
+                r"\bproduction of technical services and provision of\b",
+                "Technical work and supply of",
+            ),
+            (r"\bthe work of the major works\b", "structural work"),
+            (r"\blarge amount of work\b", "Structural work"),
+            (r"\bpours\b", "for"),
+            (r"\s+by itself\b", ""),
+        )
+        for pattern, replacement in replacements:
+            polished = re.sub(pattern, replacement, polished, flags=re.IGNORECASE)
+        return polished
 
     @staticmethod
     def _log(application, action, character_count, processing_ms, cached, error):

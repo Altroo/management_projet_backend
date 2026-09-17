@@ -401,7 +401,7 @@ def _translate_report_content(data, project, language):
         fields,
         target_language=language,
         context="project",
-        quality_review=True,
+        polish=True,
     )
 
     def translated(value):

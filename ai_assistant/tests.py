@@ -275,57 +275,6 @@ def test_batch_translation_uses_specialist_and_caches_each_result():
     assert len(translation_client.calls) == 1
 
 
-@override_settings(
-    AI_TRANSLATION_SPECIALIST_ENABLED=True,
-    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam8",
-    AI_MODEL_ID="qwen3.6-35b-a3b-q5_k_m",
-)
-def test_quality_review_uses_qwen_only_for_suspicious_english_translations():
-    translation_client = QueueTranslationClient(
-        ["987650000th advance for the installer", "Purchase of ceramic tiles"]
-    )
-    llama_client = QueueClient(
-        json.dumps(
-            {
-                "items": [
-                    {
-                        "id": "0",
-                        "suggested_text": "987650000nd advance payment for the installer",
-                    }
-                ]
-            }
-        )
-    )
-    service = AiAssistantService(
-        client=llama_client, translation_client=translation_client
-    )
-
-    with patch.object(service, "_known_names", return_value=set()):
-        first = service.translate_many(
-            ["2ème avance pour l'installateur", "Achat de carrelage"],
-            target_language="en",
-            context="project",
-            quality_review=True,
-        )
-        second = service.translate_many(
-            ["2ème avance pour l'installateur", "Achat de carrelage"],
-            target_language="en",
-            context="project",
-            quality_review=True,
-        )
-
-    assert first == {
-        "2ème avance pour l'installateur": "2nd advance payment for the installer",
-        "Achat de carrelage": "Purchase of ceramic tiles",
-    }
-    assert second == first
-    assert len(translation_client.calls) == 1
-    assert len(llama_client.calls) == 1
-    system_prompt = llama_client.calls[0]["messages"][0]["content"]
-    assert "complément de commande = additional order" in system_prompt
-    assert "never output 1th, 2th, or 3th" in system_prompt
-
-
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -338,6 +287,78 @@ def test_quality_review_uses_qwen_only_for_suspicious_english_translations():
 )
 def test_english_ordinal_normalization(value, expected):
     assert AiAssistantService._normalize_english_ordinals(value, "en") == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (
+            "Progress towards the implementation of the Rachid Project",
+            "Progress payment for the Rachid Project",
+        ),
+        (
+            "Regulation of the progress of the major work of the LuxuryHome project",
+            "Progress payment for structural work on the LuxuryHome project",
+        ),
+        (
+            "1er customer down payment and 2th advance",
+            "1st client advance payment and 2nd advance",
+        ),
+        (
+            "Command supplement Minotti project Brahim",
+            "Additional order Minotti project Brahim",
+        ),
+        (
+            "Performance of interior finishing and furnishings",
+            "Interior finishing and furnishing work",
+        ),
+        (
+            "Production of technical services and provision of design elements",
+            "Technical work and supply of design elements",
+        ),
+        ("Large amount of work", "Structural work"),
+        (
+            "Payment of the furniture Poliform pours the project Brahim",
+            "Payment of the furniture Poliform for the project Brahim",
+        ),
+    ],
+)
+def test_professional_english_translation_polish(value, expected):
+    assert AiAssistantService._polish_english_translation(value) == expected
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_batch_translation_polishes_cached_specialist_output_without_qwen():
+    translation_client = QueueTranslationClient(
+        ["Progress towards the implementation of the Rachid Project"]
+    )
+    llama_client = QueueClient()
+    service = AiAssistantService(
+        client=llama_client, translation_client=translation_client
+    )
+
+    with patch.object(service, "_known_names", return_value=set()):
+        first = service.translate_many(
+            ["Avancement pour la réalisation du Projet Rachid"],
+            target_language="en",
+            context="project",
+            polish=True,
+        )
+        second = service.translate_many(
+            ["Avancement pour la réalisation du Projet Rachid"],
+            target_language="en",
+            context="project",
+            polish=True,
+        )
+
+    assert first == {
+        "Avancement pour la réalisation du Projet Rachid": (
+            "Progress payment for the Rachid Project"
+        )
+    }
+    assert second == first
+    assert len(translation_client.calls) == 1
+    assert llama_client.calls == []
 
 
 def test_cache_is_isolated_by_calling_application():

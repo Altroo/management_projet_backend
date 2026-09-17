@@ -287,7 +287,7 @@ def test_pdf_translation_batches_only_human_authored_text_and_preserves_amounts(
     assert translate_many.call_args.kwargs == {
         "target_language": "en",
         "context": "project",
-        "quality_review": True,
+        "polish": True,
     }
 
 
