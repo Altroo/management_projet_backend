@@ -306,7 +306,7 @@ def test_english_ordinal_normalization(value, expected):
         ),
         (
             "Command supplement Minotti project Brahim",
-            "Additional order Minotti project Brahim",
+            "Additional Minotti order for the Brahim project",
         ),
         (
             "Performance of interior finishing and furnishings",
@@ -320,6 +320,18 @@ def test_english_ordinal_normalization(value, expected):
         (
             "Payment of the furniture Poliform pours the project Brahim",
             "Payment of the furniture Poliform for the project Brahim",
+        ),
+        (
+            "1th advance of the glazing installer",
+            "1st advance payment for the glazing installer",
+        ),
+        (
+            "Progress payment for Project Abdelmoneim",
+            "Progress payment for the Abdelmoneim project",
+        ),
+        (
+            "Production of technical services and provision of design and decoration elements Casa Di Lusso",
+            "Technical work and supply of Casa Di Lusso design and decoration elements",
         ),
     ],
 )

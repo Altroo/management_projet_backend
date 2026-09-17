@@ -534,7 +534,15 @@ class AiAssistantService:
         polished = cls._normalize_english_ordinals(value, target_language)
         replacements = (
             (r"\b1st customer down payment\b", "1st client advance payment"),
+            (
+                r"\b(\d+(?:st|nd|rd|th)) advance of the\b",
+                r"\1 advance payment for the",
+            ),
             (r"\bcommand supplement\b", "Additional order"),
+            (
+                r"\bAdditional order Minotti project Brahim\b",
+                "Additional Minotti order for the Brahim project",
+            ),
             (
                 r"\bregulation of the progress of the major work of\b",
                 "Progress payment for structural work on",
@@ -550,6 +558,14 @@ class AiAssistantService:
             (
                 r"\bproduction of technical services and provision of\b",
                 "Technical work and supply of",
+            ),
+            (
+                r"\bTechnical work and supply of design and decoration elements Casa Di Lusso\b",
+                "Technical work and supply of Casa Di Lusso design and decoration elements",
+            ),
+            (
+                r"\bProgress payment for Project ([^.]+)$",
+                r"Progress payment for the \1 project",
             ),
             (r"\bthe work of the major works\b", "structural work"),
             (r"\blarge amount of work\b", "Structural work"),
