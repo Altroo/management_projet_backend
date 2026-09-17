@@ -108,6 +108,17 @@ def test_protected_values_reject_marker_junk_adjacent_to_placeholder():
         )
 
 
+def test_numbers_and_currency_use_separate_type_shaped_placeholders():
+    protected = protect_text("Paiement de 24 000 MAD à 10 heures.")
+
+    assert "24 000" not in protected.text
+    assert "MAD" not in protected.text
+    assert "10" not in protected.text
+    assert "ZXQCURR" in protected.text
+    assert protected.text.count("98765") == 2
+    assert protected.restore(protected.text) == "Paiement de 24 000 MAD à 10 heures."
+
+
 def test_service_retries_malformed_json_and_caches_valid_response():
     client = QueueClient(
         "not json",
