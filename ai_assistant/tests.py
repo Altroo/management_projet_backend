@@ -191,7 +191,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 
 @override_settings(
     AI_TRANSLATION_SPECIALIST_ENABLED=True,
-    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr",
+    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam8",
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
@@ -213,7 +213,7 @@ def test_translation_uses_specialist_and_reports_its_model():
     assert result["suggested_text"] == (
         "Delivery for Maison Atlas on 17/09/2026."
     )
-    assert result["model"] == "opus-mt-fr-en+en-fr"
+    assert result["model"] == "opus-mt-fr-en+en-fr-beam8"
     assert len(translation_client.calls) == 1
     assert llama_client.calls == []
 

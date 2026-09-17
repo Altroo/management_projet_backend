@@ -238,7 +238,7 @@ AI_TRANSLATION_BASE_URL = config(
     "AI_TRANSLATION_BASE_URL", default="http://ai-translation:8080"
 )
 AI_TRANSLATION_MODEL_ID = config(
-    "AI_TRANSLATION_MODEL_ID", default="opus-mt-fr-en+en-fr"
+    "AI_TRANSLATION_MODEL_ID", default="opus-mt-fr-en+en-fr-beam8"
 )
 AI_TRANSLATION_TIMEOUT_SECONDS = config(
     "AI_TRANSLATION_TIMEOUT_SECONDS", default=90, cast=int

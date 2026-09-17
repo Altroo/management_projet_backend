@@ -33,6 +33,8 @@ CPU-only container. Grammar correction and professional rewriting remain on Qwen
 The download script also verifies every tokenizer and configuration file before
 installation. The specialist has no host port, accepts only French/English batch
 translation, and logs counts, target language, duration, and errors without text.
+The deployed model identifier is `opus-mt-fr-en+en-fr-beam8`; the suffix is part
+of the cache namespace and records deterministic eight-beam decoding.
 
 ## Candidate and disk policy
 
