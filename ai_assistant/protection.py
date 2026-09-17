@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from .exceptions import InvalidModelResponse
 
 
-PLACEHOLDER_RE = re.compile(r"__PROTECTED_\d{4}__")
+PLACEHOLDER_RE = re.compile(r"<x\d{4}>")
 
 PROTECTED_PATTERNS = (
     re.compile(r"https?://[^\s<>\]\[()]+(?<![.,;:!?])", re.IGNORECASE),
@@ -27,9 +27,18 @@ class ProtectedText:
     replacements: dict[str, str]
 
     def restore(self, generated_text: str) -> str:
-        found = PLACEHOLDER_RE.findall(generated_text)
+        matches = list(PLACEHOLDER_RE.finditer(generated_text))
+        found = [match.group(0) for match in matches]
         expected = set(self.replacements)
-        if set(found) != expected or len(found) != len(expected):
+        has_marker_junk = any(
+            (match.start() > 0 and generated_text[match.start() - 1] in "<>_")
+            or (
+                match.end() < len(generated_text)
+                and generated_text[match.end()] in "<>_"
+            )
+            for match in matches
+        )
+        if set(found) != expected or len(found) != len(expected) or has_marker_junk:
             raise InvalidModelResponse(
                 "La réponse IA a modifié une valeur protégée. Veuillez réessayer."
             )
@@ -61,7 +70,7 @@ def protect_text(text: str, known_names=()) -> ProtectedText:
     parts = []
     cursor = 0
     for index, (start, end) in enumerate(selected):
-        placeholder = f"__PROTECTED_{index:04d}__"
+        placeholder = f"<x{index:04d}>"
         parts.extend((text[cursor:start], placeholder))
         replacements[placeholder] = text[start:end]
         cursor = end
