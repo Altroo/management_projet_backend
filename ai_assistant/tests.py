@@ -114,6 +114,15 @@ def test_service_retries_malformed_json_and_caches_valid_response():
     assert len(client.calls) == 2
 
 
+def test_translation_prompt_requires_natural_language_and_preserves_imperatives():
+    instruction = AiAssistantService._instruction(
+        "translate", "en", "fr", "project", "management_projet"
+    )
+
+    assert "natural, idiomatic business language" in instruction
+    assert "imperatives must remain instructions and imperatives" in instruction
+
+
 def test_service_rejects_changed_placeholder_after_one_retry():
     client = QueueClient(
         json.dumps({"suggested_text": "Nom supprimé", "detected_language": "fr"}),

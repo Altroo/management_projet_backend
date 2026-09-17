@@ -16,6 +16,8 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
+PROMPT_VERSION = "2"
+
 SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -74,6 +76,7 @@ class AiAssistantService:
     ):
         material = json.dumps(
             {
+                "prompt_version": PROMPT_VERSION,
                 "model": settings.AI_MODEL_ID,
                 "application": application,
                 "action": action,
@@ -119,7 +122,10 @@ class AiAssistantService:
         action, source_language, target_language, context, application
     ):
         language_rule = (
-            f"Translate faithfully into {'French' if target_language == 'fr' else 'English'}."
+            "Translate faithfully into "
+            f"{'French' if target_language == 'fr' else 'English'} using natural, "
+            "idiomatic business language. Preserve each sentence's grammatical function: "
+            "instructions and imperatives must remain instructions and imperatives."
             if action == "translate"
             else "Keep the source language unchanged."
         )
