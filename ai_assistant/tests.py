@@ -74,6 +74,18 @@ def test_protected_values_must_be_returned_exactly_once():
         protected.restore(protected.text.replace("__PROTECTED_0000__", ""))
 
 
+def test_url_protection_leaves_sentence_punctuation_outside_placeholder():
+    protected = protect_text("Consulter https://atlas.test/dossier/REF-2048.")
+
+    assert list(protected.replacements.values()) == [
+        "https://atlas.test/dossier/REF-2048"
+    ]
+    assert protected.text.endswith("__PROTECTED_0000__.")
+    assert protected.restore(protected.text) == (
+        "Consulter https://atlas.test/dossier/REF-2048."
+    )
+
+
 def test_service_retries_malformed_json_and_caches_valid_response():
     client = QueueClient(
         "not json",

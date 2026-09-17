@@ -7,7 +7,7 @@ from .exceptions import InvalidModelResponse
 PLACEHOLDER_RE = re.compile(r"__PROTECTED_\d{4}__")
 
 PROTECTED_PATTERNS = (
-    re.compile(r"https?://[^\s<>\]\[()]+", re.IGNORECASE),
+    re.compile(r"https?://[^\s<>\]\[()]+(?<![.,;:!?])", re.IGNORECASE),
     re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"),
     re.compile(
         r"(?<!\w)(?:MAD|DHS?|EUR|USD)\s*[-+]?\d[\d\s.,]*"
