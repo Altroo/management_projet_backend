@@ -230,7 +230,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for XACME0000X on DATEX0001."],
+        ["Delivery for XAAAX on XAABX."],
     )
     llama_client = QueueClient()
     service = AiAssistantService(
@@ -251,7 +251,7 @@ def test_translation_uses_specialist_and_reports_its_model():
     assert result["model"] == "opus-mt-fr-en+en-fr-cpu-bounded"
     assert len(translation_client.calls) == 1
     assert translation_client.calls[0]["texts"] == [
-        "Livraison pour XACME0000X le DATEX0001.",
+        "Livraison pour XAAAX le XAABX.",
     ]
     assert llama_client.calls == []
 

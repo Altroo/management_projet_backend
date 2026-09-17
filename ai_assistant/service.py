@@ -17,7 +17,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "12"
+PROMPT_VERSION = "13"
 
 FRENCH_LANGUAGE_HINTS = frozenset(
     {
@@ -151,6 +151,41 @@ class AiAssistantService:
         if english_score > french_score:
             return "en"
         return None
+
+    @staticmethod
+    def _opus_placeholder(index):
+        if index >= 26**3:
+            raise InvalidModelResponse()
+        letters = "".join(
+            chr(ord("A") + ((index // divisor) % 26))
+            for divisor in (26**2, 26, 1)
+        )
+        return f"X{letters}X"
+
+    @classmethod
+    def _encode_opus_placeholders(cls, protected):
+        value = protected.text
+        mapping = {}
+        token_index = 0
+        for placeholder in protected.replacements:
+            token = cls._opus_placeholder(token_index)
+            while token in value or token in mapping:
+                token_index += 1
+                token = cls._opus_placeholder(token_index)
+            value = value.replace(placeholder, token)
+            mapping[token] = placeholder
+            token_index += 1
+        return value, mapping
+
+    @staticmethod
+    def _decode_opus_placeholders(value, mapping):
+        for token, placeholder in mapping.items():
+            if value.count(token) != 1:
+                raise InvalidModelResponse(
+                    "La réponse IA a modifié une valeur protégée. Veuillez réessayer."
+                )
+            value = value.replace(token, placeholder)
+        return value
 
     @staticmethod
     def _split_opus_fragments(protected):
@@ -339,13 +374,20 @@ class AiAssistantService:
             for _attempt in range(2):
                 try:
                     if target_language == "en":
+                        opus_text, opus_mapping = (
+                            self._encode_opus_placeholders(protected)
+                        )
                         translations = self.translation_client.translate(
-                            texts=[protected.text],
+                            texts=[opus_text],
                             target_language=target_language,
                         )
                         if len(translations) != 1 or not translations[0].strip():
                             raise InvalidModelResponse()
-                        suggested_text = protected.restore(translations[0])
+                        suggested_text = protected.restore(
+                            self._decode_opus_placeholders(
+                                translations[0], opus_mapping
+                            )
+                        )
                     else:
                         opus_fragments, opus_plan = self._split_opus_fragments(
                             protected
@@ -604,20 +646,30 @@ class AiAssistantService:
     def _translate_english_chunk_with_opus(
         self, chunk, protected_items, translated
     ):
+        opus_items = [
+            self._encode_opus_placeholders(protected)
+            for protected in protected_items
+        ]
         last_error = None
         for _attempt in range(2):
             try:
                 suggestions = self.translation_client.translate(
-                    texts=[protected.text for protected in protected_items],
+                    texts=[text for text, _mapping in opus_items],
                     target_language="en",
                 )
                 if len(suggestions) != len(chunk):
                     raise InvalidModelResponse()
                 restored = []
-                for protected, suggestion in zip(protected_items, suggestions):
+                for protected, suggestion, (_text, mapping) in zip(
+                    protected_items, suggestions, opus_items
+                ):
                     if not suggestion.strip():
                         raise InvalidModelResponse()
-                    restored.append(protected.restore(suggestion))
+                    restored.append(
+                        protected.restore(
+                            self._decode_opus_placeholders(suggestion, mapping)
+                        )
+                    )
                 for (source, cache_key, _protected), suggestion in zip(
                     chunk, restored
                 ):
