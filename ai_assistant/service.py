@@ -793,6 +793,23 @@ class AiAssistantService:
             replacements = (
                 (r"\bConception et conception\b", "Conception & design"),
                 (r"\bConception Interieur\b", "Design intérieur"),
+                (
+                    r"\bavance de projet de Luxury home pour le design\b",
+                    "Avance pour la conception du projet Luxury Home",
+                ),
+                (
+                    r"\bMontant total des devis accordes est\b",
+                    "Montant total des devis approuvés :",
+                ),
+                (
+                    r"\bAvance des travaux pour la societe BTN de Projet Luxury Home\b",
+                    "Avance pour les travaux de la société BTN sur le projet Luxury Home",
+                ),
+                (r"\bGros Oeuvre\b", "Gros œuvre"),
+                (
+                    r"\bBTN Groupe \(maison de luxe depuis\)",
+                    "BTN Groupe (projet Luxury Home)",
+                ),
             )
             for pattern, replacement in replacements:
                 value = re.sub(
@@ -841,6 +858,34 @@ class AiAssistantService:
             ),
             (r"\bthe work of the major works\b", "structural work"),
             (r"\blarge amount of work\b", "Structural work"),
+            (r"\bbig work & masonry\b", "Structural work & masonry"),
+            (r"\blarge work\b", "Structural work"),
+            (r"\blabour force\b", "Labor"),
+            (r"\bfor the projet\b", "for the project"),
+            (
+                r"\bUpgrading of a modern kitchen and design of an interior staircase\b",
+                "Fitting out a modern kitchen and designing an interior staircase",
+            ),
+            (
+                r"\bCashing an advance on the (.+?) project\b",
+                r"Receipt of an advance for the \1 project",
+            ),
+            (
+                r"\bLuxury home project advance for design\b",
+                "Advance for the Luxury Home design project",
+            ),
+            (
+                r"\bAdvance for Gessi and Flaminia\b",
+                "Advance payment for Gessi and Flaminia",
+            ),
+            (
+                r"\bTotal amount of quotes awarded is\b",
+                "Total value of approved quotations:",
+            ),
+            (
+                r"\bAdvance work for the BTN company of the Luxury Home Project\b",
+                "Progress payment to BTN for the Luxury Home project",
+            ),
             (r"\bpours\b", "for"),
             (r"\s+by itself\b", ""),
         )

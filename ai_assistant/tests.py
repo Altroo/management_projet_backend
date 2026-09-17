@@ -353,6 +353,29 @@ def test_english_ordinal_normalization(value, expected):
             "Production of technical services and provision of design and decoration elements Casa Di Lusso",
             "Technical work and supply of Casa Di Lusso design and decoration elements",
         ),
+        ("Big work & masonry", "Structural work & masonry"),
+        ("Large Work", "Structural work"),
+        ("Labour force", "Labor"),
+        (
+            'Upgrading of a modern kitchen and design of an interior staircase for the projet Luxury Home "Mohamed Sitiane".',
+            'Fitting out a modern kitchen and designing an interior staircase for the project Luxury Home "Mohamed Sitiane".',
+        ),
+        (
+            "Cashing an advance on the Luxury Home design project.",
+            "Receipt of an advance for the Luxury Home design project.",
+        ),
+        (
+            "Luxury home project advance for design",
+            "Advance for the Luxury Home design project",
+        ),
+        (
+            "Total amount of quotes awarded is 1 558 390,22 MAD.",
+            "Total value of approved quotations: 1 558 390,22 MAD.",
+        ),
+        (
+            "Advance work for the BTN company of the Luxury Home Project",
+            "Progress payment to BTN for the Luxury Home project",
+        ),
     ],
 )
 def test_professional_english_translation_polish(value, expected):
@@ -366,6 +389,18 @@ def test_professional_french_translation_polish():
     assert AiAssistantService._polish_english_translation(
         "Conception Interieur", "fr"
     ) == "Design intérieur"
+    assert AiAssistantService._polish_english_translation(
+        "avance de projet de Luxury home pour le design", "fr"
+    ) == "Avance pour la conception du projet Luxury Home"
+    assert AiAssistantService._polish_english_translation(
+        "Montant total des devis accordes est 1 558 390,22 MAD.", "fr"
+    ) == "Montant total des devis approuvés : 1 558 390,22 MAD."
+    assert AiAssistantService._polish_english_translation(
+        "Avance des travaux pour la societe BTN de Projet Luxury Home", "fr"
+    ) == "Avance pour les travaux de la société BTN sur le projet Luxury Home"
+    assert AiAssistantService._polish_english_translation(
+        "Gros Oeuvre", "fr"
+    ) == "Gros œuvre"
 
 
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
