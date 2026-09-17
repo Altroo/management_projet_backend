@@ -226,11 +226,11 @@ def test_service_propagates_timeout_without_returning_original_text():
 
 @override_settings(
     AI_TRANSLATION_SPECIALIST_ENABLED=True,
-    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam8",
+    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam4",
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for XAAAX on XAABX."]
+        ["Delivery for", "on"],
     )
     llama_client = QueueClient()
     service = AiAssistantService(
@@ -248,32 +248,28 @@ def test_translation_uses_specialist_and_reports_its_model():
     assert result["suggested_text"] == (
         "Delivery for Maison Atlas on 17/09/2026."
     )
-    assert result["model"] == "opus-mt-fr-en+en-fr-beam8"
+    assert result["model"] == "opus-mt-fr-en+en-fr-beam4"
     assert len(translation_client.calls) == 1
     assert translation_client.calls[0]["texts"] == [
-        "Livraison pour XAAAX le XAABX."
+        "Livraison pour",
+        "le",
     ]
     assert llama_client.calls == []
 
 
-def test_opus_placeholder_codec_rejects_changed_or_duplicated_tokens():
+def test_opus_translates_fragments_around_protected_values():
     protected = protect_text(
         "Payment by Maison Atlas on 17/09/2026.", {"Maison Atlas"}
     )
-    encoded, mapping = AiAssistantService._encode_opus_placeholders(protected)
+    fragments, plan = AiAssistantService._split_opus_fragments(protected)
 
-    assert encoded == "Payment by XAAAX on XAABX."
-    decoded = AiAssistantService._decode_opus_placeholders(encoded, mapping)
-    assert protected.restore(decoded) == (
-        "Payment by Maison Atlas on 17/09/2026."
-    )
+    assert fragments == ["Payment by", "on"]
+    assert AiAssistantService._restore_opus_fragments(
+        protected, plan, ["Paiement par", "le"]
+    ) == "Paiement par Maison Atlas le 17/09/2026."
     with pytest.raises(InvalidModelResponse):
-        AiAssistantService._decode_opus_placeholders(
-            encoded.replace("XAAAX", "XAAX"), mapping
-        )
-    with pytest.raises(InvalidModelResponse):
-        AiAssistantService._decode_opus_placeholders(
-            encoded.replace("XAAAX", "XAAAX XAAAX"), mapping
+        AiAssistantService._restore_opus_fragments(
+            protected, plan, ["Paiement par"]
         )
 
 

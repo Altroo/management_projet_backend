@@ -17,7 +17,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "9"
+PROMPT_VERSION = "10"
 
 SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
@@ -66,38 +66,59 @@ class AiAssistantService:
         self.cache = caches["ai_assistant"]
 
     @staticmethod
-    def _opus_placeholder(index):
-        if index >= 26**3:
-            raise InvalidModelResponse()
-        letters = []
-        for divisor in (26**2, 26, 1):
-            letters.append(chr(ord("A") + ((index // divisor) % 26)))
-        return f"X{''.join(letters)}X"
+    def _split_opus_fragments(protected):
+        placeholders = tuple(protected.replacements)
+        if not placeholders:
+            return [protected.text], [("translation", 0, "", "")]
 
-    @classmethod
-    def _encode_opus_placeholders(cls, protected):
-        value = protected.text
-        mapping = {}
-        token_index = 0
-        for placeholder in protected.replacements:
-            token = cls._opus_placeholder(token_index)
-            while token in value or token in mapping:
-                token_index += 1
-                token = cls._opus_placeholder(token_index)
-            value = value.replace(placeholder, token)
-            mapping[token] = placeholder
-            token_index += 1
-        return value, mapping
+        pattern = re.compile(
+            "(" + "|".join(map(re.escape, placeholders)) + ")"
+        )
+        fragments = []
+        plan = []
+        for part in pattern.split(protected.text):
+            if not part:
+                continue
+            if part in protected.replacements:
+                plan.append(("literal", part, "", ""))
+                continue
+            leading = part[: len(part) - len(part.lstrip())]
+            trailing = part[len(part.rstrip()) :]
+            value = part.strip()
+            if not value or not re.search(r"[A-Za-zÀ-ÿ]", value):
+                plan.append(("literal", part, "", ""))
+                continue
+            plan.append(("translation", len(fragments), leading, trailing))
+            fragments.append(value)
+        return fragments, plan
 
     @staticmethod
-    def _decode_opus_placeholders(value, mapping):
-        for token, placeholder in mapping.items():
-            if value.count(token) != 1:
-                raise InvalidModelResponse(
-                    "La réponse IA a modifié une valeur protégée. Veuillez réessayer."
-                )
-            value = value.replace(token, placeholder)
-        return value
+    def _restore_opus_fragments(protected, plan, translations):
+        parts = []
+        for kind, value, leading, trailing in plan:
+            if kind == "literal":
+                parts.append(value)
+                continue
+            try:
+                translated = translations[value]
+            except (IndexError, TypeError) as exc:
+                raise InvalidModelResponse() from exc
+            if not translated.strip():
+                raise InvalidModelResponse()
+            parts.append(f"{leading}{translated.strip()}{trailing}")
+        return protected.restore("".join(parts))
+
+    def _translate_opus_fragments(self, fragments, target_language):
+        translations = []
+        for offset in range(0, len(fragments), 100):
+            batch = fragments[offset : offset + 100]
+            result = self.translation_client.translate(
+                texts=batch, target_language=target_language
+            )
+            if len(result) != len(batch):
+                raise InvalidModelResponse()
+            translations.extend(result)
+        return translations
 
     @staticmethod
     def _model_id(action):
@@ -227,19 +248,15 @@ class AiAssistantService:
             return result
 
         if action == "translate" and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
-            opus_text, opus_mapping = self._encode_opus_placeholders(protected)
+            opus_fragments, opus_plan = self._split_opus_fragments(protected)
             last_error = None
             for _attempt in range(2):
                 try:
-                    translations = self.translation_client.translate(
-                        texts=[opus_text], target_language=target_language
+                    translations = self._translate_opus_fragments(
+                        opus_fragments, target_language
                     )
-                    if len(translations) != 1 or not translations[0].strip():
-                        raise InvalidModelResponse()
-                    suggested_text = protected.restore(
-                        self._decode_opus_placeholders(
-                            translations[0], opus_mapping
-                        )
+                    suggested_text = self._restore_opus_fragments(
+                        protected, opus_plan, translations
                     )
                     detected_language = (
                         source_language
@@ -434,30 +451,34 @@ class AiAssistantService:
 
     def _translate_chunk_with_opus(self, chunk, target_language, translated):
         protected_items = [protected for _text, _key, protected in chunk]
-        opus_items = [
-            self._encode_opus_placeholders(protected)
-            for protected in protected_items
+        opus_items = [self._split_opus_fragments(item) for item in protected_items]
+        opus_fragments = [
+            fragment
+            for fragments, _plan in opus_items
+            for fragment in fragments
         ]
         last_error = None
         for _attempt in range(2):
             try:
-                suggestions = self.translation_client.translate(
-                    texts=[text for text, _mapping in opus_items],
-                    target_language=target_language,
+                suggestions = self._translate_opus_fragments(
+                    opus_fragments, target_language
                 )
-                if len(suggestions) != len(chunk):
-                    raise InvalidModelResponse()
                 restored = []
-                for protected, suggestion, (_text, mapping) in zip(
-                    protected_items, suggestions, opus_items
+                suggestion_offset = 0
+                for protected, (fragments, plan) in zip(
+                    protected_items, opus_items
                 ):
-                    if not suggestion.strip():
-                        raise InvalidModelResponse()
+                    item_suggestions = suggestions[
+                        suggestion_offset : suggestion_offset + len(fragments)
+                    ]
                     restored.append(
-                        protected.restore(
-                            self._decode_opus_placeholders(suggestion, mapping)
+                        self._restore_opus_fragments(
+                            protected, plan, item_suggestions
                         )
                     )
+                    suggestion_offset += len(fragments)
+                if suggestion_offset != len(suggestions):
+                    raise InvalidModelResponse()
                 for (source, cache_key, _protected), suggestion in zip(
                     chunk, restored
                 ):
