@@ -17,7 +17,80 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "10"
+PROMPT_VERSION = "11"
+
+FRENCH_LANGUAGE_HINTS = frozenset(
+    {
+        "achat",
+        "acompte",
+        "avance",
+        "au",
+        "aux",
+        "avec",
+        "client",
+        "commande",
+        "dans",
+        "de",
+        "des",
+        "dépense",
+        "du",
+        "et",
+        "facture",
+        "fournisseur",
+        "fourniture",
+        "gros",
+        "installation",
+        "la",
+        "le",
+        "les",
+        "main",
+        "matériaux",
+        "mobilier",
+        "montant",
+        "oeuvre",
+        "paiement",
+        "plomberie",
+        "pose",
+        "pour",
+        "projet",
+        "règlement",
+        "sanitaire",
+        "sous",
+        "technique",
+        "travaux",
+        "vente",
+    }
+)
+ENGLISH_LANGUAGE_HINTS = frozenset(
+    {
+        "advance",
+        "and",
+        "client",
+        "coordination",
+        "expense",
+        "finishing",
+        "follow",
+        "for",
+        "from",
+        "furniture",
+        "installation",
+        "interior",
+        "materials",
+        "of",
+        "on",
+        "payment",
+        "project",
+        "purchase",
+        "revenue",
+        "selection",
+        "supplier",
+        "supply",
+        "technical",
+        "the",
+        "to",
+        "work",
+    }
+)
 
 SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
@@ -64,6 +137,20 @@ class AiAssistantService:
         self.client = client or LlamaCppClient()
         self.translation_client = translation_client or OpusTranslationClient()
         self.cache = caches["ai_assistant"]
+
+    @staticmethod
+    def _detect_supported_language(value):
+        lowered = value.lower()
+        if re.search(r"[àâçéèêëîïôùûüÿœæ]", lowered):
+            return "fr"
+        words = set(re.findall(r"[a-z]+", lowered))
+        french_score = len(words & FRENCH_LANGUAGE_HINTS)
+        english_score = len(words & ENGLISH_LANGUAGE_HINTS)
+        if french_score > english_score:
+            return "fr"
+        if english_score > french_score:
+            return "en"
+        return None
 
     @staticmethod
     def _split_opus_fragments(protected):
@@ -379,6 +466,9 @@ class AiAssistantService:
         if application == "management_projet":
             known_names.update(self._known_names())
         for text in unique_texts:
+            if self._detect_supported_language(text) == target_language:
+                translated[text] = text
+                continue
             protected = protect_text(text, known_names)
             cache_key = self._cache_key(
                 application=application,

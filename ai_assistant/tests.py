@@ -393,6 +393,45 @@ def test_batch_translation_polishes_cached_specialist_output_without_qwen():
     assert llama_client.calls == []
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("Avancement pour la réalisation du Projet Rachid", "fr"),
+        ("Règlement de l'avancement du gros œuvre", "fr"),
+        ("Transport de la commande pour le projet", "fr"),
+        ("Interior Design", "en"),
+        ("Coordination and follow-up of work", "en"),
+        ("Selection of materials and furniture", "en"),
+        ("CASA DI LUSSO", None),
+    ],
+)
+def test_supported_language_detection(value, expected):
+    assert AiAssistantService._detect_supported_language(value) == expected
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_batch_translation_preserves_text_already_in_target_language():
+    translation_client = QueueTranslationClient(["Design intérieur"])
+    service = AiAssistantService(translation_client=translation_client)
+
+    with patch.object(service, "_known_names", return_value=set()):
+        result = service.translate_many(
+            [
+                "Avancement pour la réalisation du Projet Rachid",
+                "Interior Design",
+            ],
+            target_language="fr",
+        )
+
+    assert result == {
+        "Avancement pour la réalisation du Projet Rachid": (
+            "Avancement pour la réalisation du Projet Rachid"
+        ),
+        "Interior Design": "Design intérieur",
+    }
+    assert translation_client.calls[0]["texts"] == ["Interior Design"]
+
+
 def test_cache_is_isolated_by_calling_application():
     response = json.dumps(
         {"suggested_text": "Professional text", "detected_language": "en"}
