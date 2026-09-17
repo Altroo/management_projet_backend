@@ -60,7 +60,7 @@ def translate(texts, target_language):
             )
             generated = model.generate(
                 **encoded,
-                num_beams=4,
+                num_beams=8 if target_language == "en" else 4,
                 do_sample=False,
                 early_stopping=True,
                 max_length=generation_limit,

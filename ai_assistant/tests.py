@@ -226,7 +226,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 
 @override_settings(
     AI_TRANSLATION_SPECIALIST_ENABLED=True,
-    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam4",
+    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-cpu-bounded",
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
@@ -248,7 +248,7 @@ def test_translation_uses_specialist_and_reports_its_model():
     assert result["suggested_text"] == (
         "Delivery for Maison Atlas on 17/09/2026."
     )
-    assert result["model"] == "opus-mt-fr-en+en-fr-beam4"
+    assert result["model"] == "opus-mt-fr-en+en-fr-cpu-bounded"
     assert len(translation_client.calls) == 1
     assert translation_client.calls[0]["texts"] == [
         "Livraison pour XACME0000X le DATEX0001.",
