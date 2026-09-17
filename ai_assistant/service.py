@@ -16,7 +16,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "7"
+PROMPT_VERSION = "8"
 
 SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
@@ -146,7 +146,7 @@ class AiAssistantService:
             f"Application: {application}. Context: {context}. "
             f"Declared source language: {source_language}. "
             f"{action_rule} {language_rule} "
-            "Every token shaped like ZXQMARKER0000, ACME0000, DATEX0000, "
+            "Every token shaped like ZXQMARKER0000, XACME0000X, DATEX0000, "
             "MADCURR0000, or 987650000 is immutable: "
             "copy it exactly once, "
             "unchanged and in the appropriate semantic position. Return JSON only."

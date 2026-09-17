@@ -128,7 +128,7 @@ def test_known_names_use_proper_name_shaped_placeholders():
         {"Maison Atlas"},
     )
 
-    assert protected.text.startswith("ACME0000 confirmed delivery")
+    assert protected.text.startswith("XACME0000X confirmed delivery")
     assert protected.restore(protected.text) == (
         "Maison Atlas confirmed delivery for project REF-2048."
     )
@@ -223,7 +223,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for ACME0000 on DATEX0001."]
+        ["Delivery for XACME0000X on DATEX0001."]
     )
     llama_client = QueueClient()
     service = AiAssistantService(
