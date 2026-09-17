@@ -17,7 +17,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "11"
+PROMPT_VERSION = "12"
 
 FRENCH_LANGUAGE_HINTS = frozenset(
     {
@@ -335,16 +335,27 @@ class AiAssistantService:
             return result
 
         if action == "translate" and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
-            opus_fragments, opus_plan = self._split_opus_fragments(protected)
             last_error = None
             for _attempt in range(2):
                 try:
-                    translations = self._translate_opus_fragments(
-                        opus_fragments, target_language
-                    )
-                    suggested_text = self._restore_opus_fragments(
-                        protected, opus_plan, translations
-                    )
+                    if target_language == "en":
+                        translations = self.translation_client.translate(
+                            texts=[protected.text],
+                            target_language=target_language,
+                        )
+                        if len(translations) != 1 or not translations[0].strip():
+                            raise InvalidModelResponse()
+                        suggested_text = protected.restore(translations[0])
+                    else:
+                        opus_fragments, opus_plan = self._split_opus_fragments(
+                            protected
+                        )
+                        translations = self._translate_opus_fragments(
+                            opus_fragments, target_language
+                        )
+                        suggested_text = self._restore_opus_fragments(
+                            protected, opus_plan, translations
+                        )
                     detected_language = (
                         source_language
                         if source_language in ("fr", "en")
@@ -543,6 +554,11 @@ class AiAssistantService:
 
     def _translate_chunk_with_opus(self, chunk, target_language, translated):
         protected_items = [protected for _text, _key, protected in chunk]
+        if target_language == "en":
+            return self._translate_english_chunk_with_opus(
+                chunk, protected_items, translated
+            )
+
         opus_items = [self._split_opus_fragments(item) for item in protected_items]
         opus_fragments = [
             fragment
@@ -577,6 +593,37 @@ class AiAssistantService:
                     value = {
                         "suggested_text": suggestion,
                         "detected_language": "fr" if target_language == "en" else "en",
+                    }
+                    self.cache.set(cache_key, value, self.cache_ttl)
+                    translated[source] = suggestion
+                return
+            except InvalidModelResponse as exc:
+                last_error = exc
+        raise last_error or InvalidModelResponse()
+
+    def _translate_english_chunk_with_opus(
+        self, chunk, protected_items, translated
+    ):
+        last_error = None
+        for _attempt in range(2):
+            try:
+                suggestions = self.translation_client.translate(
+                    texts=[protected.text for protected in protected_items],
+                    target_language="en",
+                )
+                if len(suggestions) != len(chunk):
+                    raise InvalidModelResponse()
+                restored = []
+                for protected, suggestion in zip(protected_items, suggestions):
+                    if not suggestion.strip():
+                        raise InvalidModelResponse()
+                    restored.append(protected.restore(suggestion))
+                for (source, cache_key, _protected), suggestion in zip(
+                    chunk, restored
+                ):
+                    value = {
+                        "suggested_text": suggestion,
+                        "detected_language": "fr",
                     }
                     self.cache.set(cache_key, value, self.cache_ttl)
                     translated[source] = suggestion

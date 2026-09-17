@@ -230,7 +230,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for", "on"],
+        ["Delivery for XACME0000X on DATEX0001."],
     )
     llama_client = QueueClient()
     service = AiAssistantService(
@@ -251,8 +251,7 @@ def test_translation_uses_specialist_and_reports_its_model():
     assert result["model"] == "opus-mt-fr-en+en-fr-beam4"
     assert len(translation_client.calls) == 1
     assert translation_client.calls[0]["texts"] == [
-        "Livraison pour",
-        "le",
+        "Livraison pour XACME0000X le DATEX0001.",
     ]
     assert llama_client.calls == []
 
