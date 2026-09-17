@@ -40,10 +40,22 @@ class ProtectedText:
         expected = set(self.replacements)
         starts = {match.start() for match in matches}
         ends = {match.end() for match in matches}
+
+        def original_allows_adjacent_alnum(placeholder, *, before):
+            position = self.text.find(placeholder)
+            adjacent = position - 1 if before else position + len(placeholder)
+            if adjacent < 0 or adjacent >= len(self.text):
+                return False
+            value = self.text[adjacent]
+            return value.isalnum() or value == "_"
+
         has_marker_junk = any(
             (
                 match.start() > 0
                 and match.start() not in ends
+                and not original_allows_adjacent_alnum(
+                    match.group(0), before=True
+                )
                 and (
                     generated_text[match.start() - 1].isalnum()
                     or generated_text[match.start() - 1] == "_"
@@ -52,6 +64,9 @@ class ProtectedText:
             or (
                 match.end() < len(generated_text)
                 and match.end() not in starts
+                and not original_allows_adjacent_alnum(
+                    match.group(0), before=False
+                )
                 and (
                     generated_text[match.end()].isalnum()
                     or generated_text[match.end()] == "_"

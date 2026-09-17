@@ -111,6 +111,13 @@ def test_protected_values_reject_marker_junk_adjacent_to_placeholder():
         )
 
 
+def test_protected_numbers_allow_an_existing_unit_boundary():
+    protected = protect_text("Surface de 12m2.")
+
+    assert protected.text == "Surface de 987650000m2."
+    assert protected.restore(protected.text) == "Surface de 12m2."
+
+
 def test_numbers_and_currency_use_separate_type_shaped_placeholders():
     protected = protect_text("Paiement de 24 000 MAD à 10 heures.")
 
