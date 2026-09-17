@@ -80,6 +80,7 @@ def test_protected_values_must_be_returned_exactly_once():
     assert "REF-2048" not in protected.text
     assert "https://atlas.test/devis/2048" not in protected.text
     assert "1 250 MAD" not in protected.text
+    assert "DATEX" in protected.text
     assert protected.restore(protected.text) == (
         "Contacter Maison Atlas (REF-2048) via atlas@example.com ou "
         "https://atlas.test/devis/2048 le 17/09/2026 pour 1 250 MAD."
@@ -222,7 +223,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for ACME0000 on ZXQMARKER0001."]
+        ["Delivery for ACME0000 on DATEX0001."]
     )
     llama_client = QueueClient()
     service = AiAssistantService(

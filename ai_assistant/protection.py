@@ -5,7 +5,7 @@ from .exceptions import InvalidModelResponse
 
 
 PLACEHOLDER_RE = re.compile(
-    r"(?:ZXQMARKER\d{4}|ACME\d{4}|MADCURR\d{4}|98765\d{4})"
+    r"(?:ZXQMARKER\d{4}|ACME\d{4}|DATEX\d{4}|MADCURR\d{4}|98765\d{4})"
 )
 
 PROTECTED_PATTERNS = (
@@ -16,7 +16,7 @@ PROTECTED_PATTERNS = (
     ("generic", re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")),
     ("currency", re.compile(r"\b(?:MAD|DHS?|EUR|USD)\b|[$€£]", re.IGNORECASE)),
     (
-        "generic",
+        "date",
         re.compile(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{2,4})\b"),
     ),
     (
@@ -103,6 +103,7 @@ def protect_text(text: str, known_names=()) -> ProtectedText:
     for index, (start, end, kind) in enumerate(selected):
         placeholder = {
             "currency": f"MADCURR{index:04d}",
+            "date": f"DATEX{index:04d}",
             "name": f"ACME{index:04d}",
             "number": f"98765{index:04d}",
         }.get(kind, f"ZXQMARKER{index:04d}")
