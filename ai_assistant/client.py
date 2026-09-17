@@ -60,3 +60,41 @@ class LlamaCppClient:
         if not isinstance(content, str):
             raise InvalidModelResponse()
         return content.strip()
+
+
+class OpusTranslationClient:
+    """Client for the private, translation-only OPUS-MT service."""
+
+    def translate(self, *, texts, target_language):
+        payload = {
+            "texts": texts,
+            "target_language": target_language,
+        }
+        http_request = request.Request(
+            f"{settings.AI_TRANSLATION_BASE_URL.rstrip('/')}/translate",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with request.urlopen(
+                http_request, timeout=settings.AI_TRANSLATION_TIMEOUT_SECONDS
+            ) as response:
+                response_payload = json.loads(response.read().decode("utf-8"))
+        except (TimeoutError, socket.timeout) as exc:
+            raise ModelTimeout() from exc
+        except error.HTTPError as exc:
+            if exc.code in (408, 504):
+                raise ModelTimeout() from exc
+            raise ModelUnavailable() from exc
+        except (error.URLError, ConnectionError, OSError) as exc:
+            raise ModelUnavailable() from exc
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise InvalidModelResponse() from exc
+
+        translations = response_payload.get("translations")
+        if not isinstance(translations, list) or not all(
+            isinstance(value, str) for value in translations
+        ):
+            raise InvalidModelResponse()
+        return translations

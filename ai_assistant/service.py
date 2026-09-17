@@ -10,7 +10,7 @@ from account.models import CustomUser
 from company.models import CompanyProfile
 from project.models import Client, Project, Supplier
 
-from .client import LlamaCppClient
+from .client import LlamaCppClient, OpusTranslationClient
 from .exceptions import InvalidModelResponse, ModelTimeout, ModelUnavailable
 from .protection import protect_text
 
@@ -59,9 +59,16 @@ def _parse_json(content):
 class AiAssistantService:
     cache_ttl = 60 * 60 * 24 * 30
 
-    def __init__(self, client=None):
+    def __init__(self, client=None, translation_client=None):
         self.client = client or LlamaCppClient()
+        self.translation_client = translation_client or OpusTranslationClient()
         self.cache = caches["ai_assistant"]
+
+    @staticmethod
+    def _model_id(action):
+        if action.startswith("translate") and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+            return settings.AI_TRANSLATION_MODEL_ID
+        return settings.AI_MODEL_ID
 
     @staticmethod
     def _cache_key(
@@ -77,7 +84,7 @@ class AiAssistantService:
         material = json.dumps(
             {
                 "prompt_version": PROMPT_VERSION,
-                "model": settings.AI_MODEL_ID,
+                "model": AiAssistantService._model_id(action),
                 "application": application,
                 "action": action,
                 "source_language": source_language,
@@ -155,6 +162,7 @@ class AiAssistantService:
         protected_terms=(),
     ):
         started = time.monotonic()
+        model_id = self._model_id(action)
         known_names = set(protected_terms)
         if application == "management_projet":
             known_names.update(self._known_names())
@@ -172,7 +180,7 @@ class AiAssistantService:
         if cached_value:
             result = {
                 **cached_value,
-                "model": settings.AI_MODEL_ID,
+                "model": model_id,
                 "cached": True,
                 "processing_ms": round((time.monotonic() - started) * 1000),
             }
@@ -180,6 +188,50 @@ class AiAssistantService:
                 application, action, len(text), result["processing_ms"], True, None
             )
             return result
+
+        if action == "translate" and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+            last_error = None
+            for _attempt in range(2):
+                try:
+                    translations = self.translation_client.translate(
+                        texts=[protected.text], target_language=target_language
+                    )
+                    if len(translations) != 1 or not translations[0].strip():
+                        raise InvalidModelResponse()
+                    suggested_text = protected.restore(translations[0])
+                    detected_language = (
+                        source_language
+                        if source_language in ("fr", "en")
+                        else ("fr" if target_language == "en" else "en")
+                    )
+                    stored = {
+                        "suggested_text": suggested_text,
+                        "detected_language": detected_language,
+                    }
+                    self.cache.set(cache_key, stored, self.cache_ttl)
+                    processing_ms = round((time.monotonic() - started) * 1000)
+                    self._log(
+                        application, action, len(text), processing_ms, False, None
+                    )
+                    return {
+                        **stored,
+                        "model": model_id,
+                        "cached": False,
+                        "processing_ms": processing_ms,
+                    }
+                except InvalidModelResponse as exc:
+                    last_error = exc
+                except (ModelUnavailable, ModelTimeout) as exc:
+                    processing_ms = round((time.monotonic() - started) * 1000)
+                    self._log(
+                        application, action, len(text), processing_ms, False, exc
+                    )
+                    raise
+            processing_ms = round((time.monotonic() - started) * 1000)
+            self._log(
+                application, action, len(text), processing_ms, False, last_error
+            )
+            raise last_error or InvalidModelResponse()
 
         temperature = 0.35 if action == "professionalize" else 0.0
         last_error = None
@@ -231,7 +283,7 @@ class AiAssistantService:
                 self._log(application, action, len(text), processing_ms, False, None)
                 return {
                     **stored,
-                    "model": settings.AI_MODEL_ID,
+                    "model": model_id,
                     "cached": False,
                     "processing_ms": processing_ms,
                 }
@@ -285,13 +337,18 @@ class AiAssistantService:
 
         try:
             for chunk in self._chunks(missing):
-                self._translate_chunk(
-                    chunk,
-                    target_language,
-                    context,
-                    translated,
-                    application,
-                )
+                if settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+                    self._translate_chunk_with_opus(
+                        chunk, target_language, translated
+                    )
+                else:
+                    self._translate_chunk_with_qwen(
+                        chunk,
+                        target_language,
+                        context,
+                        translated,
+                        application,
+                    )
         except (InvalidModelResponse, ModelUnavailable, ModelTimeout) as exc:
             self._log(
                 application,
@@ -327,7 +384,37 @@ class AiAssistantService:
         if chunk:
             yield chunk
 
-    def _translate_chunk(
+    def _translate_chunk_with_opus(self, chunk, target_language, translated):
+        protected_items = [protected for _text, _key, protected in chunk]
+        last_error = None
+        for _attempt in range(2):
+            try:
+                suggestions = self.translation_client.translate(
+                    texts=[protected.text for protected in protected_items],
+                    target_language=target_language,
+                )
+                if len(suggestions) != len(chunk):
+                    raise InvalidModelResponse()
+                restored = []
+                for protected, suggestion in zip(protected_items, suggestions):
+                    if not suggestion.strip():
+                        raise InvalidModelResponse()
+                    restored.append(protected.restore(suggestion))
+                for (source, cache_key, _protected), suggestion in zip(
+                    chunk, restored
+                ):
+                    value = {
+                        "suggested_text": suggestion,
+                        "detected_language": "fr" if target_language == "en" else "en",
+                    }
+                    self.cache.set(cache_key, value, self.cache_ttl)
+                    translated[source] = suggestion
+                return
+            except InvalidModelResponse as exc:
+                last_error = exc
+        raise last_error or InvalidModelResponse()
+
+    def _translate_chunk_with_qwen(
         self,
         chunk,
         target_language,
@@ -405,7 +492,7 @@ class AiAssistantService:
                 "ai_operation": action,
                 "ai_application": application,
                 "ai_character_count": character_count,
-                "ai_model": settings.AI_MODEL_ID,
+                "ai_model": AiAssistantService._model_id(action),
                 "ai_cached": cached,
                 "ai_duration_ms": processing_ms,
                 "ai_error": error.__class__.__name__ if error else None,

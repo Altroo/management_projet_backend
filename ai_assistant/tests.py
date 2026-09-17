@@ -35,6 +35,19 @@ class QueueClient:
         return response
 
 
+class QueueTranslationClient:
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.calls = []
+
+    def translate(self, **kwargs):
+        self.calls.append(kwargs)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
 @pytest.fixture(autouse=True)
 def clear_ai_cache():
     caches["default"].clear()
@@ -155,7 +168,9 @@ def test_service_retries_non_object_structured_output_then_rejects_it():
 
 
 def test_service_propagates_timeout_without_returning_original_text():
-    service = AiAssistantService(client=QueueClient(ModelTimeout()))
+    service = AiAssistantService(
+        translation_client=QueueTranslationClient(ModelTimeout())
+    )
     with patch.object(service, "_known_names", return_value=set()):
         with pytest.raises(ModelTimeout):
             service.assist(
@@ -165,6 +180,57 @@ def test_service_propagates_timeout_without_returning_original_text():
                 target_language="en",
                 context="other",
             )
+
+
+@override_settings(
+    AI_TRANSLATION_SPECIALIST_ENABLED=True,
+    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr",
+)
+def test_translation_uses_specialist_and_reports_its_model():
+    translation_client = QueueTranslationClient(
+        ["Delivery for __PROTECTED_0000__ on __PROTECTED_0001__."]
+    )
+    llama_client = QueueClient()
+    service = AiAssistantService(
+        client=llama_client, translation_client=translation_client
+    )
+    with patch.object(service, "_known_names", return_value={"Maison Atlas"}):
+        result = service.assist(
+            action="translate",
+            text="Livraison pour Maison Atlas le 17/09/2026.",
+            source_language="fr",
+            target_language="en",
+            context="project",
+        )
+
+    assert result["suggested_text"] == (
+        "Delivery for Maison Atlas on 17/09/2026."
+    )
+    assert result["model"] == "opus-mt-fr-en+en-fr"
+    assert len(translation_client.calls) == 1
+    assert llama_client.calls == []
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_batch_translation_uses_specialist_and_caches_each_result():
+    translation_client = QueueTranslationClient(
+        ["First translated text", "Second translated text"]
+    )
+    service = AiAssistantService(translation_client=translation_client)
+    with patch.object(service, "_known_names", return_value=set()):
+        first = service.translate_many(
+            ["Premier texte", "Deuxième texte"], target_language="en"
+        )
+        second = service.translate_many(
+            ["Premier texte", "Deuxième texte"], target_language="en"
+        )
+
+    assert first == {
+        "Premier texte": "First translated text",
+        "Deuxième texte": "Second translated text",
+    }
+    assert second == first
+    assert len(translation_client.calls) == 1
 
 
 def test_cache_is_isolated_by_calling_application():

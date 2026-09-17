@@ -113,6 +113,40 @@ services:
       retries: 10
       start_period: 180s
 
+  ai-translation:
+    build:
+      context: ./deploy/opus
+    container_name: management_projet_ai_translation
+    profiles: ["ai"]
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - ./translation-models:/models:ro
+    environment:
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      TOKENIZERS_PARALLELISM: "false"
+    networks:
+      - backend
+    mem_limit: 4g
+    cpu_shares: 192
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5).read()
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
   db:
     image: postgres:18
     container_name: management_projet_db

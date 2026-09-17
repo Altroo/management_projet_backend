@@ -15,6 +15,25 @@ narrow gateway endpoint. No application calls `llama.cpp` directly.
 
 The vision projector is intentionally not downloaded or mounted.
 
+### Translation specialist
+
+Translation is routed to two Apache-2.0 OPUS-MT models in a separate private
+CPU-only container. Grammar correction and professional rewriting remain on Qwen.
+
+- Runtime base: `python:3.12.12-slim-bookworm@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c`
+- French to English: `Helsinki-NLP/opus-mt-fr-en` at
+  `c4aed37b318c763fd177aa449b44e3b783cc6c02`
+- French to English weights SHA256:
+  `599b819e3488f0fb888fef09511370ce4c0388b6f0f6beeb49a1f4b19043bebc`
+- English to French: `Helsinki-NLP/opus-mt-en-fr` at
+  `dd7f6540a7a48a7f4db59e5c0b9c42c8eea67f18`
+- English to French weights SHA256:
+  `cc1de10b49342ad2f33e06bc4474ddd6eaca278474903c4a8636ce15680d64de`
+
+The download script also verifies every tokenizer and configuration file before
+installation. The specialist has no host port, accepts only French/English batch
+translation, and logs counts, target language, duration, and errors without text.
+
 ## Candidate and disk policy
 
 Test one candidate at a time and remove a failed candidate before downloading the
@@ -40,13 +59,23 @@ Rejected candidate record (2026-09-17): Qwen3.8 used repository
 same pinned runtime above. It preserved every protected value in both sanitized
 translation runs, but failed the no-run-above-30-seconds latency requirement.
 
+Qwen3.6 acceptance record (2026-09-17): ten warm 250-character translations had
+a 7.73-second median and 8.86-second maximum. It passed 20/20 translation samples,
+10/10 grammar samples, 10/10 professional rewrites, and preserved every protected
+value. A representative uncached project PDF took 138.9 seconds, which was below
+the 180-second hard limit but above the 90-second median target. This activated the
+OPUS-MT specialist for translation and PDF translation; Qwen3.6 remains the selected
+general model for grammar and professional rewriting.
+
 ## Start-up
 
-1. Run `scripts/download_ai_model.sh` from the backend directory.
+1. Run `scripts/download_ai_model.sh` and `scripts/download_opus_models.sh` from the
+   backend directory.
 2. Configure a different high-entropy secret for every caller in
    `AI_ASSISTANT_SERVICE_KEYS`, for example `{"facturation":"..."}`.
-3. Start and inspect the model with `docker compose --profile ai up -d ai-model` and
-   `docker compose ps ai-model`.
+3. Start and inspect the models with
+   `docker compose --profile ai up -d ai-model ai-translation` and
+   `docker compose --profile ai ps ai-model ai-translation`.
 4. Keep `AI_ASSISTANT_ENABLED=False` until the acceptance benchmark passes.
 5. Enable one user through `AI_ASSISTANT_USER_IDS` before enabling all internal users.
 

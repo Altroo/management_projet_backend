@@ -231,6 +231,18 @@ AI_ASSISTANT_SERVICE_KEYS = json.loads(
 AI_MODEL_BASE_URL = config("AI_MODEL_BASE_URL", default="http://ai-model:8080/v1")
 AI_MODEL_ID = config("AI_MODEL_ID", default="qwen3.6-35b-a3b-q5_k_m")
 AI_MODEL_TIMEOUT_SECONDS = config("AI_MODEL_TIMEOUT_SECONDS", default=180, cast=int)
+AI_TRANSLATION_SPECIALIST_ENABLED = config(
+    "AI_TRANSLATION_SPECIALIST_ENABLED", default=True, cast=bool
+)
+AI_TRANSLATION_BASE_URL = config(
+    "AI_TRANSLATION_BASE_URL", default="http://ai-translation:8080"
+)
+AI_TRANSLATION_MODEL_ID = config(
+    "AI_TRANSLATION_MODEL_ID", default="opus-mt-fr-en+en-fr"
+)
+AI_TRANSLATION_TIMEOUT_SECONDS = config(
+    "AI_TRANSLATION_TIMEOUT_SECONDS", default=90, cast=int
+)
 AI_PDF_TRANSLATION_ENABLED = config(
     "AI_PDF_TRANSLATION_ENABLED", default=AI_ASSISTANT_ENABLED, cast=bool
 )
