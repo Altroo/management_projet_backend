@@ -194,7 +194,7 @@ def test_assist_endpoint_validates_request_and_does_not_write_business_data(user
     result = {
         "suggested_text": "Texte corrigé",
         "detected_language": "fr",
-        "model": "qwen3.8-27b-q5_k_m",
+        "model": "qwen3.6-35b-a3b-q5_k_m",
         "cached": False,
         "processing_ms": 42,
     }
@@ -254,7 +254,7 @@ def test_assist_endpoint_is_rate_limited_per_user(user):
     result = {
         "suggested_text": "Bonjour.",
         "detected_language": "fr",
-        "model": "qwen3.8-27b-q5_k_m",
+        "model": "qwen3.6-35b-a3b-q5_k_m",
         "cached": False,
         "processing_ms": 10,
     }
@@ -311,7 +311,7 @@ def test_internal_endpoint_accepts_signed_peer_request_and_rejects_replay():
     result = {
         "suggested_text": "Delivery for Casa Atlas",
         "detected_language": "fr",
-        "model": "qwen3.8-27b-q5_k_m",
+        "model": "qwen3.6-35b-a3b-q5_k_m",
         "cached": False,
         "processing_ms": 50,
     }

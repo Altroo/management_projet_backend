@@ -8,10 +8,10 @@ narrow gateway endpoint. No application calls `llama.cpp` directly.
 
 - Runtime: `ghcr.io/ggml-org/llama.cpp:server-b10991`
 - Runtime digest: `sha256:79903855d3de1689e9856219283591be12ba6f40a8e65fc7223824109446ad88`
-- Model repository: `unsloth/Qwen3.8-27B-GGUF`
-- Model revision: `4ca720788d1e01f1bff70c033e0d0028fd02e502`
-- File: `Qwen3.8-27B-UD-Q5_K_M.gguf`
-- SHA256: `2de73110cb254cbf09b54b717578dadff12ef1194e7271527e68202f39ba4bfd`
+- Model repository: `unsloth/Qwen3.6-35B-A3B-GGUF`
+- Model revision: `a483e9e6cbd595906af30beda3187c2663a1118c`
+- File: `Qwen3.6-35B-A3B-UD-Q5_K_M.gguf`
+- SHA256: `c13ce26253ea334df472bd8fbd2d6da66d8a41195c17f6fcbf44c4d20ece0932`
 
 The vision projector is intentionally not downloaded or mounted.
 
@@ -20,8 +20,9 @@ The vision projector is intentionally not downloaded or mounted.
 Test one candidate at a time and remove a failed candidate before downloading the
 next one. The decision order is:
 
-1. Qwen3.8-27B Q5_K_M (the pinned default above).
-2. Qwen3.6-35B-A3B Q5_K_M when dense-model CPU latency fails.
+1. Qwen3.8-27B Q5_K_M was tested first and rejected after cold and warm
+   250-character translations took 54.7 and 55.0 seconds.
+2. Qwen3.6-35B-A3B Q5_K_M is the pinned current candidate above.
 3. Qwen3.5-35B-A3B Q5_K_M only for runtime or multilingual compatibility issues.
 4. Qwen3-30B-A3B-Instruct-2507 Q5_K_M as the mature fallback.
 
@@ -30,6 +31,14 @@ SHA256, runtime image digest, benchmark result, and license before changing the
 deployment configuration. Keep only the winning general model. Add the Apache-2.0
 OPUS-MT `fr-en` and `en-fr` pair only if the winning Qwen model passes grammar and
 professional rewriting but fails the translation quality or PDF-latency gate.
+
+Rejected candidate record (2026-09-17): Qwen3.8 used repository
+`unsloth/Qwen3.8-27B-GGUF`, revision
+`4ca720788d1e01f1bff70c033e0d0028fd02e502`, file
+`Qwen3.8-27B-UD-Q5_K_M.gguf`, and SHA256
+`2de73110cb254cbf09b54b717578dadff12ef1194e7271527e68202f39ba4bfd` with the
+same pinned runtime above. It preserved every protected value in both sanitized
+translation runs, but failed the no-run-above-30-seconds latency requirement.
 
 ## Start-up
 

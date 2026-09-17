@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repository="unsloth/Qwen3.8-27B-GGUF"
-revision="4ca720788d1e01f1bff70c033e0d0028fd02e502"
-filename="Qwen3.8-27B-UD-Q5_K_M.gguf"
-expected_sha256="2de73110cb254cbf09b54b717578dadff12ef1194e7271527e68202f39ba4bfd"
+repository="unsloth/Qwen3.6-35B-A3B-GGUF"
+revision="a483e9e6cbd595906af30beda3187c2663a1118c"
+filename="Qwen3.6-35B-A3B-UD-Q5_K_M.gguf"
+expected_sha256="c13ce26253ea334df472bd8fbd2d6da66d8a41195c17f6fcbf44c4d20ece0932"
 model_dir="${AI_MODEL_DIRECTORY:-$(pwd)/models}"
 destination="${model_dir}/${filename}"
 partial="${destination}.part"
