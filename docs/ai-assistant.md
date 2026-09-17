@@ -69,6 +69,16 @@ the 180-second hard limit but above the 90-second median target. This activated 
 OPUS-MT specialist for translation and PDF translation; Qwen3.6 remains the selected
 general model for grammar and professional rewriting.
 
+OPUS-MT acceptance record (2026-09-17): the pinned specialist passed 20/20
+sanitized French/English translation samples and preserved every protected name,
+identifier, date, number, currency, email address, and URL. Ten uncached runs of a
+251-character sample took 1.111 to 1.132 seconds, with a 1.124-second median. Ten
+uncached English PDFs for a representative production project with 8 revenues and
+19 expenses took 6.187 to 6.330 seconds, with a 6.249-second median; all ten outputs
+had valid PDF headers and the same 28,925-byte size. During a 4,283-character Qwen
+professional rewrite, a representative Django API path had a 2.1735-millisecond
+median versus a 2.1705-millisecond idle median, a 0.14 percent increase.
+
 ## Start-up
 
 1. Run `scripts/download_ai_model.sh` and `scripts/download_opus_models.sh` from the
