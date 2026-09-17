@@ -517,9 +517,11 @@ class AiAssistantService:
             not missing,
             None,
         )
-        if polish and target_language == "en":
+        if polish:
             return {
-                source: self._polish_english_translation(suggestion)
+                source: self._polish_english_translation(
+                    suggestion, target_language
+                )
                 for source, suggestion in translated.items()
             }
         return translated
@@ -688,6 +690,13 @@ class AiAssistantService:
 
     @classmethod
     def _polish_english_translation(cls, value, target_language="en"):
+        if target_language == "fr":
+            return re.sub(
+                r"\bConception et conception\b",
+                "Conception & design",
+                value,
+                flags=re.IGNORECASE,
+            )
         if target_language != "en":
             return value
 

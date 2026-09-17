@@ -359,6 +359,12 @@ def test_professional_english_translation_polish(value, expected):
     assert AiAssistantService._polish_english_translation(value) == expected
 
 
+def test_professional_french_translation_polish():
+    assert AiAssistantService._polish_english_translation(
+        "Conception et conception", "fr"
+    ) == "Conception & design"
+
+
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
 def test_batch_translation_polishes_cached_specialist_output_without_qwen():
     translation_client = QueueTranslationClient(
