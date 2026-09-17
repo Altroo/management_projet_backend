@@ -12,7 +12,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Collect static files for WhiteNoise
-RUN python manage.py collectstatic --noinput
+RUN SECRET_KEY=build-only-not-for-runtime \
+    REDIS_HOST=localhost \
+    REDIS_PORT=6379 \
+    API_URL=http://localhost \
+    python manage.py collectstatic --noinput
 
 # Ensure media directories exist
 RUN mkdir -p /app/media/user_avatars
