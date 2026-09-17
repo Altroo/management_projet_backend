@@ -790,12 +790,15 @@ class AiAssistantService:
     @classmethod
     def _polish_english_translation(cls, value, target_language="en"):
         if target_language == "fr":
-            return re.sub(
-                r"\bConception et conception\b",
-                "Conception & design",
-                value,
-                flags=re.IGNORECASE,
+            replacements = (
+                (r"\bConception et conception\b", "Conception & design"),
+                (r"\bConception Interieur\b", "Design intérieur"),
             )
+            for pattern, replacement in replacements:
+                value = re.sub(
+                    pattern, replacement, value, flags=re.IGNORECASE
+                )
+            return value
         if target_language != "en":
             return value
 
@@ -806,6 +809,7 @@ class AiAssistantService:
                 r"\b(\d+(?:st|nd|rd|th)) advance of the\b",
                 r"\1 advance payment for the",
             ),
+            (r"\b(\d+(?:st|nd|rd|th)) advances\b", r"\1 advance"),
             (r"\bcommand supplement\b", "Additional order"),
             (
                 r"\bAdditional order Minotti project Brahim\b",

@@ -344,6 +344,7 @@ def test_english_ordinal_normalization(value, expected):
             "1th advance of the glazing installer",
             "1st advance payment for the glazing installer",
         ),
+        ("2nd advances for glass supplier", "2nd advance for glass supplier"),
         (
             "Progress payment for Project Abdelmoneim",
             "Progress payment for the Abdelmoneim project",
@@ -362,6 +363,9 @@ def test_professional_french_translation_polish():
     assert AiAssistantService._polish_english_translation(
         "Conception et conception", "fr"
     ) == "Conception & design"
+    assert AiAssistantService._polish_english_translation(
+        "Conception Interieur", "fr"
+    ) == "Design intérieur"
 
 
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
