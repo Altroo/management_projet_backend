@@ -39,6 +39,8 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {  # noqa: F405
     "user": "10000/minute",
     "login": "10000/minute",
     "password_reset": "10000/minute",
+    "ai_assistant": "10000/minute",
+    "ai_assistant_service": "10000/minute",
 }
 
 # Use a test-only secret key with sufficient length for JWT signing.
@@ -48,6 +50,14 @@ SECRET_KEY = "management_projet-test-secret-key-2026-abcdef-123456"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+    "ai_assistant": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "ai-assistant-tests",
     },
 }
 

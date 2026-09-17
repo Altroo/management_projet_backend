@@ -6,10 +6,13 @@ from decimal import Decimal
 from io import BytesIO
 from xml.sax.saxutils import escape
 
+from django.conf import settings
 from django.utils import timezone
 
+from ai_assistant.service import AiAssistantService
 from company.views import get_company_profile
 from depense.models import Expense
+from project.models import ProjectPaymentSchedule
 from revenu.models import Revenue
 
 try:
@@ -68,6 +71,10 @@ TRANSLATIONS = {
         "date": "Date",
         "description": "Description",
         "notes": "Notes",
+        "project_description": "Description du projet",
+        "payment_schedule_detail": "Échéancier prévisionnel",
+        "due_date": "Date prévue",
+        "expected_amount": "Montant prévu",
         "amount": "Montant",
         "category": "Catégorie",
         "supplier": "Fournisseur",
@@ -110,6 +117,10 @@ TRANSLATIONS = {
         "date": "Date",
         "description": "Description",
         "notes": "Notes",
+        "project_description": "Project description",
+        "payment_schedule_detail": "Payment schedule",
+        "due_date": "Due date",
+        "expected_amount": "Expected amount",
         "amount": "Amount",
         "category": "Category",
         "supplier": "Supplier",
@@ -121,6 +132,29 @@ TRANSLATIONS = {
         "no_data": "No data is available for the selected period.",
         "uncategorized": "Uncategorized",
         "page": "Page",
+    },
+}
+
+STATUS_TRANSLATIONS = {
+    "fr": {
+        "Complété": "Complété",
+        "En cours": "En cours",
+        "Pas commencé": "Pas commencé",
+        "En attente": "En attente",
+        "En pause": "En pause",
+        "Annulé": "Annulé",
+        "En attente de démarrage": "En attente de démarrage",
+        "Livré": "Livré",
+    },
+    "en": {
+        "Complété": "Completed",
+        "En cours": "In progress",
+        "Pas commencé": "Not started",
+        "En attente": "Pending",
+        "En pause": "On hold",
+        "Annulé": "Cancelled",
+        "En attente de démarrage": "Waiting to start",
+        "Livré": "Delivered",
     },
 }
 
@@ -159,6 +193,8 @@ def build_financial_report_pdf(
     labels = TRANSLATIONS[language]
     company = company or get_company_profile()
     report_data = _report_data(project, date_from, date_to, labels, language)
+    if settings.AI_PDF_TRANSLATION_ENABLED:
+        _translate_report_content(report_data, project, language)
 
     margin = 0.9 * cm
     page_width, _page_height = A4
@@ -272,15 +308,19 @@ def _report_data(project, date_from, date_to, labels, language):
         "sous_categorie",
         "supplier",
     ).all()
+    payment_schedules = ProjectPaymentSchedule.objects.select_related("project").all()
     if project:
         revenues = revenues.filter(project=project)
         expenses = expenses.filter(project=project)
+        payment_schedules = payment_schedules.filter(project=project)
     if date_from:
         revenues = revenues.filter(date__gte=date_from)
         expenses = expenses.filter(date__gte=date_from)
+        payment_schedules = payment_schedules.filter(due_date__gte=date_from)
     if date_to:
         revenues = revenues.filter(date__lte=date_to)
         expenses = expenses.filter(date__lte=date_to)
+        payment_schedules = payment_schedules.filter(due_date__lte=date_to)
 
     revenue_rows = list(revenues.order_by("date", "id"))
     expense_rows = list(expenses.order_by("date", "id"))
@@ -322,6 +362,7 @@ def _report_data(project, date_from, date_to, labels, language):
         "cash_remaining": cash_remaining,
         "revenue_rows": revenue_rows,
         "expense_rows": expense_rows,
+        "payment_schedule_rows": list(payment_schedules.order_by("due_date", "id")),
         "project_rows": project_rows,
         "category_totals": sorted(
             category_totals.items(), key=lambda item: item[1], reverse=True
@@ -330,6 +371,61 @@ def _report_data(project, date_from, date_to, labels, language):
         "revenue_history": revenue_history,
         "expense_history": expense_history,
     }
+
+
+def _translate_report_content(data, project, language):
+    """Translate only human-authored copy on transient ORM instances."""
+    fields = []
+    if project:
+        fields.extend((project.description, project.notes))
+    for row in data["revenue_rows"]:
+        fields.extend((row.description, row.notes))
+    for row in data["expense_rows"]:
+        fields.extend(
+            (
+                row.category.name if row.category else None,
+                row.sous_categorie.name if row.sous_categorie else None,
+                row.element,
+                row.description,
+                row.notes,
+            )
+        )
+    for row in data["payment_schedule_rows"]:
+        fields.extend((row.description, row.notes))
+
+    translations = AiAssistantService().translate_many(
+        fields, target_language=language, context="project"
+    )
+
+    def translated(value):
+        return translations.get(value.strip(), value) if value and value.strip() else value
+
+    if project:
+        project.description = translated(project.description)
+        project.notes = translated(project.notes)
+    for row in data["revenue_rows"]:
+        row.description = translated(row.description)
+        row.notes = translated(row.notes)
+    for row in data["expense_rows"]:
+        if row.category:
+            row.category.name = translated(row.category.name)
+        if row.sous_categorie:
+            row.sous_categorie.name = translated(row.sous_categorie.name)
+        row.element = translated(row.element)
+        row.description = translated(row.description)
+        row.notes = translated(row.notes)
+    for row in data["payment_schedule_rows"]:
+        row.description = translated(row.description)
+        row.notes = translated(row.notes)
+
+    category_totals = defaultdict(lambda: Decimal("0.00"))
+    for row in data["expense_rows"]:
+        category_totals[
+            row.category.name if row.category else TRANSLATIONS[language]["uncategorized"]
+        ] += row.montant
+    data["category_totals"] = sorted(
+        category_totals.items(), key=lambda item: item[1], reverse=True
+    )
 
 
 def _time_buckets(revenues, expenses, date_from, date_to, language):
@@ -664,7 +760,7 @@ def _build_project_context(project, labels, width, styles):
     cells = [
         (labels["project"], project.nom),
         (labels["client"], client_name or "-"),
-        (labels["status"], project.status),
+        (labels["status"], _status_label(project.status, labels)),
     ]
     table = Table(
         [
@@ -690,7 +786,44 @@ def _build_project_context(project, labels, width, styles):
             ]
         )
     )
-    return table
+    details = []
+    if project.description:
+        details.append(
+            Paragraph(
+                f"<b>{_text(labels['project_description'])}</b><br/>"
+                f"{_text(project.description)}",
+                styles["Small"],
+            )
+        )
+    if project.notes:
+        details.append(
+            Paragraph(
+                f"<b>{_text(labels['notes'])}</b><br/>{_text(project.notes)}",
+                styles["Small"],
+            )
+        )
+    if not details:
+        return table
+    detail_table = Table(
+        [details],
+        colWidths=[width / len(details)] * len(details),
+        hAlign="LEFT",
+    )
+    detail_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+                ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor(BORDER)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
+    return KeepTogether([table, detail_table])
 
 
 def _build_totals(data, labels, width, styles):
@@ -850,7 +983,86 @@ def _transaction_details(data, labels, language, width, styles, *, single_projec
                 ),
             ]
         )
+    schedule_rows = data.get("payment_schedule_rows", [])
+    if schedule_rows:
+        sections.extend(
+            [
+                Spacer(1, 0.4 * cm),
+                CondPageBreak(7 * cm),
+                _section_heading(
+                    labels["payment_schedule_detail"],
+                    f"{len(schedule_rows)} {labels['entries']}",
+                    styles,
+                    width,
+                ),
+                Spacer(1, 0.16 * cm),
+                _payment_schedule_table(
+                    schedule_rows,
+                    labels,
+                    language,
+                    width,
+                    styles,
+                    single_project=single_project,
+                ),
+            ]
+        )
     return sections
+
+
+def _payment_schedule_table(rows, labels, language, width, styles, *, single_project):
+    if single_project:
+        headers = [labels["due_date"], labels["description"], labels["expected_amount"]]
+        col_widths = [width * 0.16, width * 0.62, width * 0.22]
+    else:
+        headers = [
+            labels["due_date"],
+            labels["project"],
+            labels["description"],
+            labels["expected_amount"],
+        ]
+        col_widths = [width * 0.14, width * 0.24, width * 0.42, width * 0.20]
+    header_row = [
+        Paragraph(f"<b>{_text(header)}</b>", styles["SmallHeader"])
+        for header in headers
+    ]
+    body = []
+    for row in rows:
+        description = _table_cell(row.description or "-", styles, secondary=row.notes)
+        cells = [
+            _table_cell(_format_date(row.due_date, language), styles),
+            description,
+            _amount_cell(row.expected_amount, styles, color=ACCENT),
+        ]
+        if not single_project:
+            cells.insert(1, _table_cell(row.project.nom, styles))
+        body.append(cells)
+    table = LongTable(
+        [header_row, *body],
+        colWidths=col_widths,
+        repeatRows=1,
+        splitByRow=1,
+        hAlign="LEFT",
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(TABLE_HEADER_BG)),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.8, colors.HexColor(ACCENT)),
+                ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor(ACCENT)),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor(SOFT_BG)]),
+                ("LINEBEFORE", (0, 0), (0, -1), 2.2, colors.HexColor(ACCENT)),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.35, colors.HexColor(BORDER)),
+                ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
+    return table
 
 
 def _transaction_table(
@@ -1632,7 +1844,8 @@ def _summary_cards(data, labels, width, styles):
             f"<font size='10'><b>{_text(project.nom)}</b></font><br/>"
             f"<font size='7' color='{MUTED}'>{_text(labels['client'])}: "
             f"{_text(client_name or '-')}</font><br/>"
-            f"<font size='7' color='{ACCENT}'><b>{_text(project.status)}</b></font>",
+            f"<font size='7' color='{ACCENT}'><b>"
+            f"{_text(_status_label(project.status, labels))}</b></font>",
             styles["Small"],
         )
         metrics_width = width * 0.48 - 20
@@ -1777,6 +1990,11 @@ def _format_datetime(value, language):
 def _money(value):
     amount = Decimal(value or 0).quantize(Decimal("0.01"))
     return f"{amount:,.2f}".replace(",", " ")
+
+
+def _status_label(status, labels):
+    language = "en" if labels["title"] == "FINANCIAL REPORT" else "fr"
+    return STATUS_TRANSLATIONS[language].get(status, status)
 
 
 def _chart_money(value):

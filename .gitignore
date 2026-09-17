@@ -181,3 +181,9 @@ cython_debug/
 .docs/*
 .github
 .github/*
+
+# Large, separately verified local model weights
+models/
+
+# Local PDF QA artifacts
+tmp/

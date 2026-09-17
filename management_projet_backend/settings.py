@@ -1,5 +1,6 @@
 """Django settings for the management_projet project."""
 
+import json
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     "revenu.apps.RevenuConfig",
     "depense.apps.DepenseConfig",
     "notification.apps.NotificationConfig",
+    "ai_assistant.apps.AiAssistantConfig",
     "axes",
 ]
 
@@ -177,6 +179,10 @@ REST_FRAMEWORK = dict(
         "user": "200/minute",
         "login": "5/minute",
         "password_reset": "3/minute",
+        "ai_assistant": config("AI_ASSISTANT_RATE", default="10/minute"),
+        "ai_assistant_service": config(
+            "AI_ASSISTANT_SERVICE_RATE", default="30/minute"
+        ),
     },
 )
 
@@ -200,6 +206,34 @@ SIMPLE_JWT = {
 
 REDIS_HOST = config("REDIS_HOST")
 REDIS_PORT = config("REDIS_PORT")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/2",
+    },
+    "ai_assistant": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/2",
+        "TIMEOUT": 60 * 60 * 24 * 30,
+    },
+}
+
+AI_ASSISTANT_ENABLED = config("AI_ASSISTANT_ENABLED", default=False, cast=bool)
+AI_ASSISTANT_USER_IDS = {
+    int(value)
+    for value in config("AI_ASSISTANT_USER_IDS", default="").split(",")
+    if value.strip().isdigit()
+}
+AI_ASSISTANT_SERVICE_KEYS = json.loads(
+    config("AI_ASSISTANT_SERVICE_KEYS", default="{}")
+)
+AI_MODEL_BASE_URL = config("AI_MODEL_BASE_URL", default="http://ai-model:8080/v1")
+AI_MODEL_ID = config("AI_MODEL_ID", default="qwen3.8-27b-q5_k_m")
+AI_MODEL_TIMEOUT_SECONDS = config("AI_MODEL_TIMEOUT_SECONDS", default=180, cast=int)
+AI_PDF_TRANSLATION_ENABLED = config(
+    "AI_PDF_TRANSLATION_ENABLED", default=AI_ASSISTANT_ENABLED, cast=bool
+)
 
 CHANNEL_LAYERS = {
     "default": {

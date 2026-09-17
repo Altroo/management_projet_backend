@@ -4,6 +4,7 @@ from io import BytesIO
 from unittest.mock import patch
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -12,7 +13,14 @@ from rest_framework_simplejwt.tokens import AccessToken
 from account.models import CustomUser
 from depense.models import Expense
 from revenu.models import Revenue
-from .models import Category, Project, SubCategory, Supplier
+from ai_assistant.exceptions import InvalidModelResponse
+from .models import (
+    Category,
+    Project,
+    ProjectPaymentSchedule,
+    SubCategory,
+    Supplier,
+)
 from .pdf import (
     GREEN,
     NAVY,
@@ -235,6 +243,66 @@ def test_actual_report_builds_with_vector_charts():
     )
 
     assert buffer.read(5) == b"%PDF-"
+
+
+@override_settings(AI_PDF_TRANSLATION_ENABLED=True)
+def test_pdf_translation_batches_only_human_authored_text_and_preserves_amounts():
+    project = make_project()
+    project.description = "Rénovation de la cuisine"
+    project.notes = "Livraison avant décembre"
+    project.save(update_fields=["description", "notes"])
+    Revenue.objects.create(
+        project=project,
+        date=date(2026, 3, 10),
+        description="Acompte reçu",
+        notes="Virement confirmé",
+        montant="1800.00",
+    )
+    ProjectPaymentSchedule.objects.create(
+        project=project,
+        due_date=date(2026, 3, 20),
+        expected_amount="5000.00",
+        description="Deuxième acompte",
+        notes="Après validation",
+    )
+    translations = {
+        "Rénovation de la cuisine": "Kitchen renovation",
+        "Livraison avant décembre": "Delivery before December",
+        "Acompte reçu": "Deposit received",
+        "Virement confirmé": "Transfer confirmed",
+        "Deuxième acompte": "Second deposit",
+        "Après validation": "After approval",
+    }
+    with patch(
+        "project.pdf.AiAssistantService.translate_many", return_value=translations
+    ) as translate_many:
+        buffer = build_financial_report_pdf(project=project, language="en")
+
+    sent_texts = [value for value in translate_many.call_args.args[0] if value]
+    assert buffer.read(5) == b"%PDF-"
+    assert "Projet Rapport" not in sent_texts
+    assert all("1800" not in value and "5000" not in value for value in sent_texts)
+    assert translate_many.call_args.kwargs == {
+        "target_language": "en",
+        "context": "project",
+    }
+
+
+@override_settings(AI_PDF_TRANSLATION_ENABLED=True)
+def test_pdf_endpoint_returns_error_instead_of_mixed_language_document():
+    project = make_project()
+    project.description = "Texte à traduire"
+    project.save(update_fields=["description"])
+    with patch(
+        "project.pdf.AiAssistantService.translate_many",
+        side_effect=InvalidModelResponse(),
+    ):
+        response = make_user().get(
+            reverse("project:financial-report-pdf-en"),
+            {"project_id": project.id},
+        )
+    assert response.status_code == status.HTTP_502_BAD_GATEWAY
+    assert response["Content-Type"] == "application/json"
 
 
 @pytest.mark.parametrize(

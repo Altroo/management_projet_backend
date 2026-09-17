@@ -1,0 +1,407 @@
+import hashlib
+import json
+import logging
+import time
+
+from django.conf import settings
+from django.core.cache import caches
+
+from account.models import CustomUser
+from company.models import CompanyProfile
+from project.models import Client, Project, Supplier
+
+from .client import LlamaCppClient
+from .exceptions import InvalidModelResponse, ModelTimeout, ModelUnavailable
+from .protection import protect_text
+
+logger = logging.getLogger(__name__)
+
+SINGLE_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "suggested_text": {"type": "string"},
+        "detected_language": {"type": "string", "enum": ["fr", "en"]},
+    },
+    "required": ["suggested_text", "detected_language"],
+    "additionalProperties": False,
+}
+
+BATCH_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "suggested_text": {"type": "string"},
+                },
+                "required": ["id", "suggested_text"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["items"],
+    "additionalProperties": False,
+}
+
+
+def _parse_json(content):
+    try:
+        return json.loads(content)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise InvalidModelResponse() from exc
+
+
+class AiAssistantService:
+    cache_ttl = 60 * 60 * 24 * 30
+
+    def __init__(self, client=None):
+        self.client = client or LlamaCppClient()
+        self.cache = caches["ai_assistant"]
+
+    @staticmethod
+    def _cache_key(
+        *,
+        application,
+        action,
+        text,
+        source_language,
+        target_language,
+        context,
+        protection_hash,
+    ):
+        material = json.dumps(
+            {
+                "model": settings.AI_MODEL_ID,
+                "application": application,
+                "action": action,
+                "source_language": source_language,
+                "target_language": target_language,
+                "context": context,
+                "protection_hash": protection_hash,
+                "text": text,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        return f"ai-assist:{hashlib.sha256(material.encode('utf-8')).hexdigest()}"
+
+    @staticmethod
+    def _protection_hash(protected):
+        material = "\0".join(protected.replacements.values())
+        return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _known_names():
+        values = set()
+        values.update(Project.objects.values_list("nom", flat=True))
+        values.update(Project.objects.exclude(nom_client="").values_list("nom_client", flat=True))
+        values.update(
+            Project.objects.exclude(chef_de_projet="").values_list(
+                "chef_de_projet", flat=True
+            )
+        )
+        values.update(Client.objects.values_list("nom", flat=True))
+        values.update(Supplier.objects.values_list("nom", flat=True))
+        values.update(CompanyProfile.objects.values_list("raison_sociale", flat=True))
+        for first_name, last_name in CustomUser.objects.values_list(
+            "first_name", "last_name"
+        ):
+            full_name = f"{first_name} {last_name}".strip()
+            if full_name:
+                values.add(full_name)
+        return {value for value in values if value}
+
+    @staticmethod
+    def _instruction(
+        action, source_language, target_language, context, application
+    ):
+        language_rule = (
+            f"Translate faithfully into {'French' if target_language == 'fr' else 'English'}."
+            if action == "translate"
+            else "Keep the source language unchanged."
+        )
+        action_rule = {
+            "translate": "Translate only; do not summarize or add information.",
+            "fix_grammar": "Correct grammar, spelling, punctuation, and agreement without changing meaning.",
+            "professionalize": "Rewrite in a concise professional tone without inventing facts.",
+        }[action]
+        return (
+            "You edit internal business text. "
+            f"Application: {application}. Context: {context}. "
+            f"Declared source language: {source_language}. "
+            f"{action_rule} {language_rule} "
+            "Every token shaped like __PROTECTED_0000__ is immutable: copy it exactly once, "
+            "unchanged and in the appropriate semantic position. Return JSON only."
+        )
+
+    def assist(
+        self,
+        *,
+        action,
+        text,
+        source_language,
+        target_language=None,
+        context,
+        application="management_projet",
+        protected_terms=(),
+    ):
+        started = time.monotonic()
+        known_names = set(protected_terms)
+        if application == "management_projet":
+            known_names.update(self._known_names())
+        protected = protect_text(text, known_names)
+        cache_key = self._cache_key(
+            application=application,
+            action=action,
+            text=text,
+            source_language=source_language,
+            target_language=target_language,
+            context=context,
+            protection_hash=self._protection_hash(protected),
+        )
+        cached_value = self.cache.get(cache_key)
+        if cached_value:
+            result = {
+                **cached_value,
+                "model": settings.AI_MODEL_ID,
+                "cached": True,
+                "processing_ms": round((time.monotonic() - started) * 1000),
+            }
+            self._log(
+                application, action, len(text), result["processing_ms"], True, None
+            )
+            return result
+
+        temperature = 0.35 if action == "professionalize" else 0.0
+        last_error = None
+        for _attempt in range(2):
+            try:
+                content = self.client.complete(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": self._instruction(
+                                action,
+                                source_language,
+                                target_language,
+                                context,
+                                application,
+                            ),
+                        },
+                        {"role": "user", "content": protected.text},
+                    ],
+                    response_schema=SINGLE_RESPONSE_SCHEMA,
+                    temperature=temperature,
+                    top_p=0.9 if action == "professionalize" else 1.0,
+                    max_tokens=2048,
+                )
+                payload = _parse_json(content)
+                if not isinstance(payload, dict) or set(payload) != {
+                    "suggested_text",
+                    "detected_language",
+                }:
+                    raise InvalidModelResponse()
+                if not isinstance(payload["suggested_text"], str):
+                    raise InvalidModelResponse()
+                if payload["detected_language"] not in ("fr", "en"):
+                    raise InvalidModelResponse()
+                suggested_text = protected.restore(payload["suggested_text"])
+                if not suggested_text.strip():
+                    raise InvalidModelResponse()
+                detected_language = (
+                    source_language
+                    if source_language in ("fr", "en")
+                    else payload["detected_language"]
+                )
+                stored = {
+                    "suggested_text": suggested_text,
+                    "detected_language": detected_language,
+                }
+                self.cache.set(cache_key, stored, self.cache_ttl)
+                processing_ms = round((time.monotonic() - started) * 1000)
+                self._log(application, action, len(text), processing_ms, False, None)
+                return {
+                    **stored,
+                    "model": settings.AI_MODEL_ID,
+                    "cached": False,
+                    "processing_ms": processing_ms,
+                }
+            except InvalidModelResponse as exc:
+                last_error = exc
+            except (ModelUnavailable, ModelTimeout) as exc:
+                processing_ms = round((time.monotonic() - started) * 1000)
+                self._log(application, action, len(text), processing_ms, False, exc)
+                raise
+        processing_ms = round((time.monotonic() - started) * 1000)
+        self._log(application, action, len(text), processing_ms, False, last_error)
+        raise last_error or InvalidModelResponse()
+
+    def translate_many(
+        self,
+        texts,
+        *,
+        target_language,
+        context="other",
+        application="management_projet",
+        protected_terms=(),
+    ):
+        started = time.monotonic()
+        unique_texts = list(
+            dict.fromkeys(text.strip() for text in texts if text and text.strip())
+        )
+        if not unique_texts:
+            return {}
+
+        translated = {}
+        missing = []
+        known_names = set(protected_terms)
+        if application == "management_projet":
+            known_names.update(self._known_names())
+        for text in unique_texts:
+            protected = protect_text(text, known_names)
+            cache_key = self._cache_key(
+                application=application,
+                action="translate",
+                text=text,
+                source_language="auto",
+                target_language=target_language,
+                context=context,
+                protection_hash=self._protection_hash(protected),
+            )
+            cached_value = self.cache.get(cache_key)
+            if cached_value:
+                translated[text] = cached_value["suggested_text"]
+            else:
+                missing.append((text, cache_key, protected))
+
+        try:
+            for chunk in self._chunks(missing):
+                self._translate_chunk(
+                    chunk,
+                    target_language,
+                    context,
+                    translated,
+                    application,
+                )
+        except (InvalidModelResponse, ModelUnavailable, ModelTimeout) as exc:
+            self._log(
+                application,
+                "translate_batch",
+                sum(map(len, unique_texts)),
+                round((time.monotonic() - started) * 1000),
+                False,
+                exc,
+            )
+            raise
+        self._log(
+            application,
+            "translate_batch",
+            sum(map(len, unique_texts)),
+            round((time.monotonic() - started) * 1000),
+            not missing,
+            None,
+        )
+        return translated
+
+    @staticmethod
+    def _chunks(items, max_items=15, max_chars=6000):
+        chunk = []
+        char_count = 0
+        for item in items:
+            item_length = len(item[0])
+            if chunk and (len(chunk) >= max_items or char_count + item_length > max_chars):
+                yield chunk
+                chunk = []
+                char_count = 0
+            chunk.append(item)
+            char_count += item_length
+        if chunk:
+            yield chunk
+
+    def _translate_chunk(
+        self,
+        chunk,
+        target_language,
+        context,
+        translated,
+        application,
+    ):
+        protected_items = [protected for _text, _key, protected in chunk]
+        request_items = [
+            {"id": str(index), "text": protected.text}
+            for index, protected in enumerate(protected_items)
+        ]
+        last_error = None
+        for _attempt in range(2):
+            try:
+                content = self.client.complete(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": self._instruction(
+                                "translate",
+                                "auto",
+                                target_language,
+                                context,
+                                application,
+                            )
+                            + " Return an items array with exactly one result for every input id.",
+                        },
+                        {
+                            "role": "user",
+                            "content": json.dumps({"items": request_items}, ensure_ascii=False),
+                        },
+                    ],
+                    response_schema=BATCH_RESPONSE_SCHEMA,
+                    temperature=0.0,
+                    top_p=1.0,
+                    max_tokens=4096,
+                )
+                payload = _parse_json(content)
+                response_items = payload.get("items") if isinstance(payload, dict) else None
+                if not isinstance(response_items, list):
+                    raise InvalidModelResponse()
+                indexed = {
+                    item.get("id"): item.get("suggested_text")
+                    for item in response_items
+                    if isinstance(item, dict)
+                }
+                expected_ids = {str(index) for index in range(len(chunk))}
+                if set(indexed) != expected_ids:
+                    raise InvalidModelResponse()
+
+                restored = []
+                for index, protected in enumerate(protected_items):
+                    suggested = indexed[str(index)]
+                    if not isinstance(suggested, str) or not suggested.strip():
+                        raise InvalidModelResponse()
+                    restored.append(protected.restore(suggested))
+                for (source, cache_key, _protected), suggestion in zip(chunk, restored):
+                    value = {
+                        "suggested_text": suggestion,
+                        "detected_language": "fr" if target_language == "en" else "en",
+                    }
+                    self.cache.set(cache_key, value, self.cache_ttl)
+                    translated[source] = suggestion
+                return
+            except InvalidModelResponse as exc:
+                last_error = exc
+        raise last_error or InvalidModelResponse()
+
+    @staticmethod
+    def _log(application, action, character_count, processing_ms, cached, error):
+        logger.info(
+            "AI assistant request",
+            extra={
+                "ai_operation": action,
+                "ai_application": application,
+                "ai_character_count": character_count,
+                "ai_model": settings.AI_MODEL_ID,
+                "ai_cached": cached,
+                "ai_duration_ms": processing_ms,
+                "ai_error": error.__class__.__name__ if error else None,
+            },
+        )

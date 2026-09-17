@@ -63,6 +63,7 @@ urlpatterns = [
     # Expenses
     path("api/depense/", include("depense.urls")),
     path("api/notifications/", include("notification.urls")),
+    path("api/ai/", include("ai_assistant.urls")),
     # Maintenance state (unauthenticated)
     path("api/ws/maintenance/", GetMaintenanceView.as_view(), name="ws-maintenance"),
     # Admin panel (obscured path for security)
