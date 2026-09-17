@@ -287,6 +287,7 @@ def test_pdf_translation_batches_only_human_authored_text_and_preserves_amounts(
     assert translate_many.call_args.kwargs == {
         "target_language": "en",
         "context": "project",
+        "quality_review": True,
     }
 
 
@@ -405,3 +406,30 @@ def test_timeline_value_label_sits_above_its_marker():
         item for item in drawing.contents if hasattr(item, "cx") and item.cx == label.x
     ]
     assert label.y > max(marker.cy for marker in markers)
+
+
+def test_timeline_limits_dense_month_labels_without_removing_data_points():
+    bucket_labels = [f"{month:02d}/2025" for month in range(1, 13)] + [
+        f"{month:02d}/2026" for month in range(1, 13)
+    ]
+    drawing = _timeline_chart(
+        {
+            "bucket_labels": bucket_labels,
+            "revenue_history": [1000] * 24,
+            "expense_history": [500] * 24,
+        },
+        {"revenue": "Revenue", "expenses": "Expenses"},
+        520,
+    )
+
+    visible_labels = [
+        item.text
+        for item in drawing.contents
+        if getattr(item, "text", None) in bucket_labels
+    ]
+    markers = [item for item in drawing.contents if hasattr(item, "cx")]
+
+    assert visible_labels[0] == "01/2025"
+    assert visible_labels[-1] == "12/2026"
+    assert len(visible_labels) <= 8
+    assert len(markers) == 48

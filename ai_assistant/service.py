@@ -1,7 +1,9 @@
 import hashlib
 import json
 import logging
+import re
 import time
+import unicodedata
 
 from django.conf import settings
 from django.core.cache import caches
@@ -16,7 +18,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "8"
+PROMPT_VERSION = "9"
 
 SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
@@ -66,7 +68,7 @@ class AiAssistantService:
 
     @staticmethod
     def _model_id(action):
-        if action.startswith("translate") and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+        if action in {"translate", "translate_batch"} and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
             return settings.AI_TRANSLATION_MODEL_ID
         return settings.AI_MODEL_ID
 
@@ -307,6 +309,7 @@ class AiAssistantService:
         context="other",
         application="management_projet",
         protected_terms=(),
+        quality_review=False,
     ):
         started = time.monotonic()
         unique_texts = list(
@@ -351,6 +354,15 @@ class AiAssistantService:
                         translated,
                         application,
                     )
+            if quality_review:
+                self._review_translations_with_qwen(
+                    unique_texts,
+                    translated,
+                    target_language,
+                    context,
+                    application,
+                    known_names,
+                )
         except (InvalidModelResponse, ModelUnavailable, ModelTimeout) as exc:
             self._log(
                 application,
@@ -363,13 +375,94 @@ class AiAssistantService:
             raise
         self._log(
             application,
-            "translate_batch",
+            "translate_batch_quality" if quality_review else "translate_batch",
             sum(map(len, unique_texts)),
             round((time.monotonic() - started) * 1000),
             not missing,
             None,
         )
         return translated
+
+    def _review_translations_with_qwen(
+        self,
+        source_texts,
+        translated,
+        target_language,
+        context,
+        application,
+        known_names,
+    ):
+        if target_language != "en":
+            return
+
+        candidates = []
+        for source in source_texts:
+            draft = translated[source]
+            if not self._needs_english_quality_review(source, draft):
+                continue
+            protected = protect_text(source, known_names)
+            cache_key = self._cache_key(
+                application=application,
+                action="translate_quality",
+                text=source,
+                source_language="auto",
+                target_language=target_language,
+                context=context,
+                protection_hash=self._protection_hash(protected),
+            )
+            cached_value = self.cache.get(cache_key)
+            if cached_value:
+                translated[source] = cached_value["suggested_text"]
+            else:
+                candidates.append((source, cache_key, protected))
+
+        for chunk in self._chunks(candidates):
+            self._translate_chunk_with_qwen(
+                chunk,
+                target_language,
+                context,
+                translated,
+                application,
+            )
+
+    @staticmethod
+    def _needs_english_quality_review(source, draft):
+        normalized_source = "".join(
+            character
+            for character in unicodedata.normalize("NFKD", source.lower())
+            if not unicodedata.combining(character)
+        )
+        normalized_draft = draft.lower()
+        source_terms = (
+            "1er",
+            "1ere",
+            "2eme",
+            "acompte",
+            "avance",
+            "avancement",
+            "complement de commande",
+            "gros oeuvre",
+            "realisation",
+        )
+        draft_phrases = (
+            "command supplement",
+            "large amount of work",
+            "performance of interior",
+            "production of technical services",
+            "progress towards the implementation",
+            "regulation of the progress",
+            "the work of the major works",
+            "by itself",
+            " pours ",
+        )
+        has_bad_ordinal = bool(
+            re.search(r"\b(?:1th|2th|3th|\d+(?:er|ere|eme|ère|ème))\b", normalized_draft)
+        )
+        return (
+            has_bad_ordinal
+            or any(term in normalized_source for term in source_terms)
+            or any(phrase in f" {normalized_draft} " for phrase in draft_phrases)
+        )
 
     @staticmethod
     def _chunks(items, max_items=15, max_chars=6000):
@@ -443,7 +536,16 @@ class AiAssistantService:
                                 context,
                                 application,
                             )
-                            + " Return an items array with exactly one result for every input id.",
+                            + " Use polished professional construction and accounting terminology, "
+                            "not literal word-for-word phrasing. Use these terms where applicable: "
+                            "acompte or avance = advance payment or deposit; avancement or règlement "
+                            "d'avancement = progress payment; complément de commande = additional "
+                            "order; gros œuvre = structural work; main-d'œuvre = labor. French ordinal "
+                            "suffixes around immutable numbers must become correct English suffixes: "
+                            "1er or 1ère = 1st, 2e or 2ème = 2nd, and 3e or 3ème = 3rd; never output "
+                            "1th, 2th, or 3th. If the input is already in the target language, preserve "
+                            "it unless a small correction is required for natural business language. "
+                            "Return an items array with exactly one result for every input id.",
                         },
                         {
                             "role": "user",
@@ -473,7 +575,11 @@ class AiAssistantService:
                     suggested = indexed[str(index)]
                     if not isinstance(suggested, str) or not suggested.strip():
                         raise InvalidModelResponse()
-                    restored.append(protected.restore(suggested))
+                    restored.append(
+                        self._normalize_english_ordinals(
+                            protected.restore(suggested), target_language
+                        )
+                    )
                 for (source, cache_key, _protected), suggestion in zip(chunk, restored):
                     value = {
                         "suggested_text": suggestion,
@@ -485,6 +591,26 @@ class AiAssistantService:
             except InvalidModelResponse as exc:
                 last_error = exc
         raise last_error or InvalidModelResponse()
+
+    @staticmethod
+    def _normalize_english_ordinals(value, target_language):
+        if target_language != "en":
+            return value
+
+        def replace(match):
+            number = int(match.group(1))
+            if 10 <= number % 100 <= 20:
+                suffix = "th"
+            else:
+                suffix = {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+            return f"{number}{suffix}"
+
+        return re.sub(
+            r"\b(\d+)(?:th|er|ere|ère|eme|ème)\b",
+            replace,
+            value,
+            flags=re.IGNORECASE,
+        )
 
     @staticmethod
     def _log(application, action, character_count, processing_ms, cached, error):

@@ -275,6 +275,71 @@ def test_batch_translation_uses_specialist_and_caches_each_result():
     assert len(translation_client.calls) == 1
 
 
+@override_settings(
+    AI_TRANSLATION_SPECIALIST_ENABLED=True,
+    AI_TRANSLATION_MODEL_ID="opus-mt-fr-en+en-fr-beam8",
+    AI_MODEL_ID="qwen3.6-35b-a3b-q5_k_m",
+)
+def test_quality_review_uses_qwen_only_for_suspicious_english_translations():
+    translation_client = QueueTranslationClient(
+        ["987650000th advance for the installer", "Purchase of ceramic tiles"]
+    )
+    llama_client = QueueClient(
+        json.dumps(
+            {
+                "items": [
+                    {
+                        "id": "0",
+                        "suggested_text": "987650000nd advance payment for the installer",
+                    }
+                ]
+            }
+        )
+    )
+    service = AiAssistantService(
+        client=llama_client, translation_client=translation_client
+    )
+
+    with patch.object(service, "_known_names", return_value=set()):
+        first = service.translate_many(
+            ["2ème avance pour l'installateur", "Achat de carrelage"],
+            target_language="en",
+            context="project",
+            quality_review=True,
+        )
+        second = service.translate_many(
+            ["2ème avance pour l'installateur", "Achat de carrelage"],
+            target_language="en",
+            context="project",
+            quality_review=True,
+        )
+
+    assert first == {
+        "2ème avance pour l'installateur": "2nd advance payment for the installer",
+        "Achat de carrelage": "Purchase of ceramic tiles",
+    }
+    assert second == first
+    assert len(translation_client.calls) == 1
+    assert len(llama_client.calls) == 1
+    system_prompt = llama_client.calls[0]["messages"][0]["content"]
+    assert "complément de commande = additional order" in system_prompt
+    assert "never output 1th, 2th, or 3th" in system_prompt
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("1th advance", "1st advance"),
+        ("2ème avance", "2nd avance"),
+        ("3er payment", "3rd payment"),
+        ("11th payment", "11th payment"),
+        ("24th payment", "24th payment"),
+    ],
+)
+def test_english_ordinal_normalization(value, expected):
+    assert AiAssistantService._normalize_english_ordinals(value, "en") == expected
+
+
 def test_cache_is_isolated_by_calling_application():
     response = json.dumps(
         {"suggested_text": "Professional text", "detected_language": "en"}

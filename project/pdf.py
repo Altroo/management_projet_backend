@@ -398,7 +398,10 @@ def _translate_report_content(data, project, language):
         fields.extend((row.description, row.notes))
 
     translations = AiAssistantService().translate_many(
-        fields, target_language=language, context="project"
+        fields,
+        target_language=language,
+        context="project",
+        quality_review=True,
     )
 
     def translated(value):
@@ -1365,7 +1368,13 @@ def _timeline_chart(data, labels, width):
 
     count = len(data["bucket_labels"])
     step = plot_width / max(1, count - 1)
+    max_visible_labels = 8
+    label_interval = max(1, math.ceil((count - 1) / (max_visible_labels - 1)))
+    visible_label_indexes = set(range(0, count, label_interval))
+    visible_label_indexes.add(count - 1)
     for index, bucket_label in enumerate(data["bucket_labels"]):
+        if index not in visible_label_indexes:
+            continue
         x = plot_x + (plot_width / 2 if count == 1 else index * step)
         drawing.add(
             String(
