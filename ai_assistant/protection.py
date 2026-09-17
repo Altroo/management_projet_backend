@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from .exceptions import InvalidModelResponse
 
 
-PLACEHOLDER_RE = re.compile(r"<x\d{4}>")
+PLACEHOLDER_RE = re.compile(r"ZXQMARKER\d{4}")
 
 PROTECTED_PATTERNS = (
     re.compile(r"https?://[^\s<>\]\[()]+(?<![.,;:!?])", re.IGNORECASE),
@@ -31,10 +31,19 @@ class ProtectedText:
         found = [match.group(0) for match in matches]
         expected = set(self.replacements)
         has_marker_junk = any(
-            (match.start() > 0 and generated_text[match.start() - 1] in "<>_")
+            (
+                match.start() > 0
+                and (
+                    generated_text[match.start() - 1].isalnum()
+                    or generated_text[match.start() - 1] == "_"
+                )
+            )
             or (
                 match.end() < len(generated_text)
-                and generated_text[match.end()] in "<>_"
+                and (
+                    generated_text[match.end()].isalnum()
+                    or generated_text[match.end()] == "_"
+                )
             )
             for match in matches
         )
@@ -70,7 +79,7 @@ def protect_text(text: str, known_names=()) -> ProtectedText:
     parts = []
     cursor = 0
     for index, (start, end) in enumerate(selected):
-        placeholder = f"<x{index:04d}>"
+        placeholder = f"ZXQMARKER{index:04d}"
         parts.extend((text[cursor:start], placeholder))
         replacements[placeholder] = text[start:end]
         cursor = end

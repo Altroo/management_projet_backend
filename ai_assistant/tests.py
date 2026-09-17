@@ -84,7 +84,7 @@ def test_protected_values_must_be_returned_exactly_once():
         "https://atlas.test/devis/2048 le 17/09/2026 pour 1 250 MAD."
     )
     with pytest.raises(InvalidModelResponse):
-        protected.restore(protected.text.replace("<x0000>", ""))
+        protected.restore(protected.text.replace("ZXQMARKER0000", ""))
 
 
 def test_url_protection_leaves_sentence_punctuation_outside_placeholder():
@@ -93,7 +93,7 @@ def test_url_protection_leaves_sentence_punctuation_outside_placeholder():
     assert list(protected.replacements.values()) == [
         "https://atlas.test/dossier/REF-2048"
     ]
-    assert protected.text.endswith("<x0000>.")
+    assert protected.text.endswith("ZXQMARKER0000.")
     assert protected.restore(protected.text) == (
         "Consulter https://atlas.test/dossier/REF-2048."
     )
@@ -103,7 +103,9 @@ def test_protected_values_reject_marker_junk_adjacent_to_placeholder():
     protected = protect_text("Consulter https://atlas.test/dossier/REF-2048.")
 
     with pytest.raises(InvalidModelResponse):
-        protected.restore(protected.text.replace("<x0000>", "<x0000>__"))
+        protected.restore(
+            protected.text.replace("ZXQMARKER0000", "ZXQMARKER0000__")
+        )
 
 
 def test_service_retries_malformed_json_and_caches_valid_response():
@@ -195,7 +197,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for <x0000> on <x0001>."]
+        ["Delivery for ZXQMARKER0000 on ZXQMARKER0001."]
     )
     llama_client = QueueClient()
     service = AiAssistantService(
