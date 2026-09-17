@@ -30,9 +30,11 @@ from .pdf import (
     _build_totals,
     _nice_max,
     _report_data,
+    _summary_cards,
     _styles,
     _timeline_chart,
     _transaction_table,
+    _translate_report_content,
     build_financial_report_pdf,
 )
 
@@ -286,6 +288,51 @@ def test_pdf_translation_batches_only_human_authored_text_and_preserves_amounts(
         "target_language": "en",
         "context": "project",
     }
+
+
+@override_settings(AI_PDF_TRANSLATION_ENABLED=True)
+def test_all_projects_translates_and_displays_project_description_and_notes():
+    project = make_project()
+    project.description = "Rénovation complète de la villa"
+    project.notes = "Livraison prévue en décembre"
+    project.save(update_fields=["description", "notes"])
+    Revenue.objects.create(
+        project=project,
+        date=date(2026, 3, 10),
+        description="Acompte reçu",
+        montant="1800.00",
+    )
+    data = _report_data(
+        None,
+        date(2026, 1, 1),
+        date(2026, 12, 31),
+        TRANSLATIONS["en"],
+        "en",
+    )
+    translations = {
+        "Rénovation complète de la villa": "Complete villa renovation",
+        "Livraison prévue en décembre": "Delivery planned for December",
+        "Acompte reçu": "Deposit received",
+    }
+
+    with patch(
+        "project.pdf.AiAssistantService.translate_many", return_value=translations
+    ) as translate_many:
+        _translate_report_content(data, None, "en")
+
+    sent_texts = [value for value in translate_many.call_args.args[0] if value]
+    report_project = data["project_rows"][0]["project"]
+    assert "Rénovation complète de la villa" in sent_texts
+    assert "Livraison prévue en décembre" in sent_texts
+    assert "Projet Rapport" not in sent_texts
+    assert report_project.description == "Complete villa renovation"
+    assert report_project.notes == "Delivery planned for December"
+
+    cards = _summary_cards(data, TRANSLATIONS["en"], 520, _styles())
+    card = cards[0]._content[0]
+    details = card._cellvalues[1][0].getPlainText()
+    assert "Project description: Complete villa renovation" in details
+    assert "Notes: Delivery planned for December" in details
 
 
 @override_settings(AI_PDF_TRANSLATION_ENABLED=True)

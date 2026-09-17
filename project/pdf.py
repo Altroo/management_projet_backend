@@ -378,6 +378,10 @@ def _translate_report_content(data, project, language):
     fields = []
     if project:
         fields.extend((project.description, project.notes))
+    else:
+        for item in data["project_rows"]:
+            report_project = item["project"]
+            fields.extend((report_project.description, report_project.notes))
     for row in data["revenue_rows"]:
         fields.extend((row.description, row.notes))
     for row in data["expense_rows"]:
@@ -403,6 +407,11 @@ def _translate_report_content(data, project, language):
     if project:
         project.description = translated(project.description)
         project.notes = translated(project.notes)
+    else:
+        for item in data["project_rows"]:
+            report_project = item["project"]
+            report_project.description = translated(report_project.description)
+            report_project.notes = translated(report_project.notes)
     for row in data["revenue_rows"]:
         row.description = translated(row.description)
         row.notes = translated(row.notes)
@@ -1892,24 +1901,46 @@ def _summary_cards(data, labels, width, styles):
                 ]
             )
         )
+        details = []
+        if project.description:
+            details.append(
+                f"<b>{_text(labels['project_description'])}:</b> "
+                f"{_text(project.description)}"
+            )
+        if project.notes:
+            details.append(
+                f"<b>{_text(labels['notes'])}:</b> {_text(project.notes)}"
+            )
+        card_rows = [[identity, metrics]]
+        if details:
+            card_rows.append(
+                [
+                    Paragraph(
+                        "<br/>".join(details),
+                        styles["Small"],
+                    ),
+                    "",
+                ]
+            )
         card = Table(
-            [[identity, metrics]],
+            card_rows,
             colWidths=[width * 0.52, width * 0.48],
             hAlign="LEFT",
         )
+        card_style = [
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
+            ("LINEBEFORE", (0, 0), (0, 0), 3, colors.HexColor(ACCENT)),
+            ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ]
+        if details:
+            card_style.append(("SPAN", (0, 1), (1, 1)))
         card.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(SOFT_BG)),
-                    ("LINEBEFORE", (0, 0), (0, 0), 3, colors.HexColor(ACCENT)),
-                    ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(BORDER)),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                    ("TOPPADDING", (0, 0), (-1, -1), 8),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ]
-            )
+            TableStyle(card_style)
         )
         cards.extend([KeepTogether([card]), Spacer(1, 0.12 * cm)])
     return cards
