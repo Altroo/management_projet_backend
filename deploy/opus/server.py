@@ -51,7 +51,7 @@ def translate(texts, target_language):
                 truncation=True,
                 max_length=512,
             )
-            generated = model.generate(**encoded)
+            generated = model.generate(**encoded, num_beams=8, do_sample=False)
             translated.extend(
                 tokenizer.batch_decode(generated, skip_special_tokens=True)
             )
