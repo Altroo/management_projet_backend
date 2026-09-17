@@ -230,7 +230,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for XACME0000X on DATEX0001."]
+        ["Delivery for XAAAX on XAABX."]
     )
     llama_client = QueueClient()
     service = AiAssistantService(
@@ -250,7 +250,31 @@ def test_translation_uses_specialist_and_reports_its_model():
     )
     assert result["model"] == "opus-mt-fr-en+en-fr-beam8"
     assert len(translation_client.calls) == 1
+    assert translation_client.calls[0]["texts"] == [
+        "Livraison pour XAAAX le XAABX."
+    ]
     assert llama_client.calls == []
+
+
+def test_opus_placeholder_codec_rejects_changed_or_duplicated_tokens():
+    protected = protect_text(
+        "Payment by Maison Atlas on 17/09/2026.", {"Maison Atlas"}
+    )
+    encoded, mapping = AiAssistantService._encode_opus_placeholders(protected)
+
+    assert encoded == "Payment by XAAAX on XAABX."
+    decoded = AiAssistantService._decode_opus_placeholders(encoded, mapping)
+    assert protected.restore(decoded) == (
+        "Payment by Maison Atlas on 17/09/2026."
+    )
+    with pytest.raises(InvalidModelResponse):
+        AiAssistantService._decode_opus_placeholders(
+            encoded.replace("XAAAX", "XAAX"), mapping
+        )
+    with pytest.raises(InvalidModelResponse):
+        AiAssistantService._decode_opus_placeholders(
+            encoded.replace("XAAAX", "XAAAX XAAAX"), mapping
+        )
 
 
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
