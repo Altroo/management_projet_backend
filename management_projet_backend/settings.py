@@ -251,7 +251,18 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            # redis-py 8 defaults socket_timeout to 5 seconds, which is also
+            # channels-redis' BZPOPMIN timeout. Keep the socket deadline above
+            # the blocking-pop interval so an idle WebSocket is not mistaken
+            # for a failed Redis connection every five seconds.
+            "hosts": [
+                {
+                    "host": REDIS_HOST,
+                    "port": int(REDIS_PORT),
+                    "socket_connect_timeout": 5,
+                    "socket_timeout": 10,
+                }
+            ],
         },
     },
 }
