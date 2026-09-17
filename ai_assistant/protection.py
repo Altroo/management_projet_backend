@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from .exceptions import InvalidModelResponse
 
 
-PLACEHOLDER_RE = re.compile(r"(?:ZXQ(?:MARKER|CURR)\d{4}|98765\d{4})")
+PLACEHOLDER_RE = re.compile(
+    r"(?:ZXQMARKER\d{4}|ACME\d{4}|MADCURR\d{4}|98765\d{4})"
+)
 
 PROTECTED_PATTERNS = (
     (
@@ -79,7 +81,7 @@ def protect_text(text: str, known_names=()) -> ProtectedText:
             continue
         pattern = re.compile(rf"(?<!\w){re.escape(name)}(?!\w)", re.IGNORECASE)
         spans.extend(
-            (match.start(), match.end(), "generic")
+            (match.start(), match.end(), "name")
             for match in pattern.finditer(text)
         )
 
@@ -100,7 +102,8 @@ def protect_text(text: str, known_names=()) -> ProtectedText:
     cursor = 0
     for index, (start, end, kind) in enumerate(selected):
         placeholder = {
-            "currency": f"ZXQCURR{index:04d}",
+            "currency": f"MADCURR{index:04d}",
+            "name": f"ACME{index:04d}",
             "number": f"98765{index:04d}",
         }.get(kind, f"ZXQMARKER{index:04d}")
         parts.extend((text[cursor:start], placeholder))

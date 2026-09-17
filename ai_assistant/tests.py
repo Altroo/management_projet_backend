@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import re
 import time
 from unittest.mock import patch
 
@@ -83,8 +84,9 @@ def test_protected_values_must_be_returned_exactly_once():
         "Contacter Maison Atlas (REF-2048) via atlas@example.com ou "
         "https://atlas.test/devis/2048 le 17/09/2026 pour 1 250 MAD."
     )
+    first_placeholder = next(iter(protected.replacements))
     with pytest.raises(InvalidModelResponse):
-        protected.restore(protected.text.replace("ZXQMARKER0000", ""))
+        protected.restore(protected.text.replace(first_placeholder, ""))
 
 
 def test_url_protection_leaves_sentence_punctuation_outside_placeholder():
@@ -112,11 +114,23 @@ def test_numbers_and_currency_use_separate_type_shaped_placeholders():
     protected = protect_text("Paiement de 24 000 MAD à 10 heures.")
 
     assert "24 000" not in protected.text
-    assert "MAD" not in protected.text
+    assert re.search(r"\bMAD\b", protected.text) is None
     assert "10" not in protected.text
-    assert "ZXQCURR" in protected.text
+    assert "MADCURR" in protected.text
     assert protected.text.count("98765") == 2
     assert protected.restore(protected.text) == "Paiement de 24 000 MAD à 10 heures."
+
+
+def test_known_names_use_proper_name_shaped_placeholders():
+    protected = protect_text(
+        "Maison Atlas confirmed delivery for project REF-2048.",
+        {"Maison Atlas"},
+    )
+
+    assert protected.text.startswith("ACME0000 confirmed delivery")
+    assert protected.restore(protected.text) == (
+        "Maison Atlas confirmed delivery for project REF-2048."
+    )
 
 
 def test_service_retries_malformed_json_and_caches_valid_response():
@@ -208,7 +222,7 @@ def test_service_propagates_timeout_without_returning_original_text():
 )
 def test_translation_uses_specialist_and_reports_its_model():
     translation_client = QueueTranslationClient(
-        ["Delivery for ZXQMARKER0000 on ZXQMARKER0001."]
+        ["Delivery for ACME0000 on ZXQMARKER0001."]
     )
     llama_client = QueueClient()
     service = AiAssistantService(
