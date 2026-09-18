@@ -9,7 +9,7 @@ environ.setdefault("DJANGO_SETTINGS_MODULE", "management_projet_backend.settings
 
 app = Celery("management_projet_backend", broker=settings.CELERY_BROKER_URL)
 app.config_from_object("django.conf:settings", namespace="CELERY")
-app.conf.timezone = settings.TIME_ZONE
+app.conf.update(timezone=settings.TIME_ZONE)
 app.conf.setdefault("worker_cancel_long_running_tasks_on_connection_loss", True)
 app.conf.task_serializer = "json"
 app.conf.result_serializer = "json"
@@ -25,7 +25,7 @@ app.autodiscover_tasks(
 
 app.conf.beat_schedule = {
     "check-project-notifications-every-hour": {
-        "task": "notification.check_project_notifications",
+        "task": "notification.tasks.check_project_notifications",
         "schedule": crontab(minute=0),
     },
 }
