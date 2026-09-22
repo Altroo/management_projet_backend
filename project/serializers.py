@@ -382,6 +382,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_status_display(obj):
         return obj.status
 
+    @staticmethod
+    def validate_budget_total(value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                "Le budget total doit être supérieur à 0."
+            )
+        return value
+
     class Meta:
         model = Project
         fields = [

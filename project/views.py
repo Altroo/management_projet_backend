@@ -226,8 +226,8 @@ def _project_dashboard_payload(
         "marge": marge,
         "budget_utilisation": (
             round((depenses_totales / project.budget_total) * 100, 2)
-            if project.budget_total
-            else 0
+            if project.budget_total > 0
+            else None
         ),
         "top_categories": _group_expenses(
             expenses,
@@ -284,7 +284,9 @@ def _multi_project_dashboard_payload(
         round((total_profit / total_revenue) * 100, 2) if total_revenue else 0
     )
     budget_utilisation = (
-        round((total_expenses / total_budget) * 100, 2) if total_budget else 0
+        round((total_expenses / total_budget) * 100, 2)
+        if total_budget > 0
+        else None
     )
     total_service_fees = _service_fee_total(expenses)
 

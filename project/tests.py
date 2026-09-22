@@ -457,6 +457,22 @@ class TestProjectListCreateView:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["nom"] == "Nouveau Projet"
 
+    def test_create_rejects_zero_budget(self):
+        payload = {
+            "nom": "Budget invalide",
+            "budget_total": "0.00",
+            "date_debut": "2025-06-01",
+            "date_fin": "2025-12-31",
+            "status": "Pas commencé",
+            "chef_de_projet": "Marie Curie",
+            "nom_client": "Client Z",
+        }
+
+        response = self.staff_client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "budget_total" in response.data["details"]
+
     def test_create_without_permission_returns_403(self):
         payload = {
             "nom": "Blocked",
@@ -779,6 +795,16 @@ class TestProjectDashboardView:
         assert Decimal(response.data["budget_gap"]) == Decimal("77000.00")
         assert len(response.data["real_budget_by_stage"]) == 2
 
+    def test_zero_budget_returns_unavailable_utilisation(self):
+        self.project.budget_total = Decimal("0.00")
+        self.project.save(update_fields=["budget_total"])
+        make_expense(self.project, montant="500.00")
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["budget_utilisation"] is None
+
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -899,6 +925,19 @@ class TestMultiProjectDashboardView:
         assert Decimal(response.data["real_budget_profit"]) == Decimal("8000.00")
         assert response.data["real_budget_by_stage"][0]["stage"] == "Design"
         assert Decimal(response.data["projects"][0]["real_budget_total_cost"]) == Decimal("12000.00")
+
+    def test_zero_total_budget_returns_unavailable_utilisation(self):
+        project = make_project(
+            nom="MP Sans Budget",
+            created_by=self.staff_user,
+            budget_total="0.00",
+        )
+        make_expense(project, montant="500.00")
+
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["budget_utilisation"] is None
 
     def test_unauthenticated_returns_401(self):
         response = self.anon_client.get(self.url)
