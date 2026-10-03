@@ -29,6 +29,9 @@ def _file_url(request, file_field):
 class ExpenseSerializer(serializers.ModelSerializer):
     """Serializer for Expense CRUD."""
 
+    quote_number = serializers.CharField(
+        source="quote.number", read_only=True, default=None
+    )
     project_name = serializers.CharField(source="project.nom", read_only=True)
     category_name = serializers.CharField(
         source="category.name", read_only=True, default=None
@@ -36,7 +39,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
     sous_categorie_name = serializers.CharField(
         source="sous_categorie.name", read_only=True, default=None
     )
-    supplier_name = serializers.CharField(source="supplier.nom", read_only=True, default=None)
+    supplier_name = serializers.CharField(
+        source="supplier.nom", read_only=True, default=None
+    )
     created_by_user_name = serializers.SerializerMethodField()
     frais_de_service_montant = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
@@ -52,6 +57,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "id",
             "project",
             "project_name",
+            "quote",
+            "quote_number",
             "date",
             "category",
             "category_name",
@@ -87,6 +94,24 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        quote = attrs.get("quote", getattr(self.instance, "quote", None))
+        if quote:
+            # Lock the quote while a linked expense is saved by the view.
+            from devis.models import Quote
+
+            quote = Quote.objects.select_for_update().get(pk=quote.pk)
+            if quote.status != Quote.Status.VALIDATED:
+                raise serializers.ValidationError(
+                    {
+                        "quote": "Seuls les devis validés peuvent être liés à une dépense."
+                    }
+                )
+            for field in ("project", "category", "sous_categorie", "supplier"):
+                value = attrs.get(field, getattr(self.instance, field, None))
+                if value != getattr(quote, field):
+                    raise serializers.ValidationError(
+                        {field: "Ce champ doit correspondre au devis choisi."}
+                    )
         frais_de_service = attrs.get(
             "frais_de_service",
             getattr(self.instance, "frais_de_service", False),
@@ -117,10 +142,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"frais_de_service_valeur": "La valeur doit être supérieure à 0."}
             )
-        if (
-            fee_type == Expense.SERVICE_FEE_TYPE_PERCENTAGE
-            and value > Decimal("100")
-        ):
+        if fee_type == Expense.SERVICE_FEE_TYPE_PERCENTAGE and value > Decimal("100"):
             raise serializers.ValidationError(
                 {
                     "frais_de_service_valeur": (

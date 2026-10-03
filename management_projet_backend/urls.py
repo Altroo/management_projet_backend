@@ -62,6 +62,7 @@ urlpatterns = [
     path("api/revenu/", include("revenu.urls")),
     # Expenses
     path("api/depense/", include("depense.urls")),
+    path("api/devis/", include("devis.urls")),
     path("api/notifications/", include("notification.urls")),
     path("api/ai/", include("ai_assistant.urls")),
     # Maintenance state (unauthenticated)

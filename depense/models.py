@@ -31,6 +31,14 @@ class Expense(models.Model):
         related_name="expenses",
         verbose_name=_("Projet"),
     )
+    quote = models.ForeignKey(
+        "devis.Quote",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        verbose_name=_("Devis"),
+    )
     date = models.DateField(
         verbose_name=_("Date"),
         db_index=True,

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "project.apps.ProjectConfig",
     "revenu.apps.RevenuConfig",
     "depense.apps.DepenseConfig",
+    "devis.apps.DevisConfig",
     "notification.apps.NotificationConfig",
     "ai_assistant.apps.AiAssistantConfig",
     "axes",

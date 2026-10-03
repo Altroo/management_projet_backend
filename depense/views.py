@@ -1,6 +1,7 @@
 import logging
 
 from django.http import Http404
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import permissions, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -24,13 +25,19 @@ class ExpenseListCreateView(APIView):
     @staticmethod
     def get(request):
         qs = Expense.objects.select_related(
-            "project", "category", "sous_categorie", "supplier", "created_by_user"
+            "project",
+            "category",
+            "sous_categorie",
+            "supplier",
+            "created_by_user",
+            "quote",
         ).all()
         filterset = ExpenseFilter(request.GET, queryset=qs)
         serializer = ExpenseSerializer(filterset.qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod
+    @transaction.atomic
     def post(request):
         if not can_create(request.user):
             raise PermissionDenied(
@@ -51,7 +58,12 @@ class ExpenseDetailView(APIView):
     def _get_expense(pk: int) -> Expense:
         try:
             return Expense.objects.select_related(
-                "project", "category", "sous_categorie", "supplier", "created_by_user"
+                "project",
+                "category",
+                "sous_categorie",
+                "supplier",
+                "created_by_user",
+                "quote",
             ).get(pk=pk)
         except Expense.DoesNotExist:
             raise Http404(_("Dépense introuvable."))
@@ -61,6 +73,7 @@ class ExpenseDetailView(APIView):
         serializer = ExpenseSerializer(expense)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def put(self, request, pk: int):
         if not can_update(request.user):
             raise PermissionDenied(

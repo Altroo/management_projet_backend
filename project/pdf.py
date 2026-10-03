@@ -25,6 +25,7 @@ try:
     from reportlab.lib.units import cm
     from reportlab.platypus import (
         CondPageBreak,
+        PageBreak,
         Image,
         KeepTogether,
         LongTable,
@@ -178,13 +179,21 @@ PALETTE = (
 )
 
 
-def build_project_report_pdf(project, language="fr"):
+def build_project_report_pdf(project, language="fr", include_estimates=False):
     """Compatibility wrapper for the existing project report endpoint."""
-    return build_financial_report_pdf(project=project, language=language)
+    return build_financial_report_pdf(
+        project=project, language=language, include_estimates=include_estimates
+    )
 
 
 def build_financial_report_pdf(
-    *, project=None, date_from=None, date_to=None, language="fr", company=None
+    *,
+    project=None,
+    date_from=None,
+    date_to=None,
+    language="fr",
+    company=None,
+    include_estimates=False,
 ):
     if not REPORTLAB_AVAILABLE:
         raise ImportError("ReportLab is required to generate PDF reports.")
@@ -292,6 +301,14 @@ def build_financial_report_pdf(
             ),
         ]
     )
+
+    if include_estimates and project:
+        story.extend(
+            [
+                PageBreak(),
+                *_estimate_comparison(project, language, content_width, styles),
+            ]
+        )
 
     footer = _footer(company.raison_sociale, generated_at, labels, language)
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
@@ -2054,3 +2071,115 @@ def _text(value):
 def _short(value, length):
     value = str(value)
     return value if len(value) <= length else f"{value[: length - 3]}..."
+
+
+def _estimate_comparison(project, language, width, styles):
+    from devis.services import project_estimate_summary
+
+    data = project_estimate_summary(project)
+    english = language == "en"
+    title = (
+        "Estimated budget / actual spending"
+        if english
+        else "Budget prévisionnel / dépenses réelles"
+    )
+    note = (
+        "Project lifetime totals to date, independent of the selected report period. Validated quotes including VAT; expenses excluding service fees."
+        if english
+        else "Cumul du projet à ce jour, indépendant de la période du rapport. Devis validés TTC ; dépenses hors frais de service."
+    )
+    labels = (
+        ["Category", "Estimated", "Spent", "Variance", "Remaining"]
+        if english
+        else ["Lot / Catégorie", "Prévu TTC", "Dépensé", "Écart", "Reste à engager"]
+    )
+    story = [
+        _section_heading(title, "MAD", styles, width),
+        Spacer(1, 0.2 * cm),
+        Paragraph(_text(note), styles["Small"]),
+        Spacer(1, 0.3 * cm),
+    ]
+    if not data["validated_count"]:
+        story.extend(
+            [
+                Paragraph(
+                    (
+                        "No validated quotes: estimated budget unavailable."
+                        if english
+                        else "Aucun devis validé : budget prévisionnel non renseigné."
+                    ),
+                    styles["Small"],
+                ),
+                Spacer(1, 0.2 * cm),
+            ]
+        )
+    rows = [[Paragraph(_text(label), styles["SmallHeader"]) for label in labels]]
+    for row in data["by_category"]:
+        rows.append(
+            [
+                _table_cell(
+                    row["category_name"]
+                    or ("Uncategorized" if english else "Sans catégorie"),
+                    styles,
+                )
+            ]
+            + [
+                _amount_cell(
+                    row[key],
+                    styles,
+                    color=RED if key == "variance" and row["overrun"] else NAVY,
+                )
+                for key in ("estimated", "spent", "variance", "remaining")
+            ]
+        )
+    rows.append(
+        [_table_cell("TOTAL", styles)]
+        + [
+            _amount_cell(
+                data[key],
+                styles,
+                color=RED if key == "variance" and data["overrun"] else NAVY,
+            )
+            for key in ("estimated", "spent", "variance", "remaining")
+        ]
+    )
+    table = Table(
+        rows, colWidths=[width * 0.32] + [width * 0.17] * 4, repeatRows=1, hAlign="LEFT"
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(TABLE_HEADER_BG)),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(TABLE_HEADER_BG)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.3, colors.HexColor("#dce3ea")),
+            ]
+        )
+    )
+    story.extend([table, Spacer(1, 0.3 * cm)])
+    for label, value in (
+        (
+            "Client advances received" if english else "Avances reçues du client",
+            data["advances"],
+        ),
+        (
+            "Expenses without a quote" if english else "Dépenses sans devis",
+            data["unlinked_spent"],
+        ),
+    ):
+        story.append(
+            Paragraph(f"{_text(label)} : {_money(value)} MAD", styles["Small"])
+        )
+    story.append(
+        Paragraph(
+            (
+                "Variance = estimated minus spent. Remaining = positive variance."
+                if english
+                else "Écart = prévu moins dépensé. Reste à engager = écart positif."
+            ),
+            styles["Small"],
+        )
+    )
+    return story

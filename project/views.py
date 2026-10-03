@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.db.models import Q, Sum, DecimalField
 from notification.tasks import notify_project_status_change
 from django.db.models.functions import Coalesce
+from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, Http404
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -257,6 +258,9 @@ def _project_dashboard_payload(
         "revenue_history": revenue_history,
     }
     if expose_internal_financials:
+        from devis.services import project_estimate_summary
+
+        payload["estimate_summary"] = project_estimate_summary(project)
         payload["service_fees"] = service_fees
         payload["revenue_reelle"] = revenue_total + service_fees
         payload.update(_real_budget_summary(real_budget_entries, project.budget_total))
@@ -936,7 +940,12 @@ class SupplierDetailView(APIView):
             raise PermissionDenied(
                 _("Vous n'avez pas les droits pour supprimer ce fournisseur.")
             )
-        self._get_supplier(pk).delete()
+        try:
+            self._get_supplier(pk).delete()
+        except ProtectedError:
+            raise ValidationError(
+                {"supplier": "Ce fournisseur est référencé par un devis."}
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -954,7 +963,10 @@ class BulkDeleteSupplierView(APIView):
         ids = request.data.get("ids", [])
         if not ids or not isinstance(ids, list):
             raise ValidationError({"ids": _("Une liste d'identifiants est requise.")})
-        Supplier.objects.filter(pk__in=ids).delete()
+        try:
+            Supplier.objects.filter(pk__in=ids).delete()
+        except ProtectedError:
+            raise ValidationError({"ids": "Un fournisseur est référencé par un devis."})
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1210,6 +1222,13 @@ class BulkDeleteProjectRealBudgetEntryView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+def _include_estimates(request):
+    value = request.query_params.get("include_estimates", "false").lower()
+    if value not in {"true", "false", "1", "0"}:
+        raise ValidationError({"include_estimates": "Valeur booléenne invalide."})
+    return value in {"true", "1"}
+
+
 class ProjectReportPDFView(APIView):
     """Generate a project PDF report."""
 
@@ -1227,14 +1246,11 @@ class ProjectReportPDFView(APIView):
             raise Http404(_("Projet introuvable."))
 
         try:
-            pdf_buffer = build_project_report_pdf(project)
+            options = {"include_estimates": True} if _include_estimates(request) else {}
+            pdf_buffer = build_project_report_pdf(project, **options)
         except ImportError:
             raise ValidationError(
-                {
-                    "report": _(
-                        "La génération PDF nécessite la dépendance ReportLab."
-                    )
-                }
+                {"report": _("La génération PDF nécessite la dépendance ReportLab.")}
             )
         response = FileResponse(
             pdf_buffer,
@@ -1286,12 +1302,18 @@ class FinancialReportPDFView(APIView):
             except Project.DoesNotExist:
                 raise Http404(_("Projet introuvable."))
 
+        include_estimates = _include_estimates(request)
+        if include_estimates and project is None:
+            raise ValidationError(
+                {"project_id": "Sélectionnez un projet pour comparer le budget."}
+            )
         try:
             pdf_buffer = build_financial_report_pdf(
                 project=project,
                 date_from=date_from,
                 date_to=date_to,
                 language=language,
+                **({"include_estimates": True} if include_estimates else {}),
             )
         except ImportError:
             raise ValidationError(

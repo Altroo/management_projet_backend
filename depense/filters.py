@@ -8,6 +8,7 @@ class ExpenseFilter(django_filters.FilterSet):
     """Filter for the Expense model."""
 
     search = django_filters.CharFilter(method="global_search", label="Recherche")
+    quote = django_filters.NumberFilter(field_name="quote_id")
     project = django_filters.NumberFilter(field_name="project_id")
     category = django_filters.NumberFilter(field_name="category_id")
     sous_categorie = django_filters.NumberFilter(field_name="sous_categorie_id")
