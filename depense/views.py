@@ -1,3 +1,4 @@
+from management_projet_backend.ordering import apply_list_ordering
 import logging
 
 from django.http import Http404
@@ -33,7 +34,7 @@ class ExpenseListCreateView(APIView):
             "quote",
         ).all()
         filterset = ExpenseFilter(request.GET, queryset=qs)
-        serializer = ExpenseSerializer(filterset.qs, many=True)
+        serializer = ExpenseSerializer(apply_list_ordering(filterset.qs, request.query_params), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod

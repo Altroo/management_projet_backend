@@ -1,3 +1,4 @@
+from management_projet_backend.ordering import apply_list_ordering
 import logging
 
 from django.http import Http404
@@ -25,7 +26,7 @@ class RevenueListCreateView(APIView):
     def get(request):
         qs = Revenue.objects.select_related("project", "created_by_user").all()
         filterset = RevenueFilter(request.GET, queryset=qs)
-        serializer = RevenueSerializer(filterset.qs, many=True)
+        serializer = RevenueSerializer(apply_list_ordering(filterset.qs, request.query_params), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod

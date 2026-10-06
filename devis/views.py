@@ -1,3 +1,4 @@
+from management_projet_backend.ordering import apply_list_ordering
 import logging
 
 from django.http import Http404
@@ -50,7 +51,7 @@ class QuoteListCreateView(APIView):
         filterset = QuoteFilter(request.GET, queryset=qs)
         if not filterset.is_valid():
             raise ValidationError(filterset.errors)
-        serializer = QuoteSerializer(filterset.qs, many=True)
+        serializer = QuoteSerializer(apply_list_ordering(filterset.qs, request.query_params), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod

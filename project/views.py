@@ -1,3 +1,4 @@
+from management_projet_backend.ordering import apply_list_ordering
 import logging
 from decimal import Decimal
 
@@ -57,6 +58,7 @@ def _paginate_or_serialize(request, queryset, serializer_class):
         page = paginator.paginate_queryset(queryset, request)
         serializer = serializer_class(page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
+    queryset = apply_list_ordering(queryset, request.query_params)
     serializer = serializer_class(queryset, many=True, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -413,7 +415,7 @@ class CategoryListCreateView(APIView):
     @staticmethod
     def get(request):
         qs = Category.objects.select_related("created_by_user").all()
-        serializer = CategorySerializer(qs, many=True)
+        serializer = CategorySerializer(apply_list_ordering(qs, request.query_params), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod
@@ -497,7 +499,7 @@ class SubCategoryListCreateView(APIView):
         category_id = request.query_params.get("category")
         if category_id:
             qs = qs.filter(category_id=category_id)
-        serializer = SubCategorySerializer(qs, many=True)
+        serializer = SubCategorySerializer(apply_list_ordering(qs, request.query_params), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @staticmethod
