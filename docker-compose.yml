@@ -28,7 +28,6 @@ services:
       - .env
     volumes:
       - ./media:/app/media
-      - ./static:/app/static
     depends_on:
       db:
         condition: service_healthy
@@ -188,7 +187,6 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
     volumes:
       - ./media:/app/media
-      - ./static:/app/static
 
   celery-beat:
     build: .
@@ -209,7 +207,6 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
     volumes:
       - ./media:/app/media
-      - ./static:/app/static
 
 volumes:
   management_projet_db_data:

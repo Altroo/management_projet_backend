@@ -65,7 +65,12 @@ MIDDLEWARE = [
     "axes.middleware.AxesMiddleware",
 ]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 
 ROOT_URLCONF = "management_projet_backend.urls"
 
@@ -143,7 +148,8 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_PATH = "static"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
+# Generate assets separately so a host mount cannot replace current Django CSS.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = ()
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
