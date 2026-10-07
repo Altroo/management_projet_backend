@@ -5,7 +5,11 @@ from rest_framework.views import APIView
 
 from .authentication import ServiceHMACAuthentication
 from .exceptions import AssistantDisabled
-from .serializers import AssistRequestSerializer, InternalAssistRequestSerializer
+from .serializers import (
+    AssistRequestSerializer,
+    InternalAssistRequestSerializer,
+    InternalTranslationRequestSerializer,
+)
 from .service import AiAssistantService
 from .throttles import AiAssistantRateThrottle, AiServiceRateThrottle
 
@@ -27,9 +31,7 @@ class AssistView(APIView):
         serializer = AssistRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
-        result = AiAssistantService().assist(
-            **payload, application="management_projet"
-        )
+        result = AiAssistantService().assist(**payload, application="management_projet")
         return Response(
             {"original_text": payload["text"], **result},
             status=status.HTTP_200_OK,
@@ -50,10 +52,31 @@ class InternalAssistView(APIView):
         serializer = InternalAssistRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = serializer.validated_data
-        result = AiAssistantService().assist(
-            **payload, application=str(request.auth)
-        )
+        result = AiAssistantService().assist(**payload, application=str(request.auth))
         return Response(
             {"original_text": payload["text"], **result},
             status=status.HTTP_200_OK,
+        )
+
+
+class InternalTranslationView(APIView):
+    """Bounded PDF batches through the same private authenticated gateway."""
+
+    authentication_classes = (ServiceHMACAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+    throttle_classes = (AiServiceRateThrottle,)
+
+    @staticmethod
+    def post(request):
+        if not settings.AI_ASSISTANT_ENABLED:
+            raise AssistantDisabled()
+        serializer = InternalTranslationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+        texts = payload.pop("texts")
+        translations = AiAssistantService().translate_many(
+            texts, **payload, application=str(request.auth), polish=True
+        )
+        return Response(
+            {"translations": [translations.get(text.strip(), text) for text in texts]}
         )

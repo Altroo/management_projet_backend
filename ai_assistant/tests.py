@@ -106,9 +106,7 @@ def test_protected_values_reject_marker_junk_adjacent_to_placeholder():
     protected = protect_text("Consulter https://atlas.test/dossier/REF-2048.")
 
     with pytest.raises(InvalidModelResponse):
-        protected.restore(
-            protected.text.replace("ZXQMARKER0000", "ZXQMARKER0000__")
-        )
+        protected.restore(protected.text.replace("ZXQMARKER0000", "ZXQMARKER0000__"))
 
 
 def test_protected_numbers_allow_an_existing_unit_boundary():
@@ -144,9 +142,7 @@ def test_known_names_use_proper_name_shaped_placeholders():
 def test_service_retries_malformed_json_and_caches_valid_response():
     client = QueueClient(
         "not json",
-        json.dumps(
-            {"suggested_text": "Texte corrigé", "detected_language": "fr"}
-        ),
+        json.dumps({"suggested_text": "Texte corrigé", "detected_language": "fr"}),
     )
     service = AiAssistantService(client=client)
     with patch.object(service, "_known_names", return_value=set()):
@@ -245,9 +241,7 @@ def test_translation_uses_specialist_and_reports_its_model():
             context="project",
         )
 
-    assert result["suggested_text"] == (
-        "Delivery for Maison Atlas on 17/09/2026."
-    )
+    assert result["suggested_text"] == ("Delivery for Maison Atlas on 17/09/2026.")
     assert result["model"] == "opus-mt-fr-en+en-fr-cpu-bounded"
     assert len(translation_client.calls) == 1
     assert translation_client.calls[0]["texts"] == [
@@ -257,19 +251,18 @@ def test_translation_uses_specialist_and_reports_its_model():
 
 
 def test_opus_translates_fragments_around_protected_values():
-    protected = protect_text(
-        "Payment by Maison Atlas on 17/09/2026.", {"Maison Atlas"}
-    )
+    protected = protect_text("Payment by Maison Atlas on 17/09/2026.", {"Maison Atlas"})
     fragments, plan = AiAssistantService._split_opus_fragments(protected)
 
     assert fragments == ["Payment by", "on"]
-    assert AiAssistantService._restore_opus_fragments(
-        protected, plan, ["Paiement par", "le"]
-    ) == "Paiement par Maison Atlas le 17/09/2026."
-    with pytest.raises(InvalidModelResponse):
+    assert (
         AiAssistantService._restore_opus_fragments(
-            protected, plan, ["Paiement par"]
+            protected, plan, ["Paiement par", "le"]
         )
+        == "Paiement par Maison Atlas le 17/09/2026."
+    )
+    with pytest.raises(InvalidModelResponse):
+        AiAssistantService._restore_opus_fragments(protected, plan, ["Paiement par"])
 
 
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
@@ -383,24 +376,36 @@ def test_professional_english_translation_polish(value, expected):
 
 
 def test_professional_french_translation_polish():
-    assert AiAssistantService._polish_english_translation(
-        "Conception et conception", "fr"
-    ) == "Conception & design"
-    assert AiAssistantService._polish_english_translation(
-        "Conception Interieur", "fr"
-    ) == "Design intérieur"
-    assert AiAssistantService._polish_english_translation(
-        "avance de projet de Luxury home pour le design", "fr"
-    ) == "Avance pour la conception du projet Luxury Home"
-    assert AiAssistantService._polish_english_translation(
-        "Montant total des devis accordes est 1 558 390,22 MAD.", "fr"
-    ) == "Montant total des devis approuvés : 1 558 390,22 MAD."
-    assert AiAssistantService._polish_english_translation(
-        "Avance des travaux pour la societe BTN de Projet Luxury Home", "fr"
-    ) == "Avance pour les travaux de la société BTN sur le projet Luxury Home"
-    assert AiAssistantService._polish_english_translation(
-        "Gros Oeuvre", "fr"
-    ) == "Gros œuvre"
+    assert (
+        AiAssistantService._polish_english_translation("Conception et conception", "fr")
+        == "Conception & design"
+    )
+    assert (
+        AiAssistantService._polish_english_translation("Conception Interieur", "fr")
+        == "Design intérieur"
+    )
+    assert (
+        AiAssistantService._polish_english_translation(
+            "avance de projet de Luxury home pour le design", "fr"
+        )
+        == "Avance pour la conception du projet Luxury Home"
+    )
+    assert (
+        AiAssistantService._polish_english_translation(
+            "Montant total des devis accordes est 1 558 390,22 MAD.", "fr"
+        )
+        == "Montant total des devis approuvés : 1 558 390,22 MAD."
+    )
+    assert (
+        AiAssistantService._polish_english_translation(
+            "Avance des travaux pour la societe BTN de Projet Luxury Home", "fr"
+        )
+        == "Avance pour les travaux de la société BTN sur le projet Luxury Home"
+    )
+    assert (
+        AiAssistantService._polish_english_translation("Gros Oeuvre", "fr")
+        == "Gros œuvre"
+    )
 
 
 @override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
@@ -607,7 +612,9 @@ def test_assist_endpoint_is_rate_limited_per_user(user):
     assert second.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
 
-def signed_service_headers(body, *, service="facturation", secret="test-secret", request_id=None):
+def signed_service_headers(
+    body, *, service="facturation", secret="test-secret", request_id=None
+):
     timestamp = str(int(time.time()))
     request_id = request_id or "request-identifier-0001"
     body_digest = hashlib.sha256(body).hexdigest()
@@ -645,7 +652,9 @@ def test_internal_endpoint_accepts_signed_peer_request_and_rejects_replay():
         "cached": False,
         "processing_ms": 50,
     }
-    with patch("ai_assistant.views.AiAssistantService.assist", return_value=result) as assist:
+    with patch(
+        "ai_assistant.views.AiAssistantService.assist", return_value=result
+    ) as assist:
         response = APIClient().generic(
             "POST",
             reverse("ai_assistant:internal-assist"),
@@ -665,3 +674,117 @@ def test_internal_endpoint_accepts_signed_peer_request_and_rejects_replay():
     assert replay.status_code == status.HTTP_401_UNAUTHORIZED
     assert assist.call_args.kwargs["application"] == "facturation"
     assert assist.call_args.kwargs["protected_terms"] == ["Casa Atlas"]
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_dutch_translation_uses_existing_general_model_and_protects_numbers():
+    client = QueueClient(
+        json.dumps(
+            {
+                "suggested_text": "Levering van 987650000 stoelen.",
+                "detected_language": "fr",
+            }
+        )
+    )
+    specialist = QueueTranslationClient()
+    result = AiAssistantService(client=client, translation_client=specialist).assist(
+        action="translate",
+        text="Livraison de 12 chaises.",
+        source_language="fr",
+        target_language="nl",
+        context="document",
+        application="facturation",
+    )
+    assert result["suggested_text"] == "Levering van 12 stoelen."
+    assert specialist.calls == []
+    assert "Dutch" in client.calls[0]["messages"][0]["content"]
+    assert "opus" not in result["model"]
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_dutch_pdf_batch_uses_general_model():
+    client = QueueClient(
+        json.dumps({"items": [{"id": "0", "suggested_text": "Houten stoel"}]})
+    )
+    specialist = QueueTranslationClient()
+    result = AiAssistantService(
+        client=client, translation_client=specialist
+    ).translate_many(
+        ["Chaise en bois"], target_language="nl", application="facturation", polish=True
+    )
+    assert result == {"Chaise en bois": "Houten stoel"}
+    assert specialist.calls == []
+    instruction = client.calls[0]["messages"][0]["content"]
+    assert "Dutch" in instruction
+    assert "English ordinal" not in instruction
+
+
+@override_settings(AI_TRANSLATION_SPECIALIST_ENABLED=True)
+def test_dutch_source_is_not_sent_to_fr_en_specialist():
+    client = QueueClient(
+        json.dumps({"suggested_text": "Chaise en bois", "detected_language": "nl"})
+    )
+    specialist = QueueTranslationClient()
+    result = AiAssistantService(client=client, translation_client=specialist).assist(
+        action="translate",
+        text="Houten stoel",
+        source_language="auto",
+        target_language="fr",
+        context="document",
+        application="facturation",
+    )
+    assert result["suggested_text"] == "Chaise en bois"
+    assert specialist.calls == []
+
+
+@override_settings(
+    AI_ASSISTANT_ENABLED=True, AI_ASSISTANT_SERVICE_KEYS={"facturation": "test-secret"}
+)
+def test_private_pdf_batch_keeps_input_order_duplicates_and_rejects_replay():
+    payload = {
+        "texts": ["Chaise", "", "Chaise"],
+        "target_language": "nl",
+        "protected_terms": ["Casa Atlas"],
+    }
+    body = json.dumps(payload).encode()
+    headers = signed_service_headers(body)
+    with patch(
+        "ai_assistant.views.AiAssistantService.translate_many",
+        return_value={"Chaise": "Stoel"},
+    ) as translate:
+        response = APIClient().generic(
+            "POST",
+            reverse("ai_assistant:internal-translate"),
+            data=body,
+            content_type="application/json",
+            **headers,
+        )
+        replay = APIClient().generic(
+            "POST",
+            reverse("ai_assistant:internal-translate"),
+            data=body,
+            content_type="application/json",
+            **headers,
+        )
+    assert response.status_code == 200
+    assert response.data["translations"] == ["Stoel", "", "Stoel"]
+    assert translate.call_args.kwargs["application"] == "facturation"
+    assert translate.call_args.kwargs["protected_terms"] == ["Casa Atlas"]
+    assert replay.status_code == 401
+
+
+@override_settings(
+    AI_ASSISTANT_ENABLED=True, AI_ASSISTANT_SERVICE_KEYS={"facturation": "test-secret"}
+)
+def test_private_pdf_batch_rejects_oversized_input_before_model_call():
+    body = json.dumps({"texts": ["x" * 5000] * 4, "target_language": "nl"}).encode()
+    with patch("ai_assistant.views.AiAssistantService.translate_many") as translate:
+        response = APIClient().generic(
+            "POST",
+            reverse("ai_assistant:internal-translate"),
+            data=body,
+            content_type="application/json",
+            **signed_service_headers(body),
+        )
+    assert response.status_code == 400
+    translate.assert_not_called()

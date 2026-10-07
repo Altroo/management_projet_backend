@@ -17,7 +17,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "13"
+PROMPT_VERSION = "14"
 
 FRENCH_LANGUAGE_HINTS = frozenset(
     {
@@ -96,7 +96,7 @@ SINGLE_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
         "suggested_text": {"type": "string"},
-        "detected_language": {"type": "string", "enum": ["fr", "en"]},
+        "detected_language": {"type": "string", "enum": ["fr", "en", "nl"]},
     },
     "required": ["suggested_text", "detected_language"],
     "additionalProperties": False,
@@ -141,6 +141,33 @@ class AiAssistantService:
     @staticmethod
     def _detect_supported_language(value):
         lowered = value.lower()
+        words = set(re.findall(r"[a-z]+", lowered))
+        dutch_hints = {
+            "het",
+            "een",
+            "van",
+            "voor",
+            "met",
+            "levering",
+            "betaling",
+            "factuur",
+            "bestelling",
+            "klant",
+            "leverancier",
+            "ontvangen",
+            "goederen",
+            "opmerking",
+            "bedrag",
+            "werkzaamheden",
+            "geleverd",
+            "houten",
+            "stoel",
+        }
+        dutch_score = len(words & dutch_hints)
+        if dutch_score >= 2 and dutch_score > max(
+            len(words & FRENCH_LANGUAGE_HINTS), len(words & ENGLISH_LANGUAGE_HINTS)
+        ):
+            return "nl"
         if re.search(r"[àâçéèêëîïôùûüÿœæ]", lowered):
             return "fr"
         words = set(re.findall(r"[a-z]+", lowered))
@@ -157,8 +184,7 @@ class AiAssistantService:
         if index >= 26**3:
             raise InvalidModelResponse()
         letters = "".join(
-            chr(ord("A") + ((index // divisor) % 26))
-            for divisor in (26**2, 26, 1)
+            chr(ord("A") + ((index // divisor) % 26)) for divisor in (26**2, 26, 1)
         )
         return f"X{letters}X"
 
@@ -193,9 +219,7 @@ class AiAssistantService:
         if not placeholders:
             return [protected.text], [("translation", 0, "", "")]
 
-        pattern = re.compile(
-            "(" + "|".join(map(re.escape, placeholders)) + ")"
-        )
+        pattern = re.compile("(" + "|".join(map(re.escape, placeholders)) + ")")
         fragments = []
         plan = []
         for part in pattern.split(protected.text):
@@ -243,8 +267,12 @@ class AiAssistantService:
         return translations
 
     @staticmethod
-    def _model_id(action):
-        if action in {"translate", "translate_batch"} and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+    def _model_id(action, target_language=None, source_language=None):
+        if (
+            action in {"translate", "translate_batch"}
+            and settings.AI_TRANSLATION_SPECIALIST_ENABLED
+            and "nl" not in (target_language, source_language)
+        ):
             return settings.AI_TRANSLATION_MODEL_ID
         return settings.AI_MODEL_ID
 
@@ -262,7 +290,15 @@ class AiAssistantService:
         material = json.dumps(
             {
                 "prompt_version": PROMPT_VERSION,
-                "model": AiAssistantService._model_id(action),
+                "model": AiAssistantService._model_id(
+                    action,
+                    target_language,
+                    (
+                        source_language
+                        if source_language != "auto"
+                        else AiAssistantService._detect_supported_language(text)
+                    ),
+                ),
                 "application": application,
                 "action": action,
                 "source_language": source_language,
@@ -285,7 +321,9 @@ class AiAssistantService:
     def _known_names():
         values = set()
         values.update(Project.objects.values_list("nom", flat=True))
-        values.update(Project.objects.exclude(nom_client="").values_list("nom_client", flat=True))
+        values.update(
+            Project.objects.exclude(nom_client="").values_list("nom_client", flat=True)
+        )
         values.update(
             Project.objects.exclude(chef_de_projet="").values_list(
                 "chef_de_projet", flat=True
@@ -303,12 +341,10 @@ class AiAssistantService:
         return {value for value in values if value}
 
     @staticmethod
-    def _instruction(
-        action, source_language, target_language, context, application
-    ):
+    def _instruction(action, source_language, target_language, context, application):
         language_rule = (
             "Translate faithfully into "
-            f"{'French' if target_language == 'fr' else 'English'} using natural, "
+            f"{ {'fr': 'French', 'en': 'English', 'nl': 'Dutch'}.get(target_language, target_language)} using natural, "
             "idiomatic business language. Preserve each sentence's grammatical function: "
             "instructions and imperatives must remain instructions and imperatives."
             if action == "translate"
@@ -342,7 +378,12 @@ class AiAssistantService:
         protected_terms=(),
     ):
         started = time.monotonic()
-        model_id = self._model_id(action)
+        detected_source = (
+            source_language
+            if source_language != "auto"
+            else self._detect_supported_language(text)
+        )
+        model_id = self._model_id(action, target_language, detected_source)
         known_names = set(protected_terms)
         if application == "management_projet":
             known_names.update(self._known_names())
@@ -369,13 +410,17 @@ class AiAssistantService:
             )
             return result
 
-        if action == "translate" and settings.AI_TRANSLATION_SPECIALIST_ENABLED:
+        if (
+            action == "translate"
+            and settings.AI_TRANSLATION_SPECIALIST_ENABLED
+            and "nl" not in (target_language, detected_source)
+        ):
             last_error = None
             for _attempt in range(2):
                 try:
                     if target_language == "en":
-                        opus_text, opus_mapping = (
-                            self._encode_opus_placeholders(protected)
+                        opus_text, opus_mapping = self._encode_opus_placeholders(
+                            protected
                         )
                         translations = self.translation_client.translate(
                             texts=[opus_text],
@@ -400,7 +445,7 @@ class AiAssistantService:
                         )
                     detected_language = (
                         source_language
-                        if source_language in ("fr", "en")
+                        if source_language in ("fr", "en", "nl")
                         else ("fr" if target_language == "en" else "en")
                     )
                     stored = {
@@ -422,14 +467,10 @@ class AiAssistantService:
                     last_error = exc
                 except (ModelUnavailable, ModelTimeout) as exc:
                     processing_ms = round((time.monotonic() - started) * 1000)
-                    self._log(
-                        application, action, len(text), processing_ms, False, exc
-                    )
+                    self._log(application, action, len(text), processing_ms, False, exc)
                     raise
             processing_ms = round((time.monotonic() - started) * 1000)
-            self._log(
-                application, action, len(text), processing_ms, False, last_error
-            )
+            self._log(application, action, len(text), processing_ms, False, last_error)
             raise last_error or InvalidModelResponse()
 
         temperature = 0.35 if action == "professionalize" else 0.0
@@ -463,14 +504,14 @@ class AiAssistantService:
                     raise InvalidModelResponse()
                 if not isinstance(payload["suggested_text"], str):
                     raise InvalidModelResponse()
-                if payload["detected_language"] not in ("fr", "en"):
+                if payload["detected_language"] not in ("fr", "en", "nl"):
                     raise InvalidModelResponse()
                 suggested_text = protected.restore(payload["suggested_text"])
                 if not suggested_text.strip():
                     raise InvalidModelResponse()
                 detected_language = (
                     source_language
-                    if source_language in ("fr", "en")
+                    if source_language in ("fr", "en", "nl")
                     else payload["detected_language"]
                 )
                 stored = {
@@ -540,10 +581,15 @@ class AiAssistantService:
 
         try:
             for chunk in self._chunks(missing):
-                if settings.AI_TRANSLATION_SPECIALIST_ENABLED:
-                    self._translate_chunk_with_opus(
-                        chunk, target_language, translated
+                if (
+                    settings.AI_TRANSLATION_SPECIALIST_ENABLED
+                    and target_language != "nl"
+                    and not any(
+                        self._detect_supported_language(item[0]) == "nl"
+                        for item in chunk
                     )
+                ):
+                    self._translate_chunk_with_opus(chunk, target_language, translated)
                 else:
                     self._translate_chunk_with_qwen(
                         chunk,
@@ -572,9 +618,7 @@ class AiAssistantService:
         )
         if polish:
             return {
-                source: self._polish_english_translation(
-                    suggestion, target_language
-                )
+                source: self._polish_english_translation(suggestion, target_language)
                 for source, suggestion in translated.items()
             }
         return translated
@@ -585,7 +629,9 @@ class AiAssistantService:
         char_count = 0
         for item in items:
             item_length = len(item[0])
-            if chunk and (len(chunk) >= max_items or char_count + item_length > max_chars):
+            if chunk and (
+                len(chunk) >= max_items or char_count + item_length > max_chars
+            ):
                 yield chunk
                 chunk = []
                 char_count = 0
@@ -603,9 +649,7 @@ class AiAssistantService:
 
         opus_items = [self._split_opus_fragments(item) for item in protected_items]
         opus_fragments = [
-            fragment
-            for fragments, _plan in opus_items
-            for fragment in fragments
+            fragment for fragments, _plan in opus_items for fragment in fragments
         ]
         last_error = None
         for _attempt in range(2):
@@ -615,23 +659,17 @@ class AiAssistantService:
                 )
                 restored = []
                 suggestion_offset = 0
-                for protected, (fragments, plan) in zip(
-                    protected_items, opus_items
-                ):
+                for protected, (fragments, plan) in zip(protected_items, opus_items):
                     item_suggestions = suggestions[
                         suggestion_offset : suggestion_offset + len(fragments)
                     ]
                     restored.append(
-                        self._restore_opus_fragments(
-                            protected, plan, item_suggestions
-                        )
+                        self._restore_opus_fragments(protected, plan, item_suggestions)
                     )
                     suggestion_offset += len(fragments)
                 if suggestion_offset != len(suggestions):
                     raise InvalidModelResponse()
-                for (source, cache_key, _protected), suggestion in zip(
-                    chunk, restored
-                ):
+                for (source, cache_key, _protected), suggestion in zip(chunk, restored):
                     value = {
                         "suggested_text": suggestion,
                         "detected_language": "fr" if target_language == "en" else "en",
@@ -643,12 +681,9 @@ class AiAssistantService:
                 last_error = exc
         raise last_error or InvalidModelResponse()
 
-    def _translate_english_chunk_with_opus(
-        self, chunk, protected_items, translated
-    ):
+    def _translate_english_chunk_with_opus(self, chunk, protected_items, translated):
         opus_items = [
-            self._encode_opus_placeholders(protected)
-            for protected in protected_items
+            self._encode_opus_placeholders(protected) for protected in protected_items
         ]
         last_error = None
         for _attempt in range(2):
@@ -670,9 +705,7 @@ class AiAssistantService:
                             self._decode_opus_placeholders(suggestion, mapping)
                         )
                     )
-                for (source, cache_key, _protected), suggestion in zip(
-                    chunk, restored
-                ):
+                for (source, cache_key, _protected), suggestion in zip(chunk, restored):
                     value = {
                         "suggested_text": suggestion,
                         "detected_language": "fr",
@@ -711,20 +744,22 @@ class AiAssistantService:
                                 context,
                                 application,
                             )
-                            + " Use polished professional construction and accounting terminology, "
-                            "not literal word-for-word phrasing. Use these terms where applicable: "
-                            "acompte or avance = advance payment or deposit; avancement or règlement "
-                            "d'avancement = progress payment; complément de commande = additional "
-                            "order; gros œuvre = structural work; main-d'œuvre = labor. French ordinal "
-                            "suffixes around immutable numbers must become correct English suffixes: "
-                            "1er or 1ère = 1st, 2e or 2ème = 2nd, and 3e or 3ème = 3rd; never output "
-                            "1th, 2th, or 3th. If the input is already in the target language, preserve "
-                            "it unless a small correction is required for natural business language. "
+                            + (
+                                " Use professional construction and accounting terminology. "
+                                "acompte = advance payment; avancement = progress payment; "
+                                "gros œuvre = structural work; main-d'œuvre = labor. "
+                                "Use correct English ordinal suffixes (1st, 2nd, 3rd), never 1th, 2th, or 3th. "
+                                if target_language == "en"
+                                else " Use natural business terminology in the target language. "
+                            )
+                            + "If the input is already in the target language, preserve it. "
                             "Return an items array with exactly one result for every input id.",
                         },
                         {
                             "role": "user",
-                            "content": json.dumps({"items": request_items}, ensure_ascii=False),
+                            "content": json.dumps(
+                                {"items": request_items}, ensure_ascii=False
+                            ),
                         },
                     ],
                     response_schema=BATCH_RESPONSE_SCHEMA,
@@ -733,7 +768,9 @@ class AiAssistantService:
                     max_tokens=4096,
                 )
                 payload = _parse_json(content)
-                response_items = payload.get("items") if isinstance(payload, dict) else None
+                response_items = (
+                    payload.get("items") if isinstance(payload, dict) else None
+                )
                 if not isinstance(response_items, list):
                     raise InvalidModelResponse()
                 indexed = {
@@ -812,9 +849,7 @@ class AiAssistantService:
                 ),
             )
             for pattern, replacement in replacements:
-                value = re.sub(
-                    pattern, replacement, value, flags=re.IGNORECASE
-                )
+                value = re.sub(pattern, replacement, value, flags=re.IGNORECASE)
             return value
         if target_language != "en":
             return value
