@@ -788,3 +788,16 @@ def test_private_pdf_batch_rejects_oversized_input_before_model_call():
         )
     assert response.status_code == 400
     translate.assert_not_called()
+
+
+@pytest.mark.parametrize("endpoint, service_method, payload", [
+    ("internal-assist", "assist", {"action": "fix_grammar", "text": "Texte corrige"}),
+    ("internal-translate", "translate_many", {"texts": ["Chaise"], "target_language": "en"}),
+])
+@override_settings(AI_ASSISTANT_ENABLED=True, AI_ASSISTANT_SERVICE_KEYS={"facturation": "test-secret"})
+def test_private_errors_identify_rejected_model_answers(endpoint, service_method, payload):
+    body = json.dumps(payload, separators=(",", ":")).encode()
+    with patch(f"ai_assistant.views.AiAssistantService.{service_method}", side_effect=InvalidModelResponse()):
+        response = APIClient().generic("POST", reverse(f"ai_assistant:{endpoint}"), data=body, content_type="application/json", **signed_service_headers(body))
+    assert response.status_code == 502
+    assert response.data["code"] == "ai_invalid_response"

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authentication import ServiceHMACAuthentication
-from .exceptions import AssistantDisabled
+from .exceptions import AssistantDisabled, InvalidModelResponse
 from .serializers import (
     AssistRequestSerializer,
     InternalAssistRequestSerializer,
@@ -38,7 +38,15 @@ class AssistView(APIView):
         )
 
 
-class InternalAssistView(APIView):
+class InternalAssistantView(APIView):
+    def handle_exception(self, exc):
+        response = super().handle_exception(exc)
+        if isinstance(exc, InvalidModelResponse):
+            response.data["code"] = "ai_invalid_response"
+        return response
+
+
+class InternalAssistView(InternalAssistantView):
     """Private signed gateway used by other applications on the server."""
 
     authentication_classes = (ServiceHMACAuthentication,)
@@ -59,7 +67,7 @@ class InternalAssistView(APIView):
         )
 
 
-class InternalTranslationView(APIView):
+class InternalTranslationView(InternalAssistantView):
     """Bounded PDF batches through the same private authenticated gateway."""
 
     authentication_classes = (ServiceHMACAuthentication,)
