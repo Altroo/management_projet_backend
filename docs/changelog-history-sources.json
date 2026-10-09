@@ -1,0 +1,3612 @@
+{
+  "description": "Complete reachable Git history at import time. Dates describe development, not verified production deployment dates. No release tags were found; the committed package version stayed at the scaffold value 0.1.0. Historical versions are reconstructed under the product milestone convention below. Uncommitted AI chat work is excluded.",
+  "heads": {
+    "management_projet_frontend": "df49e3ca805b489a4c3955cc1fe0c1dc8fed69ca",
+    "management_projet_backend": "f8d88217b8b6c01f6055f65c272caed75f592174"
+  },
+  "commits": [
+    {
+      "repository": "management_projet_frontend",
+      "commit": "14cafb278626c454f8c604867e1a3dcadd6e6a6e",
+      "date": "2026-04-06",
+      "subject": "initial commit",
+      "body": "",
+      "files": [
+        ".dockerignore",
+        ".gitignore",
+        ".prettierrc",
+        ".yarnrc.yml",
+        "Dockerfile",
+        "bun.lock",
+        "docker-compose.yml",
+        "env.d.ts",
+        "eslint.config.mjs",
+        "jest.config.ts",
+        "jest.setup.ts",
+        "next.config.ts",
+        "package-lock.json",
+        "package.json",
+        "public/assets/fonts/Poppins-Bold.ttf",
+        "public/assets/fonts/Poppins-Medium.ttf",
+        "public/assets/fonts/Poppins-Regular.ttf",
+        "public/assets/fonts/Poppins-SemiBold.ttf",
+        "public/assets/ico/android-icon-144x144.png",
+        "public/assets/ico/android-icon-192x192.png",
+        "public/assets/ico/android-icon-36x36.png",
+        "public/assets/ico/android-icon-48x48.png",
+        "public/assets/ico/android-icon-72x72.png",
+        "public/assets/ico/android-icon-96x96.png",
+        "public/assets/ico/apple-icon-114x114.png",
+        "public/assets/ico/apple-icon-120x120.png",
+        "public/assets/ico/apple-icon-144x144.png",
+        "public/assets/ico/apple-icon-152x152.png",
+        "public/assets/ico/apple-icon-180x180.png",
+        "public/assets/ico/apple-icon-57x57.png",
+        "public/assets/ico/apple-icon-60x60.png",
+        "public/assets/ico/apple-icon-72x72.png",
+        "public/assets/ico/apple-icon-76x76.png",
+        "public/assets/ico/apple-icon-precomposed.png",
+        "public/assets/ico/apple-icon.png",
+        "public/assets/ico/browserconfig.xml",
+        "public/assets/ico/favicon-16x16.png",
+        "public/assets/ico/favicon-32x32.png",
+        "public/assets/ico/favicon-96x96.png",
+        "public/assets/ico/favicon.ico",
+        "public/assets/ico/manifest.json",
+        "public/assets/ico/ms-icon-144x144.png",
+        "public/assets/ico/ms-icon-150x150.png",
+        "public/assets/ico/ms-icon-310x310.png",
+        "public/assets/ico/ms-icon-70x70.png",
+        "public/assets/images/auth_illu/blueprint.svg",
+        "public/assets/images/auth_illu/building.svg",
+        "public/assets/images/auth_illu/calendar.svg",
+        "public/assets/images/auth_illu/handshake.svg",
+        "public/assets/images/auth_illu/key.svg",
+        "public/assets/images/auth_illu/luggage.svg",
+        "public/assets/images/auth_illu/signature.svg",
+        "public/assets/images/reservation-logo.png",
+        "public/assets/images/success-illu.svg",
+        "public/robots.txt",
+        "src/app/(auth)/login/page.test.tsx",
+        "src/app/(auth)/login/page.tsx",
+        "src/app/(auth)/reset-password/enter-code/page.test.tsx",
+        "src/app/(auth)/reset-password/enter-code/page.tsx",
+        "src/app/(auth)/reset-password/page.test.tsx",
+        "src/app/(auth)/reset-password/page.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/clearCookiesClient.test.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/clearCookiesClient.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/page.test.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/page.tsx",
+        "src/app/(auth)/reset-password/set-password/page.test.tsx",
+        "src/app/(auth)/reset-password/set-password/page.tsx",
+        "src/app/api/auth/[...nextauth]/route.test.ts",
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/app/api/cookies/route.test.ts",
+        "src/app/api/cookies/route.ts",
+        "src/app/dashboard/categories/[id]/edit/page.test.tsx",
+        "src/app/dashboard/categories/[id]/edit/page.tsx",
+        "src/app/dashboard/categories/new/page.test.tsx",
+        "src/app/dashboard/categories/new/page.tsx",
+        "src/app/dashboard/categories/page.test.tsx",
+        "src/app/dashboard/categories/page.tsx",
+        "src/app/dashboard/expenses/[id]/edit/page.test.tsx",
+        "src/app/dashboard/expenses/[id]/edit/page.tsx",
+        "src/app/dashboard/expenses/[id]/page.test.tsx",
+        "src/app/dashboard/expenses/[id]/page.tsx",
+        "src/app/dashboard/expenses/new/page.test.tsx",
+        "src/app/dashboard/expenses/new/page.tsx",
+        "src/app/dashboard/expenses/page.test.tsx",
+        "src/app/dashboard/expenses/page.tsx",
+        "src/app/dashboard/layout.tsx",
+        "src/app/dashboard/page.test.tsx",
+        "src/app/dashboard/page.tsx",
+        "src/app/dashboard/projects/[id]/edit/page.test.tsx",
+        "src/app/dashboard/projects/[id]/edit/page.tsx",
+        "src/app/dashboard/projects/[id]/page.test.tsx",
+        "src/app/dashboard/projects/[id]/page.tsx",
+        "src/app/dashboard/projects/new/page.test.tsx",
+        "src/app/dashboard/projects/new/page.tsx",
+        "src/app/dashboard/projects/page.test.tsx",
+        "src/app/dashboard/projects/page.tsx",
+        "src/app/dashboard/revenues/[id]/edit/page.test.tsx",
+        "src/app/dashboard/revenues/[id]/edit/page.tsx",
+        "src/app/dashboard/revenues/[id]/page.test.tsx",
+        "src/app/dashboard/revenues/[id]/page.tsx",
+        "src/app/dashboard/revenues/new/page.test.tsx",
+        "src/app/dashboard/revenues/new/page.tsx",
+        "src/app/dashboard/revenues/page.test.tsx",
+        "src/app/dashboard/revenues/page.tsx",
+        "src/app/dashboard/settings/edit-profile/page.test.tsx",
+        "src/app/dashboard/settings/edit-profile/page.tsx",
+        "src/app/dashboard/settings/password/page.test.tsx",
+        "src/app/dashboard/settings/password/page.tsx",
+        "src/app/dashboard/users/[id]/edit/page.test.tsx",
+        "src/app/dashboard/users/[id]/edit/page.tsx",
+        "src/app/dashboard/users/[id]/page.test.tsx",
+        "src/app/dashboard/users/[id]/page.tsx",
+        "src/app/dashboard/users/new/page.test.tsx",
+        "src/app/dashboard/users/new/page.tsx",
+        "src/app/dashboard/users/page.test.tsx",
+        "src/app/dashboard/users/page.tsx",
+        "src/app/layout.test.tsx",
+        "src/app/layout.tsx",
+        "src/app/not-found.test.tsx",
+        "src/app/not-found.tsx",
+        "src/app/page.test.tsx",
+        "src/app/page.tsx",
+        "src/auth.test.ts",
+        "src/auth.ts",
+        "src/components/formikElements/apiLoading/apiAlert/apiAlert.test.tsx",
+        "src/components/formikElements/apiLoading/apiAlert/apiAlert.tsx",
+        "src/components/formikElements/apiLoading/apiProgress/apiProgress.test.tsx",
+        "src/components/formikElements/apiLoading/apiProgress/apiProgress.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.tsx",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.module.sass",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.test.tsx",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.tsx",
+        "src/components/formikElements/customOutlinedText/customOutlinedText.test.tsx",
+        "src/components/formikElements/customOutlinedText/customOutlinedText.tsx",
+        "src/components/formikElements/customPasswordInput/customPasswordInput.test.tsx",
+        "src/components/formikElements/customPasswordInput/customPasswordInput.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.module.sass",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.test.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.tsx",
+        "src/components/formikElements/customTextInput/customTextInput.test.tsx",
+        "src/components/formikElements/customTextInput/customTextInput.tsx",
+        "src/components/htmlElements/buttons/primaryAnchorButton/primaryAnchorButton.module.sass",
+        "src/components/htmlElements/buttons/primaryAnchorButton/primaryAnchorButton.test.tsx",
+        "src/components/htmlElements/buttons/primaryAnchorButton/primaryAnchorButton.tsx",
+        "src/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton.module.sass",
+        "src/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton.test.tsx",
+        "src/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton.tsx",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.module.sass",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.test.tsx",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.tsx",
+        "src/components/htmlElements/buttons/textButton/textButton.module.sass",
+        "src/components/htmlElements/buttons/textButton/textButton.test.tsx",
+        "src/components/htmlElements/buttons/textButton/textButton.tsx",
+        "src/components/htmlElements/modals/actionModal/actionModals.test.tsx",
+        "src/components/htmlElements/modals/actionModal/actionModals.tsx",
+        "src/components/htmlElements/tooltip/darkTooltip/darkTooltip.test.tsx",
+        "src/components/htmlElements/tooltip/darkTooltip/darkTooltip.tsx",
+        "src/components/layouts/auth/authLayout.module.sass",
+        "src/components/layouts/auth/authLayout.test.tsx",
+        "src/components/layouts/auth/authLayout.tsx",
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/layouts/protected/protected.test.tsx",
+        "src/components/layouts/protected/protected.tsx",
+        "src/components/pages/auth/login/login.test.tsx",
+        "src/components/pages/auth/login/login.tsx",
+        "src/components/pages/auth/reset-password/enterCode.test.tsx",
+        "src/components/pages/auth/reset-password/enterCode.tsx",
+        "src/components/pages/auth/reset-password/resetPassword.test.tsx",
+        "src/components/pages/auth/reset-password/resetPassword.tsx",
+        "src/components/pages/auth/reset-password/setPassword.test.tsx",
+        "src/components/pages/auth/reset-password/setPassword.tsx",
+        "src/components/pages/auth/reset-password/setPasswordComplete.test.tsx",
+        "src/components/pages/auth/reset-password/setPasswordComplete.tsx",
+        "src/components/pages/categories/categories-list.test.tsx",
+        "src/components/pages/categories/categories-list.tsx",
+        "src/components/pages/categories/category-form.test.tsx",
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.test.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/expenses/expenses-list.test.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.test.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/projects/projects-list.test.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/revenues/revenue-form.test.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/revenues/revenue-view.test.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/pages/revenues/revenues-list.test.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/pages/settings/edit-profile.test.tsx",
+        "src/components/pages/settings/edit-profile.tsx",
+        "src/components/pages/settings/password.test.tsx",
+        "src/components/pages/settings/password.tsx",
+        "src/components/pages/users/users-form.test.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-list.test.tsx",
+        "src/components/pages/users/users-list.tsx",
+        "src/components/pages/users/users-view.test.tsx",
+        "src/components/pages/users/users-view.tsx",
+        "src/components/portals/customToast/customToast.module.sass",
+        "src/components/portals/customToast/customToast.test.tsx",
+        "src/components/portals/customToast/customToast.tsx",
+        "src/components/shared/chipSelectFilter/chipSelectFilter.tsx",
+        "src/components/shared/chipSelectFilter/chipSelectFilterBar.tsx",
+        "src/components/shared/dateRangeFilter/dateRangeFilterOperator.test.tsx",
+        "src/components/shared/dateRangeFilter/dateRangeFilterOperator.tsx",
+        "src/components/shared/dropdownFilter/dropdownFilter.test.tsx",
+        "src/components/shared/dropdownFilter/dropdownFilter.tsx",
+        "src/components/shared/errorBoundary/ErrorBoundary.test.tsx",
+        "src/components/shared/errorBoundary/errorBoundary.tsx",
+        "src/components/shared/errorBoundary/index.ts",
+        "src/components/shared/filterPanel/customFilterPanel.test.tsx",
+        "src/components/shared/filterPanel/customFilterPanel.tsx",
+        "src/components/shared/languageSwitcher/languageSwitcher.test.tsx",
+        "src/components/shared/languageSwitcher/languageSwitcher.tsx",
+        "src/components/shared/maintenance/Maintenance.test.tsx",
+        "src/components/shared/maintenance/Maintenance.tsx",
+        "src/components/shared/mobileActionsMenu/mobileActionsMenu.test.tsx",
+        "src/components/shared/mobileActionsMenu/mobileActionsMenu.tsx",
+        "src/components/shared/noPermission/noPermission.test.tsx",
+        "src/components/shared/noPermission/noPermission.tsx",
+        "src/components/shared/numericFilter/numericFilterOperator.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.test.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.tsx",
+        "src/components/shared/sessionExpiredListener/sessionExpiredListener.test.tsx",
+        "src/components/shared/sessionExpiredListener/sessionExpiredListener.tsx",
+        "src/contexts/InitContext.tsx",
+        "src/contexts/initContext.test.tsx",
+        "src/contexts/initEffects.test.tsx",
+        "src/contexts/initEffects.tsx",
+        "src/contexts/languageContext.test.tsx",
+        "src/contexts/languageContext.tsx",
+        "src/contexts/portal.tsx",
+        "src/contexts/toastContext.test.tsx",
+        "src/contexts/toastContext.tsx",
+        "src/models/classes.test.ts",
+        "src/models/classes.ts",
+        "src/providers/sessionProvider.tsx",
+        "src/providers/storeProvider.tsx",
+        "src/providers/themeProvider.tsx",
+        "src/proxy.test.ts",
+        "src/proxy.ts",
+        "src/store/actions/_initActions.test.ts",
+        "src/store/actions/_initActions.ts",
+        "src/store/actions/accountActions.test.ts",
+        "src/store/actions/accountActions.ts",
+        "src/store/actions/index.ts",
+        "src/store/actions/wsActions.test.ts",
+        "src/store/actions/wsActions.ts",
+        "src/store/sagas/_initSaga.test.ts",
+        "src/store/sagas/_initSaga.ts",
+        "src/store/sagas/accountSaga.test.ts",
+        "src/store/sagas/accountSaga.ts",
+        "src/store/sagas/index.test.ts",
+        "src/store/sagas/index.ts",
+        "src/store/sagas/wsSaga.test.ts",
+        "src/store/sagas/wsSaga.ts",
+        "src/store/selectors/index.test.ts",
+        "src/store/selectors/index.ts",
+        "src/store/services/account.test.ts",
+        "src/store/services/account.ts",
+        "src/store/services/project.ts",
+        "src/store/services/ws.test.ts",
+        "src/store/services/ws.ts",
+        "src/store/session.test.ts",
+        "src/store/session.ts",
+        "src/store/setupApiStore.ts",
+        "src/store/slices/_initSlice.test.ts",
+        "src/store/slices/_initSlice.ts",
+        "src/store/slices/accountSlice.test.ts",
+        "src/store/slices/accountSlice.ts",
+        "src/store/slices/wsSlice.test.ts",
+        "src/store/slices/wsSlice.ts",
+        "src/store/store.test.ts",
+        "src/store/store.ts",
+        "src/styles/auth/auth.module.sass",
+        "src/styles/dashboard/dashboard.module.sass",
+        "src/styles/dashboard/settings/settings.module.sass",
+        "src/styles/globals.sass",
+        "src/styles/sass/_colors.sass",
+        "src/styles/sass/_mixins.sass",
+        "src/styles/sass/_typography.sass",
+        "src/styles/sass/_variables.sass",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/translations/index.ts",
+        "src/translations/translations.test.ts",
+        "src/types/_initTypes.ts",
+        "src/types/accountTypes.ts",
+        "src/types/languageTypes.ts",
+        "src/types/next-auth.d.ts",
+        "src/types/projectTypes.ts",
+        "src/types/wsTypes.ts",
+        "src/types/zod-formik-adapter.d.ts",
+        "src/utils/apiHelpers.test.ts",
+        "src/utils/apiHelpers.ts",
+        "src/utils/axiosBaseQuery.test.ts",
+        "src/utils/axiosBaseQuery.ts",
+        "src/utils/clientHelpers.test.tsx",
+        "src/utils/clientHelpers.tsx",
+        "src/utils/corsHeaders.test.ts",
+        "src/utils/corsHeaders.ts",
+        "src/utils/formValidationErrorMessages.ts",
+        "src/utils/formValidationSchemas.test.ts",
+        "src/utils/formValidationSchemas.ts",
+        "src/utils/helpers.test.ts",
+        "src/utils/helpers.ts",
+        "src/utils/hooks.test.tsx",
+        "src/utils/hooks.ts",
+        "src/utils/rawData.test.ts",
+        "src/utils/rawData.ts",
+        "src/utils/routes.test.ts",
+        "src/utils/routes.ts",
+        "src/utils/serverTranslations.ts",
+        "src/utils/themes.test.ts",
+        "src/utils/themes.ts",
+        "tsc_output.txt",
+        "tsconfig.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "5cafdcc3a63d96cdf6b107abe9d119a1197425a0",
+      "date": "2026-04-06",
+      "subject": "initial commit",
+      "body": "",
+      "files": [
+        "src/app/layout.test.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.tsx",
+        "src/components/formikElements/customPasswordInput/customPasswordInput.test.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/protected/protected.test.tsx",
+        "src/components/pages/auth/login/login.test.tsx",
+        "src/components/pages/auth/reset-password/enterCode.test.tsx",
+        "src/components/pages/categories/category-form.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/revenues/revenue-form.test.tsx",
+        "src/components/pages/settings/edit-profile.test.tsx",
+        "src/components/pages/settings/password.test.tsx",
+        "src/components/pages/users/users-form.test.tsx",
+        "src/components/shared/maintenance/Maintenance.test.tsx",
+        "src/components/shared/mobileActionsMenu/mobileActionsMenu.test.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.tsx",
+        "src/utils/hooks.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "04e8b2bada1f7c5fa5a6f4ffdfb7514654e4fe05",
+      "date": "2026-04-06",
+      "subject": "initial commit",
+      "body": "",
+      "files": [
+        "src/store/sagas/accountSaga.test.ts",
+        "src/utils/hooks.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "94ca9e32ac91e44814eb06d94b2e62ba837fea55",
+      "date": "2026-04-06",
+      "subject": "feat: update @types/node and baseline-browser-mapping dependencies to latest versions",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "f6490c74f63a7678f50e70015cdd1a877ab7a62b",
+      "date": "2026-04-06",
+      "subject": "feat: upgrade TypeScript to version 6.0.2 and change module resolution to bundler",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json",
+        "src/store/services/ws.test.ts",
+        "tsc_output.txt",
+        "tsconfig.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "8379b7b91576e5b822fdbf96224007152ac5c2f5",
+      "date": "2026-04-06",
+      "subject": "fix: update BACKEND_SITE_ADMIN URL to point to the correct endpoint",
+      "body": "",
+      "files": [
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "b0dafd63e3c148c7b0ed7c6d7969a59c5c3b43f3",
+      "date": "2026-04-06",
+      "subject": "fix: update CORS headers and local development port to 3003",
+      "body": "",
+      "files": [
+        "Dockerfile",
+        "docker-compose.yml",
+        "package.json",
+        "src/app/api/cookies/route.test.ts",
+        "src/utils/corsHeaders.test.ts",
+        "src/utils/corsHeaders.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3a7944f0641fbf581591f29d5e0a1842102adf22",
+      "date": "2026-04-06",
+      "subject": "feat: enhance language context to support initial language from cookies",
+      "body": "",
+      "files": [
+        "src/app/layout.tsx",
+        "src/contexts/languageContext.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "1b0a6ff2ddf7293f5e7e6b0145dfd921c2863fb2",
+      "date": "2026-04-06",
+      "subject": "feat: refactor websocket initialization to use async token retrieval",
+      "body": "",
+      "files": [
+        "src/app/layout.test.tsx",
+        "src/contexts/languageContext.test.tsx",
+        "src/store/sagas/wsSaga.test.ts",
+        "src/store/sagas/wsSaga.ts",
+        "src/store/services/ws.test.ts",
+        "src/store/services/ws.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "a5ffb2a71ca3f737b51185d829da3acaf24fa17d",
+      "date": "2026-04-06",
+      "subject": "feat: implement exponential backoff for WebSocket reconnection on token retrieval failure",
+      "body": "",
+      "files": [
+        "src/store/services/ws.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9a80644e857fa60813b7981d4f5782d130aa3634",
+      "date": "2026-04-06",
+      "subject": "refactor: remove unused mobile and tablet specific styles from auth module",
+      "body": "",
+      "files": [
+        "src/styles/auth/auth.module.sass"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "0edacdeacc6466bd9da1cc9635bd882aa1259e2f",
+      "date": "2026-04-06",
+      "subject": "feat: move LanguageSwitcher component to render before the logout button in navigation bar",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "1ec408ebadec2251a1c2de1087e469ec4683ff66",
+      "date": "2026-04-06",
+      "subject": "feat: add example environment configuration file with API and account settings",
+      "body": "",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "5915197d16eb4594e1c4f24b63ea2718461fefad",
+      "date": "2026-04-06",
+      "subject": "feat: added management project auth illu",
+      "body": "",
+      "files": [
+        "public/assets/images/auth_illu/blueprint.svg",
+        "public/assets/images/auth_illu/building.svg",
+        "public/assets/images/auth_illu/calendar.svg",
+        "public/assets/images/auth_illu/gantt.svg",
+        "public/assets/images/auth_illu/handshake.svg",
+        "public/assets/images/auth_illu/key.svg",
+        "public/assets/images/auth_illu/luggage.svg",
+        "public/assets/images/auth_illu/milestone.svg",
+        "public/assets/images/auth_illu/signature.svg",
+        "public/assets/images/auth_illu/tasks.svg",
+        "public/assets/images/auth_illu/team.svg",
+        "src/components/layouts/auth/authLayout.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "ad4e9e5220c4445d644e1fe5c0325d5bef63fb40",
+      "date": "2026-04-06",
+      "subject": "feat: replace maintenance illustration with document SVG",
+      "body": "",
+      "files": [
+        "public/assets/images/auth_illu/document.svg",
+        "src/components/shared/maintenance/Maintenance.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "34a2ab07be4bd1aff98c7d88de116170aed2c52b",
+      "date": "2026-04-06",
+      "subject": "feat: enhance form submission validation and update app title in multiple languages",
+      "body": "",
+      "files": [
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "b2734470e1d2be3d11675cf3f649fbae0e6f5f0e",
+      "date": "2026-04-06",
+      "subject": "feat: enable form validation on mount for category, expense, project, and revenue forms",
+      "body": "",
+      "files": [
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/revenues/revenue-form.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "8b9b3b2f95963a2dfd59b5cf8a211b70d3bd3092",
+      "date": "2026-04-07",
+      "subject": "feat: update logo to management project illustration across auth and maintenance layouts",
+      "body": "",
+      "files": [
+        "public/assets/ico/android-icon-144x144.png",
+        "public/assets/ico/android-icon-192x192.png",
+        "public/assets/ico/android-icon-36x36.png",
+        "public/assets/ico/android-icon-48x48.png",
+        "public/assets/ico/android-icon-72x72.png",
+        "public/assets/ico/android-icon-96x96.png",
+        "public/assets/ico/apple-icon-114x114.png",
+        "public/assets/ico/apple-icon-120x120.png",
+        "public/assets/ico/apple-icon-144x144.png",
+        "public/assets/ico/apple-icon-152x152.png",
+        "public/assets/ico/apple-icon-180x180.png",
+        "public/assets/ico/apple-icon-57x57.png",
+        "public/assets/ico/apple-icon-60x60.png",
+        "public/assets/ico/apple-icon-72x72.png",
+        "public/assets/ico/apple-icon-76x76.png",
+        "public/assets/ico/apple-icon-precomposed.png",
+        "public/assets/ico/apple-icon.png",
+        "public/assets/ico/favicon-16x16.png",
+        "public/assets/ico/favicon-32x32.png",
+        "public/assets/ico/favicon-96x96.png",
+        "public/assets/ico/favicon.ico",
+        "public/assets/ico/ms-icon-144x144.png",
+        "public/assets/ico/ms-icon-150x150.png",
+        "public/assets/ico/ms-icon-310x310.png",
+        "public/assets/ico/ms-icon-70x70.png",
+        "public/assets/images/management-projet-logo.png",
+        "public/assets/images/reservation-logo.png",
+        "src/components/layouts/auth/authLayout.tsx",
+        "src/components/pages/auth/login/login.tsx",
+        "src/components/shared/maintenance/Maintenance.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "e8f7cda6baaa9ba27e78308b09adad1e88160f7e",
+      "date": "2026-04-08",
+      "subject": "feat: add notification preferences management and integrate notifications API",
+      "body": "",
+      "files": [
+        ".env.example",
+        "env.d.ts",
+        "src/app/dashboard/settings/notifications/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/settings/notifications.test.tsx",
+        "src/components/pages/settings/notifications.tsx",
+        "src/store/actions/index.ts",
+        "src/store/actions/wsActions.ts",
+        "src/store/sagas/wsSaga.ts",
+        "src/store/selectors/index.ts",
+        "src/store/services/notification.ts",
+        "src/store/services/ws.test.ts",
+        "src/store/services/ws.ts",
+        "src/store/slices/notificationSlice.test.ts",
+        "src/store/slices/notificationSlice.ts",
+        "src/store/store.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/managementNotificationTypes.ts",
+        "src/types/wsTypes.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "bea376d0d8ffcc4df794f1a888ce5694d3f43956",
+      "date": "2026-04-08",
+      "subject": "feat: integrate custom text input component for budget and deadline fields in notifications",
+      "body": "",
+      "files": [
+        "src/components/pages/settings/notifications.test.tsx",
+        "src/components/pages/settings/notifications.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "7838108967c33a8362bbae200b6681bb0d482101",
+      "date": "2026-04-08",
+      "subject": "feat: update notification API root path in environment configuration",
+      "body": "",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "74206213e261cfeb6f0d2decfae8748b496724ef",
+      "date": "2026-04-08",
+      "subject": "feat: update environment configuration for notification unread count path",
+      "body": "",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "d2f11c1efed5d51de464e196a261934dd6281c6c",
+      "date": "2026-04-08",
+      "subject": "feat: update navigation label for notifications to reflect notification preferences",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "8c37c3335fcae4c96f58c12aa56e60eae7c3e8d8",
+      "date": "2026-04-09",
+      "subject": "chore: update dependencies to latest versions for improved performance and security",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "bb6a2c8ffda4b3b36ee9c4d0a480a045c2aca88e",
+      "date": "2026-04-09",
+      "subject": "feat: update @mui from v7 to v9",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json",
+        "src/app/not-found.test.tsx",
+        "src/app/not-found.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.tsx",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.tsx",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.tsx",
+        "src/components/htmlElements/modals/actionModal/actionModals.tsx",
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/layouts/protected/protected.tsx",
+        "src/components/pages/auth/login/login.tsx",
+        "src/components/pages/auth/reset-password/enterCode.tsx",
+        "src/components/pages/auth/reset-password/resetPassword.tsx",
+        "src/components/pages/auth/reset-password/setPassword.tsx",
+        "src/components/pages/categories/categories-list.tsx",
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/pages/settings/edit-profile.tsx",
+        "src/components/pages/settings/notifications.tsx",
+        "src/components/pages/settings/password.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-list.tsx",
+        "src/components/pages/users/users-view.tsx",
+        "src/components/portals/customToast/customToast.test.tsx",
+        "src/components/portals/customToast/customToast.tsx",
+        "src/components/shared/chipSelectFilter/chipSelectFilter.tsx",
+        "src/components/shared/errorBoundary/errorBoundary.tsx",
+        "src/components/shared/filterPanel/customFilterPanel.tsx",
+        "src/components/shared/maintenance/Maintenance.tsx",
+        "src/components/shared/noPermission/noPermission.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/utils/rawData.test.ts",
+        "src/utils/rawData.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "0d77c4ab2fbf8319e9ab6b62bb94ccdf5ef7ee0e",
+      "date": "2026-04-10",
+      "subject": "feat: add expense taxonomy management with CRUD operations and update related components",
+      "body": "",
+      "files": [
+        ".env.example",
+        "env.d.ts",
+        "src/app/dashboard/categories/[id]/edit/page.test.tsx",
+        "src/app/dashboard/categories/[id]/edit/page.tsx",
+        "src/app/dashboard/categories/new/page.test.tsx",
+        "src/app/dashboard/categories/new/page.tsx",
+        "src/app/dashboard/categories/page.test.tsx",
+        "src/app/dashboard/categories/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/shared/addEntityModal/addEntityModal.test.tsx",
+        "src/components/shared/addEntityModal/addEntityModal.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.test.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.tsx",
+        "src/store/services/project.ts",
+        "src/types/projectTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "5d47d72bdc3bcc05143265de5dac39d04f970e67",
+      "date": "2026-04-10",
+      "subject": "feat: update validation messages in addEntityModal and related tests",
+      "body": "",
+      "files": [
+        "src/components/shared/addEntityModal/addEntityModal.test.tsx",
+        "src/components/shared/addEntityModal/addEntityModal.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.test.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "1794fd1fc06100c5080ec2b8c615638f77aa301c",
+      "date": "2026-04-10",
+      "subject": "chore: update dependencies to latest versions for improved performance and security",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "d16e8ba411e0ef06b9d0100e1ae789bddc45a7b9",
+      "date": "2026-04-15",
+      "subject": "feat: update CustomAutoCompleteSelect to display option values and filter by value; add corresponding tests",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.test.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.tsx",
+        "src/utils/formValidationSchemas.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "12c481dd29a4fa2fdd480eee22d82c149cc3d6e1",
+      "date": "2026-04-15",
+      "subject": "feat: update expense form to use category codes for selection and improve subcategory handling",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expense-form.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "25ba96c559333d45006b48f3eea381307a91dc07",
+      "date": "2026-04-15",
+      "subject": "feat: add success message for sub-category deletion and update related translations",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.test.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "411e230c45f4201639c8ed89838a131833178af2",
+      "date": "2026-04-15",
+      "subject": "feat: add subCategoryDeletedSuccess message to language types for improved user feedback",
+      "body": "",
+      "files": [
+        "src/types/languageTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "0a428c5b6d8d99988ee864f690ce9a8020589465",
+      "date": "2026-04-15",
+      "subject": "feat: add SummaryKpiCard component and integrate it into expenses and revenues lists for displaying total amounts",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expenses-list.test.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/revenues/revenues-list.test.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/shared/summaryKpiCard/summaryKpiCard.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "19565fff460e755f77524911ed4b7a6b33db02b4",
+      "date": "2026-04-17",
+      "subject": "feat: enhance request interceptor to fallback on NextAuth session token for authorization",
+      "body": "",
+      "files": [
+        "src/utils/helpers.test.ts",
+        "src/utils/helpers.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9442e3ecc7076f921f4346b6ec54d0a7262e5398",
+      "date": "2026-04-17",
+      "subject": "Force rebuild",
+      "body": "",
+      "files": []
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "ca19e581fbcf6a59c50b83dc3a63c7cc55029bf1",
+      "date": "2026-05-12",
+      "subject": "feat(dashboard): add spreadsheet chart views",
+      "body": "",
+      "files": [
+        "next.config.ts",
+        "src/app/dashboard/client-dashboard/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/dashboard/client-dashboard.tsx",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/formValidationSchemas.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "4b280ba33f6f12bfe7ea67353e158ba1d17b2f28",
+      "date": "2026-05-13",
+      "subject": "feat: add SSO entry and SVG flags",
+      "body": "",
+      "files": [
+        ".env.example",
+        "next.config.ts",
+        "public/assets/flags/en.svg",
+        "public/assets/flags/fr.svg",
+        "src/app/sso/callback/page.tsx",
+        "src/app/sso/start/page.tsx",
+        "src/auth.ts",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/shared/languageSwitcher/languageSwitcher.tsx",
+        "src/proxy.ts",
+        "src/store/sagas/index.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "1bdb7da3f6638cb9c79938afe5505e2849311343",
+      "date": "2026-05-13",
+      "subject": "test: add missing page smoke coverage",
+      "body": "",
+      "files": [
+        "src/app/dashboard/client-dashboard/page.test.tsx",
+        "src/app/dashboard/settings/notifications/page.test.tsx",
+        "src/app/sso/callback/page.test.tsx",
+        "src/app/sso/start/page.test.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "edb913e52ae070ffd4dd473e64e05f1b6b47b264",
+      "date": "2026-05-13",
+      "subject": "fix(auth): use absolute login route",
+      "body": "",
+      "files": [
+        "src/auth.test.ts",
+        "src/auth.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "d6fda8e3055b2a96fb254602da0f28232ce1f06b",
+      "date": "2026-05-14",
+      "subject": "feat(dashboard): unify client charts",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/dashboard/client-dashboard.tsx",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/projectTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "bcd3616f4f10a6e443f12363f66116fbd4762d7c",
+      "date": "2026-05-14",
+      "subject": "fix(dashboard): show internal service totals",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/types/projectTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "31a72563c42fe0e1caf020bbb51f8df2348bacfb",
+      "date": "2026-05-18",
+      "subject": "chore(deploy): test new production server",
+      "body": "Repo: management_projet_frontend\nTarget: 148.251.138.48",
+      "files": []
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "dbb327ed309c4749710e004f0700442a85c57c1f",
+      "date": "2026-05-18",
+      "subject": "chore: enforce LF line endings",
+      "body": "",
+      "files": [
+        ".gitattributes"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "65c0882444d9d1bcbdccd01ae8a390633af7ebbf",
+      "date": "2026-05-20",
+      "subject": "fix(users): remove print permission",
+      "body": "",
+      "files": [
+        ".env.example",
+        "src/auth.test.ts",
+        "src/auth.ts",
+        "src/components/pages/users/users-form.test.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-view.test.tsx",
+        "src/components/pages/users/users-view.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "d356a437db52a7e0cea5d082cc01eebe66c79b0a",
+      "date": "2026-06-02",
+      "subject": "fix(dashboard): reset project filter",
+      "body": "",
+      "files": [
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "16b98eb09574abb4ddf4f69d5873a3ad46d0fa04",
+      "date": "2026-06-06",
+      "subject": "feat: add client supplier project tooling",
+      "body": "",
+      "files": [
+        ".env.example",
+        "package.json",
+        "src/app/dashboard/clients/[id]/edit/page.tsx",
+        "src/app/dashboard/clients/[id]/page.tsx",
+        "src/app/dashboard/clients/new/page.tsx",
+        "src/app/dashboard/clients/page.tsx",
+        "src/app/dashboard/project-statuses/[id]/edit/page.tsx",
+        "src/app/dashboard/project-statuses/new/page.tsx",
+        "src/app/dashboard/project-statuses/page.tsx",
+        "src/app/dashboard/suppliers/[id]/edit/page.tsx",
+        "src/app/dashboard/suppliers/[id]/page.tsx",
+        "src/app/dashboard/suppliers/new/page.tsx",
+        "src/app/dashboard/suppliers/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/clients/client-form.tsx",
+        "src/components/pages/clients/client-view.tsx",
+        "src/components/pages/clients/clients-list.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/project-statuses/project-status-form.tsx",
+        "src/components/pages/project-statuses/project-statuses-list.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/pages/suppliers/supplier-form.tsx",
+        "src/components/pages/suppliers/supplier-view.tsx",
+        "src/components/pages/suppliers/suppliers-list.tsx",
+        "src/components/shared/entityAttachments/entityAttachments.tsx",
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/axiosBaseQuery.ts",
+        "src/utils/formValidationSchemas.ts",
+        "src/utils/rawData.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "59c2ee40fd944ba723e56a7d88f6a4cbae81c81f",
+      "date": "2026-06-06",
+      "subject": "feat: refine project forms and reports",
+      "body": "",
+      "files": [
+        ".env.example",
+        "src/app/dashboard/project-statuses/[id]/edit/page.tsx",
+        "src/app/dashboard/project-statuses/new/page.tsx",
+        "src/app/dashboard/project-statuses/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/project-statuses/project-status-form.tsx",
+        "src/components/pages/project-statuses/project-statuses-list.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/shared/entityAttachments/entityAttachments.tsx",
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "0750608b384db7ffe4f11a29478370994bfd8934",
+      "date": "2026-06-08",
+      "subject": "feat(project): add real budget UI",
+      "body": "",
+      "files": [
+        ".env.example",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.test.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "bd87d3b69b28d30f72729c3ea20eb03376ef0428",
+      "date": "2026-06-08",
+      "subject": "feat(projects): refine budget and supplier forms",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "7d091a1dddd6ab1a5f7fd8eb215eb2755a4c1020",
+      "date": "2026-06-08",
+      "subject": "fix(attachments): restore file chooser button",
+      "body": "",
+      "files": [
+        "src/components/shared/entityAttachments/entityAttachments.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "c1c9fee7b48c8da2cbabc7c405c4411b4cc7361f",
+      "date": "2026-06-08",
+      "subject": "Add city to client project forms",
+      "body": "",
+      "files": [
+        "src/components/pages/clients/client-form.tsx",
+        "src/components/pages/clients/client-view.tsx",
+        "src/components/pages/clients/clients-list.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/formValidationSchemas.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "4c15dd8f28a9d1f769cb0eee32c8387d0c54aaea",
+      "date": "2026-06-08",
+      "subject": "Move dashboard link to projects menu",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "571c8704589527c2532a6d764415824f7f5a64e0",
+      "date": "2026-06-09",
+      "subject": "upgrade packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "822a11e9afb20d423df4f572ad45cfafd340f0da",
+      "date": "2026-06-09",
+      "subject": "force rebuild",
+      "body": "",
+      "files": []
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "8382fd780460b4d7cc8a2fb10798eb5bb1bb0e8a",
+      "date": "2026-06-09",
+      "subject": "added build as turbopack",
+      "body": "",
+      "files": [
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "95ee283d3eeda9e03ca17f710114ffaee0f7f7c9",
+      "date": "2026-06-09",
+      "subject": "chore: update app logo assets",
+      "body": "",
+      "files": [
+        "public/assets/ico/android-icon-144x144.png",
+        "public/assets/ico/android-icon-192x192.png",
+        "public/assets/ico/android-icon-36x36.png",
+        "public/assets/ico/android-icon-48x48.png",
+        "public/assets/ico/android-icon-72x72.png",
+        "public/assets/ico/android-icon-96x96.png",
+        "public/assets/ico/apple-icon-114x114.png",
+        "public/assets/ico/apple-icon-120x120.png",
+        "public/assets/ico/apple-icon-144x144.png",
+        "public/assets/ico/apple-icon-152x152.png",
+        "public/assets/ico/apple-icon-180x180.png",
+        "public/assets/ico/apple-icon-57x57.png",
+        "public/assets/ico/apple-icon-60x60.png",
+        "public/assets/ico/apple-icon-72x72.png",
+        "public/assets/ico/apple-icon-76x76.png",
+        "public/assets/ico/apple-icon-precomposed.png",
+        "public/assets/ico/apple-icon.png",
+        "public/assets/ico/browserconfig.xml",
+        "public/assets/ico/favicon-16x16.png",
+        "public/assets/ico/favicon-32x32.png",
+        "public/assets/ico/favicon-96x96.png",
+        "public/assets/ico/favicon.ico",
+        "public/assets/ico/manifest.json",
+        "public/assets/ico/ms-icon-144x144.png",
+        "public/assets/ico/ms-icon-150x150.png",
+        "public/assets/ico/ms-icon-310x310.png",
+        "public/assets/ico/ms-icon-70x70.png",
+        "public/assets/images/management-projet-logo.png",
+        "src/store/sagas/wsSaga.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "cd85a0815fe21036b2ed0e86e49d4a71460a6ef6",
+      "date": "2026-06-09",
+      "subject": "style: use blue notification badge",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9f68b9e9747efca265baeb424ed62d92f815716e",
+      "date": "2026-06-10",
+      "subject": "Show attachments on detail views",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/shared/entityAttachments/entityAttachments.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9db71166909f316ab00aeaf89d24e42387d83a29",
+      "date": "2026-06-10",
+      "subject": "Fix real budget refresh after changes",
+      "body": "",
+      "files": [
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "fbcca281f860bcdaa3c907b5d29cd6bbebccc7bd",
+      "date": "2026-06-10",
+      "subject": "Save real budget draft on project submit",
+      "body": "",
+      "files": [
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "61d99fafc812f45958ccda3f7bb32cf46ee39c81",
+      "date": "2026-06-10",
+      "subject": "Use referenced suppliers on expenses",
+      "body": "",
+      "files": [
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.test.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/expenses/expenses-list.test.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/formValidationSchemas.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "e6f5651fa411092456598ac37cb725c835903a6c",
+      "date": "2026-06-12",
+      "subject": "fix infinite test loop in store.test.ts",
+      "body": "",
+      "files": [
+        "src/store/store.test.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "90982a13e0b4db1a4598a3a73e5f08e7a0ae402d",
+      "date": "2026-06-12",
+      "subject": "upgraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "0e0583f25cfd866463d98ac6b5d56bf83b1d38e2",
+      "date": "2026-06-12",
+      "subject": "fix failing tests",
+      "body": "",
+      "files": [
+        "src/components/pages/revenues/revenue-form.test.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "cfc24f61841de0d6b572d91b525e1331aca959db",
+      "date": "2026-06-13",
+      "subject": "docs: add project README",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-login.png"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "73a4fa6a6655b26109a1cd708eb46beb6c0fc2a5",
+      "date": "2026-06-13",
+      "subject": "docs: improve README screenshots",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-showcase.png"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "50c7fc1f2c0efff7dbdee1274a284d58b875b42b",
+      "date": "2026-06-13",
+      "subject": "Improve portfolio README",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-dashboard.png",
+        "docs/screenshots/management-projet-login.png",
+        "docs/screenshots/management-projet-projects.png",
+        "docs/screenshots/management-projet-showcase.png"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "1a139dd245637ace2017fadda70fcb88371a7478",
+      "date": "2026-06-18",
+      "subject": "feat: use textarea project notes",
+      "body": "",
+      "files": [
+        "src/components/formikElements/customTextInput/customTextInput.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/revenues/revenue-form.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9efcf0abcf42c3cf55169715adc3d212301377ea",
+      "date": "2026-06-19",
+      "subject": "upgraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3003f17d2e52dd56d8e5fe93df1af4aff699020e",
+      "date": "2026-07-08",
+      "subject": "Rename service fee dashboard card",
+      "body": "",
+      "files": [
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/translations/fr.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "59841af4a867fe5af43e9fb4202975bf04e0e517",
+      "date": "2026-07-29",
+      "subject": "chore: upgraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3e465981e4908e495a6067193a94ac07825a1a33",
+      "date": "2026-09-07",
+      "subject": "upgraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "eslint.config.mjs",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9f2d7a9a15584958165968be52eda6e2631bce49",
+      "date": "2026-09-11",
+      "subject": "feat(reports): add PDF report workflow",
+      "body": "",
+      "files": [
+        ".env.example",
+        "src/app/dashboard/reports/page.tsx",
+        "src/app/dashboard/settings/company/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/components/pages/settings/company-profile.test.tsx",
+        "src/components/pages/settings/company-profile.tsx",
+        "src/components/shared/pdfLanguageModal/pdfLanguageModal.test.tsx",
+        "src/components/shared/pdfLanguageModal/pdfLanguageModal.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/reportTypes.ts",
+        "src/utils/routes.test.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "fc8384e5440ba8391b44284f793a6d1b955a37a1",
+      "date": "2026-09-11",
+      "subject": "fix(reports): match dashboard form layout",
+      "body": "",
+      "files": [
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "bf6251eb3cf8d5c87937d5110203ed62729a2b8d",
+      "date": "2026-09-11",
+      "subject": "refactor(settings): align company profile form",
+      "body": "",
+      "files": [
+        "src/components/pages/settings/company-profile.test.tsx",
+        "src/components/pages/settings/company-profile.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/reportTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "407eda540cc63be774d4a8a7d6e41306e17b7d94",
+      "date": "2026-09-11",
+      "subject": "fix(settings): allow cropped logo upload",
+      "body": "Convert cropper data URLs locally so the production CSP does not block form submission.",
+      "files": [
+        "src/components/pages/settings/company-profile.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "998c05578cbfe16ba6f0aad70a03aeb7513f51cd",
+      "date": "2026-09-11",
+      "subject": "fix(settings): complete permission handling",
+      "body": "",
+      "files": [
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/settings/company-profile.test.tsx",
+        "src/components/pages/settings/company-profile.tsx",
+        "src/components/pages/users/users-form.test.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-view.test.tsx",
+        "src/components/pages/users/users-view.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "66dd6d53689118c9439782bfb8351e612a8ccd9e",
+      "date": "2026-09-14",
+      "subject": "fix(reports): name PDF downloads",
+      "body": "",
+      "files": [
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/utils/fileDownload.test.ts",
+        "src/utils/fileDownload.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3158cf9050e385f697a0920d034f7cb76b05d1f0",
+      "date": "2026-09-14",
+      "subject": "fix(reports): serve named PDF downloads",
+      "body": "",
+      "files": [
+        "src/app/api/reports/pdf/route.ts",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/utils/fileDownload.test.ts",
+        "src/utils/fileDownload.ts",
+        "src/utils/routes.test.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "e0b22ceb17ce7a740feb80fe1dc5d920b1c1ed93",
+      "date": "2026-09-17",
+      "subject": "feat(ai): add assistant controls and PDF flow",
+      "body": "- keep suggestions local until explicit save\\n- default report periods from project start dates",
+      "files": [
+        ".env.example",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/suppliers/supplier-form.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx",
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/aiTypes.ts",
+        "src/types/languageTypes.ts",
+        "src/utils/fileDownload.test.ts",
+        "src/utils/fileDownload.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "cab9210a41cb403273d155b836a2f426cb4345df",
+      "date": "2026-09-17",
+      "subject": "feat(ai): improve suggestion review",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3dbb732471ce77db1dd0f11915d831acff7f1241",
+      "date": "2026-09-17",
+      "subject": "fix(ai): size status dialogs to content",
+      "body": "",
+      "files": [
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "da93324aff2956ed37a5d7f4bc7e04ac80b3955c",
+      "date": "2026-09-17",
+      "subject": "fix(ai): toast unchanged results",
+      "body": "",
+      "files": [
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "c35db399773faa07e1f6f4d5895e22014894a7bb",
+      "date": "2026-09-17",
+      "subject": "fix(ai): remove diff highlight spacing",
+      "body": "",
+      "files": [
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "2df64c7013d15739fcba010856acfc914352b6eb",
+      "date": "2026-09-17",
+      "subject": "fix(ai): shorten translation labels",
+      "body": "",
+      "files": [
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "7dc87eb548f899fbfc866af81f9bc703af013a57",
+      "date": "2026-09-17",
+      "subject": "feat(reports): show PDF progress",
+      "body": "",
+      "files": [
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/utils/fileDownload.test.ts",
+        "src/utils/fileDownload.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "3a019c26e05b3688c23f359027ade291ac4b3d29",
+      "date": "2026-09-17",
+      "subject": "feat: upgaraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "43748126d9786ed92948cd4c392d52598641f2be",
+      "date": "2026-09-22",
+      "subject": "fix(dashboard): correct chart metrics",
+      "body": "",
+      "files": [
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/formValidationSchemas.test.ts",
+        "src/utils/formValidationSchemas.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "9fb4f6a7058311654e60e266cb02150414006104",
+      "date": "2026-09-23",
+      "subject": "feat(grid): restore pagination on back",
+      "body": "",
+      "files": [
+        "src/components/pages/categories/categories-list.tsx",
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/clients/client-form.tsx",
+        "src/components/pages/clients/client-view.tsx",
+        "src/components/pages/clients/clients-list.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/pages/suppliers/supplier-form.tsx",
+        "src/components/pages/suppliers/supplier-view.tsx",
+        "src/components/pages/suppliers/suppliers-list.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-list.tsx",
+        "src/components/pages/users/users-view.tsx",
+        "src/components/shared/paginatedDataGrid/useDataGridPagination.test.ts",
+        "src/components/shared/paginatedDataGrid/useDataGridPagination.ts",
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "e9cc0d48179b7d3e2365d9ed9866f5f65c0fa3f3",
+      "date": "2026-09-23",
+      "subject": "chore: migrate to React 19 and Next.js 16",
+      "body": "Align App Router APIs, component refs, effects, static data, and\nproduction build checks with the installed framework versions.",
+      "files": [
+        "Dockerfile",
+        "next.config.ts",
+        "src/app/(auth)/login/page.test.tsx",
+        "src/app/(auth)/reset-password/enter-code/page.test.tsx",
+        "src/app/(auth)/reset-password/page.test.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/clearCookiesClient.test.tsx",
+        "src/app/(auth)/reset-password/set-password-complete/page.test.tsx",
+        "src/app/(auth)/reset-password/set-password/page.test.tsx",
+        "src/app/dashboard/client-dashboard/page.test.tsx",
+        "src/app/dashboard/clients/[id]/edit/page.tsx",
+        "src/app/dashboard/clients/[id]/page.tsx",
+        "src/app/dashboard/expenses/[id]/edit/page.test.tsx",
+        "src/app/dashboard/expenses/[id]/edit/page.tsx",
+        "src/app/dashboard/expenses/[id]/page.test.tsx",
+        "src/app/dashboard/expenses/[id]/page.tsx",
+        "src/app/dashboard/expenses/new/page.test.tsx",
+        "src/app/dashboard/expenses/page.test.tsx",
+        "src/app/dashboard/layout.tsx",
+        "src/app/dashboard/projects/[id]/edit/page.test.tsx",
+        "src/app/dashboard/projects/[id]/edit/page.tsx",
+        "src/app/dashboard/projects/[id]/page.test.tsx",
+        "src/app/dashboard/projects/[id]/page.tsx",
+        "src/app/dashboard/projects/new/page.test.tsx",
+        "src/app/dashboard/projects/page.test.tsx",
+        "src/app/dashboard/revenues/[id]/edit/page.test.tsx",
+        "src/app/dashboard/revenues/[id]/edit/page.tsx",
+        "src/app/dashboard/revenues/[id]/page.test.tsx",
+        "src/app/dashboard/revenues/[id]/page.tsx",
+        "src/app/dashboard/revenues/new/page.test.tsx",
+        "src/app/dashboard/revenues/page.test.tsx",
+        "src/app/dashboard/settings/edit-profile/page.test.tsx",
+        "src/app/dashboard/settings/notifications/page.test.tsx",
+        "src/app/dashboard/settings/password/page.test.tsx",
+        "src/app/dashboard/suppliers/[id]/edit/page.tsx",
+        "src/app/dashboard/suppliers/[id]/page.tsx",
+        "src/app/dashboard/users/[id]/edit/page.test.tsx",
+        "src/app/dashboard/users/[id]/edit/page.tsx",
+        "src/app/dashboard/users/[id]/page.test.tsx",
+        "src/app/dashboard/users/[id]/page.tsx",
+        "src/app/dashboard/users/new/page.test.tsx",
+        "src/app/dashboard/users/page.test.tsx",
+        "src/app/layout.test.tsx",
+        "src/app/layout.tsx",
+        "src/app/not-found.test.tsx",
+        "src/app/not-found.tsx",
+        "src/app/sso/callback/page.test.tsx",
+        "src/components/formikElements/apiLoading/apiAlert/apiAlert.test.tsx",
+        "src/components/formikElements/apiLoading/apiAlert/apiAlert.tsx",
+        "src/components/formikElements/apiLoading/apiProgress/apiProgress.test.tsx",
+        "src/components/formikElements/apiLoading/apiProgress/apiProgress.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.test.tsx",
+        "src/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect.tsx",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.test.tsx",
+        "src/components/formikElements/customDropDownSelect/customDropDownSelect.tsx",
+        "src/components/formikElements/customOutlinedText/customOutlinedText.tsx",
+        "src/components/formikElements/customPasswordInput/customPasswordInput.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.test.tsx",
+        "src/components/formikElements/customSquareImageUploading/customSquareImageUploading.tsx",
+        "src/components/formikElements/customTextInput/customTextInput.tsx",
+        "src/components/htmlElements/buttons/primaryAnchorButton/primaryAnchorButton.tsx",
+        "src/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton.tsx",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.test.tsx",
+        "src/components/htmlElements/buttons/squareImageInputFile/squareImageInputFile.tsx",
+        "src/components/htmlElements/buttons/textButton/textButton.tsx",
+        "src/components/htmlElements/modals/actionModal/actionModals.tsx",
+        "src/components/htmlElements/tooltip/darkTooltip/darkTooltip.test.tsx",
+        "src/components/htmlElements/tooltip/darkTooltip/darkTooltip.tsx",
+        "src/components/layouts/auth/authLayout.tsx",
+        "src/components/layouts/navigationBar/navigationBar.test.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/layouts/protected/protected.test.tsx",
+        "src/components/pages/auth/login/login.test.tsx",
+        "src/components/pages/auth/login/login.tsx",
+        "src/components/pages/auth/reset-password/enterCode.test.tsx",
+        "src/components/pages/auth/reset-password/enterCode.tsx",
+        "src/components/pages/auth/reset-password/resetPassword.test.tsx",
+        "src/components/pages/auth/reset-password/resetPassword.tsx",
+        "src/components/pages/auth/reset-password/setPassword.test.tsx",
+        "src/components/pages/auth/reset-password/setPassword.tsx",
+        "src/components/pages/auth/reset-password/setPasswordComplete.test.tsx",
+        "src/components/pages/auth/reset-password/setPasswordComplete.tsx",
+        "src/components/pages/categories/categories-list.test.tsx",
+        "src/components/pages/categories/categories-list.tsx",
+        "src/components/pages/categories/category-form.test.tsx",
+        "src/components/pages/categories/category-form.tsx",
+        "src/components/pages/clients/client-form.tsx",
+        "src/components/pages/clients/client-view.tsx",
+        "src/components/pages/clients/clients-list.tsx",
+        "src/components/pages/dashboard/client-dashboard.tsx",
+        "src/components/pages/dashboard/project-dashboard.test.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.test.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/expenses/expenses-list.test.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/project-form.test.tsx",
+        "src/components/pages/projects/project-form.tsx",
+        "src/components/pages/projects/project-view.test.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/projects/projects-list.test.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/components/pages/revenues/revenue-form.test.tsx",
+        "src/components/pages/revenues/revenue-form.tsx",
+        "src/components/pages/revenues/revenue-view.test.tsx",
+        "src/components/pages/revenues/revenue-view.tsx",
+        "src/components/pages/revenues/revenues-list.test.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/pages/settings/company-profile.test.tsx",
+        "src/components/pages/settings/company-profile.tsx",
+        "src/components/pages/settings/edit-profile.test.tsx",
+        "src/components/pages/settings/edit-profile.tsx",
+        "src/components/pages/settings/notifications.test.tsx",
+        "src/components/pages/settings/notifications.tsx",
+        "src/components/pages/settings/password.test.tsx",
+        "src/components/pages/settings/password.tsx",
+        "src/components/pages/suppliers/supplier-form.tsx",
+        "src/components/pages/suppliers/supplier-view.tsx",
+        "src/components/pages/suppliers/suppliers-list.tsx",
+        "src/components/pages/users/users-form.test.tsx",
+        "src/components/pages/users/users-form.tsx",
+        "src/components/pages/users/users-list.test.tsx",
+        "src/components/pages/users/users-list.tsx",
+        "src/components/pages/users/users-view.test.tsx",
+        "src/components/pages/users/users-view.tsx",
+        "src/components/portals/customToast/customToast.test.tsx",
+        "src/components/portals/customToast/customToast.tsx",
+        "src/components/shared/addEntityModal/addEntityModal.test.tsx",
+        "src/components/shared/addEntityModal/addEntityModal.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.test.tsx",
+        "src/components/shared/aiAssistantControl/aiAssistantControl.tsx",
+        "src/components/shared/chipSelectFilter/chipSelectFilter.tsx",
+        "src/components/shared/chipSelectFilter/chipSelectFilterBar.tsx",
+        "src/components/shared/dateRangeFilter/dateRangeFilterOperator.test.tsx",
+        "src/components/shared/dateRangeFilter/dateRangeFilterOperator.tsx",
+        "src/components/shared/dropdownFilter/dropdownFilter.test.tsx",
+        "src/components/shared/dropdownFilter/dropdownFilter.tsx",
+        "src/components/shared/entityAttachments/entityAttachments.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.test.tsx",
+        "src/components/shared/entityCrudControls/entityCrudControls.tsx",
+        "src/components/shared/errorBoundary/ErrorBoundary.test.tsx",
+        "src/components/shared/errorBoundary/errorBoundary.tsx",
+        "src/components/shared/filterPanel/customFilterPanel.test.tsx",
+        "src/components/shared/filterPanel/customFilterPanel.tsx",
+        "src/components/shared/languageSwitcher/languageSwitcher.test.tsx",
+        "src/components/shared/languageSwitcher/languageSwitcher.tsx",
+        "src/components/shared/maintenance/Maintenance.test.tsx",
+        "src/components/shared/maintenance/Maintenance.tsx",
+        "src/components/shared/mobileActionsMenu/mobileActionsMenu.tsx",
+        "src/components/shared/noPermission/noPermission.test.tsx",
+        "src/components/shared/numericFilter/numericFilterOperator.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.test.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.tsx",
+        "src/components/shared/paginatedDataGrid/useDataGridPagination.ts",
+        "src/components/shared/pdfLanguageModal/pdfLanguageModal.test.tsx",
+        "src/components/shared/pdfLanguageModal/pdfLanguageModal.tsx",
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx",
+        "src/components/shared/sessionExpiredListener/sessionExpiredListener.test.tsx",
+        "src/components/shared/sessionExpiredListener/sessionExpiredListener.tsx",
+        "src/components/shared/summaryKpiCard/summaryKpiCard.tsx",
+        "src/contexts/InitContext.tsx",
+        "src/contexts/initContext.test.tsx",
+        "src/contexts/initEffects.test.tsx",
+        "src/contexts/initEffects.tsx",
+        "src/contexts/languageContext.test.tsx",
+        "src/contexts/languageContext.tsx",
+        "src/contexts/portal.tsx",
+        "src/contexts/toastContext.test.tsx",
+        "src/contexts/toastContext.tsx",
+        "src/providers/storeProvider.tsx",
+        "src/providers/themeProvider.tsx",
+        "src/types/accountTypes.ts",
+        "src/types/routeTypes.ts",
+        "src/utils/clientHelpers.test.tsx",
+        "src/utils/hooks.test.tsx",
+        "src/utils/rawData.test.ts",
+        "src/utils/rawData.ts",
+        "src/utils/runWithCleanup.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "7eefd84c0500671344990e8532cbac33fc6586c3",
+      "date": "2026-09-23",
+      "subject": "fix(grid): type project table rows",
+      "body": "",
+      "files": [
+        "src/components/shared/projectPaymentSchedule/projectPaymentSchedule.tsx",
+        "src/components/shared/projectRealBudget/projectRealBudget.tsx"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "5e18a079849f0b2753a568facc24ec8c92a51613",
+      "date": "2026-10-03",
+      "subject": "feat(quotes): add budget tracking workflows",
+      "body": "",
+      "files": [
+        "src/app/api/reports/pdf/route.ts",
+        "src/app/dashboard/quotes/[id]/edit/page.tsx",
+        "src/app/dashboard/quotes/[id]/page.tsx",
+        "src/app/dashboard/quotes/new/page.tsx",
+        "src/app/dashboard/quotes/page.tsx",
+        "src/components/layouts/navigationBar/navigationBar.tsx",
+        "src/components/pages/clients/client-view.tsx",
+        "src/components/pages/dashboard/project-dashboard.tsx",
+        "src/components/pages/expenses/expense-form.test.tsx",
+        "src/components/pages/expenses/expense-form.tsx",
+        "src/components/pages/expenses/expense-view.tsx",
+        "src/components/pages/projects/project-view.test.tsx",
+        "src/components/pages/projects/project-view.tsx",
+        "src/components/pages/quotes/quote-form.test.tsx",
+        "src/components/pages/quotes/quote-form.tsx",
+        "src/components/pages/quotes/quote-view.tsx",
+        "src/components/pages/quotes/quotes-list.tsx",
+        "src/components/pages/reports/reports.test.tsx",
+        "src/components/pages/reports/reports.tsx",
+        "src/components/pages/suppliers/supplier-view.tsx",
+        "src/components/shared/entityAttachments/entityAttachments.tsx",
+        "src/components/shared/infoRow/infoRow.tsx",
+        "src/components/shared/projectEstimateBudget/projectEstimateBudget.tsx",
+        "src/store/services/project.ts",
+        "src/translations/en.ts",
+        "src/translations/fr.ts",
+        "src/types/languageTypes.ts",
+        "src/types/projectTypes.ts",
+        "src/utils/formValidationSchemas.ts",
+        "src/utils/routes.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "b29f71a0f7f9969752121799d5e2139d616c83c2",
+      "date": "2026-10-06",
+      "subject": "feat: upgraded packages",
+      "body": "",
+      "files": [
+        "bun.lock",
+        "package.json"
+      ]
+    },
+    {
+      "repository": "management_projet_frontend",
+      "commit": "df49e3ca805b489a4c3955cc1fe0c1dc8fed69ca",
+      "date": "2026-10-06",
+      "subject": "fix(lists): use server-side column sorting",
+      "body": "",
+      "files": [
+        "src/components/pages/categories/categories-list.tsx",
+        "src/components/pages/clients/clients-list.tsx",
+        "src/components/pages/expenses/expenses-list.tsx",
+        "src/components/pages/projects/projects-list.tsx",
+        "src/components/pages/quotes/quotes-list.tsx",
+        "src/components/pages/revenues/revenues-list.tsx",
+        "src/components/pages/suppliers/suppliers-list.tsx",
+        "src/components/pages/users/users-list.tsx",
+        "src/components/shared/paginatedDataGrid/paginatedDataGrid.tsx",
+        "src/components/shared/paginatedDataGrid/useDataGridPagination.test.ts",
+        "src/components/shared/paginatedDataGrid/useDataGridPagination.ts",
+        "src/store/services/ordering.test.ts",
+        "src/store/services/project.ts"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "03eedfab0c1d63e7c4723d8c6006b62987d286ff",
+      "date": "2026-04-06",
+      "subject": "initial commit",
+      "body": "",
+      "files": [
+        ".coveragerc",
+        ".env.example",
+        ".gitignore",
+        "Copy of EMPTY MANAGEMENT DU PROJET.xlsx",
+        "Dockerfile",
+        "account/__init__.py",
+        "account/admin.py",
+        "account/apps.py",
+        "account/filters.py",
+        "account/forms.py",
+        "account/managers.py",
+        "account/migrations/0001_initial.py",
+        "account/migrations/0002_customuser_permissions.py",
+        "account/migrations/__init__.py",
+        "account/models.py",
+        "account/permissions.py",
+        "account/serializers.py",
+        "account/tasks.py",
+        "account/templates/new_account.html",
+        "account/templates/new_password.html",
+        "account/templates/password_reset.html",
+        "account/tests.py",
+        "account/urls.py",
+        "account/views.py",
+        "core/__init__.py",
+        "core/permissions.py",
+        "depense/__init__.py",
+        "depense/admin.py",
+        "depense/apps.py",
+        "depense/filters.py",
+        "depense/migrations/0001_initial.py",
+        "depense/migrations/__init__.py",
+        "depense/models.py",
+        "depense/serializers.py",
+        "depense/tests.py",
+        "depense/urls.py",
+        "depense/views.py",
+        "docker-compose.yml",
+        "entrypoint.sh",
+        "locale/en/LC_MESSAGES/django.po",
+        "locale/fr/LC_MESSAGES/django.po",
+        "manage.py",
+        "management_projet_backend/__init__.py",
+        "management_projet_backend/asgi.py",
+        "management_projet_backend/celery_conf.py",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/settings_test.py",
+        "management_projet_backend/tests.py",
+        "management_projet_backend/urls.py",
+        "management_projet_backend/utils.py",
+        "management_projet_backend/wsgi.py",
+        "project/__init__.py",
+        "project/admin.py",
+        "project/apps.py",
+        "project/filters.py",
+        "project/migrations/0001_initial.py",
+        "project/migrations/__init__.py",
+        "project/models.py",
+        "project/serializers.py",
+        "project/tests.py",
+        "project/urls.py",
+        "project/views.py",
+        "pyproject.toml",
+        "pytest.ini",
+        "requirements.txt",
+        "revenu/__init__.py",
+        "revenu/admin.py",
+        "revenu/apps.py",
+        "revenu/filters.py",
+        "revenu/migrations/0001_initial.py",
+        "revenu/migrations/__init__.py",
+        "revenu/models.py",
+        "revenu/serializers.py",
+        "revenu/tests.py",
+        "revenu/urls.py",
+        "revenu/views.py",
+        "static/admin/css/autocomplete.css",
+        "static/admin/css/base.css",
+        "static/admin/css/changelists.css",
+        "static/admin/css/dark_mode.css",
+        "static/admin/css/dashboard.css",
+        "static/admin/css/forms.css",
+        "static/admin/css/login.css",
+        "static/admin/css/nav_sidebar.css",
+        "static/admin/css/responsive.css",
+        "static/admin/css/responsive_rtl.css",
+        "static/admin/css/rtl.css",
+        "static/admin/css/unusable_password_field.css",
+        "static/admin/css/vendor/select2/LICENSE-SELECT2.md",
+        "static/admin/css/vendor/select2/select2.css",
+        "static/admin/css/vendor/select2/select2.min.css",
+        "static/admin/css/widgets.css",
+        "static/admin/img/README.md",
+        "static/admin/img/calendar-icons.svg",
+        "static/admin/img/icon-addlink.svg",
+        "static/admin/img/icon-alert-dark.svg",
+        "static/admin/img/icon-alert.svg",
+        "static/admin/img/icon-calendar.svg",
+        "static/admin/img/icon-changelink.svg",
+        "static/admin/img/icon-clock.svg",
+        "static/admin/img/icon-debug-dark.svg",
+        "static/admin/img/icon-debug.svg",
+        "static/admin/img/icon-deletelink.svg",
+        "static/admin/img/icon-hidelink.svg",
+        "static/admin/img/icon-info-dark.svg",
+        "static/admin/img/icon-info.svg",
+        "static/admin/img/icon-no-dark.svg",
+        "static/admin/img/icon-no.svg",
+        "static/admin/img/icon-unknown-alt.svg",
+        "static/admin/img/icon-unknown.svg",
+        "static/admin/img/icon-viewlink.svg",
+        "static/admin/img/icon-yes-dark.svg",
+        "static/admin/img/icon-yes.svg",
+        "static/admin/img/inline-delete.svg",
+        "static/admin/img/search.svg",
+        "static/admin/img/selector-icons.svg",
+        "static/admin/img/sorting-icons.svg",
+        "static/admin/img/tooltag-add.svg",
+        "static/admin/img/tooltag-arrowright.svg",
+        "static/admin/js/SelectBox.js",
+        "static/admin/js/SelectFilter2.js",
+        "static/admin/js/actions.js",
+        "static/admin/js/admin/DateTimeShortcuts.js",
+        "static/admin/js/admin/RelatedObjectLookups.js",
+        "static/admin/js/autocomplete.js",
+        "static/admin/js/calendar.js",
+        "static/admin/js/cancel.js",
+        "static/admin/js/change_form.js",
+        "static/admin/js/core.js",
+        "static/admin/js/filters.js",
+        "static/admin/js/inlines.js",
+        "static/admin/js/jquery.init.js",
+        "static/admin/js/nav_sidebar.js",
+        "static/admin/js/popup_response.js",
+        "static/admin/js/prepopulate.js",
+        "static/admin/js/prepopulate_init.js",
+        "static/admin/js/theme.js",
+        "static/admin/js/urlify.js",
+        "static/admin/js/vendor/jquery/LICENSE.txt",
+        "static/admin/js/vendor/jquery/jquery.js",
+        "static/admin/js/vendor/jquery/jquery.min.js",
+        "static/admin/js/vendor/select2/LICENSE.md",
+        "static/admin/js/vendor/select2/i18n/af.js",
+        "static/admin/js/vendor/select2/i18n/ar.js",
+        "static/admin/js/vendor/select2/i18n/az.js",
+        "static/admin/js/vendor/select2/i18n/bg.js",
+        "static/admin/js/vendor/select2/i18n/bn.js",
+        "static/admin/js/vendor/select2/i18n/bs.js",
+        "static/admin/js/vendor/select2/i18n/ca.js",
+        "static/admin/js/vendor/select2/i18n/cs.js",
+        "static/admin/js/vendor/select2/i18n/da.js",
+        "static/admin/js/vendor/select2/i18n/de.js",
+        "static/admin/js/vendor/select2/i18n/dsb.js",
+        "static/admin/js/vendor/select2/i18n/el.js",
+        "static/admin/js/vendor/select2/i18n/en.js",
+        "static/admin/js/vendor/select2/i18n/es.js",
+        "static/admin/js/vendor/select2/i18n/et.js",
+        "static/admin/js/vendor/select2/i18n/eu.js",
+        "static/admin/js/vendor/select2/i18n/fa.js",
+        "static/admin/js/vendor/select2/i18n/fi.js",
+        "static/admin/js/vendor/select2/i18n/fr.js",
+        "static/admin/js/vendor/select2/i18n/gl.js",
+        "static/admin/js/vendor/select2/i18n/he.js",
+        "static/admin/js/vendor/select2/i18n/hi.js",
+        "static/admin/js/vendor/select2/i18n/hr.js",
+        "static/admin/js/vendor/select2/i18n/hsb.js",
+        "static/admin/js/vendor/select2/i18n/hu.js",
+        "static/admin/js/vendor/select2/i18n/hy.js",
+        "static/admin/js/vendor/select2/i18n/id.js",
+        "static/admin/js/vendor/select2/i18n/is.js",
+        "static/admin/js/vendor/select2/i18n/it.js",
+        "static/admin/js/vendor/select2/i18n/ja.js",
+        "static/admin/js/vendor/select2/i18n/ka.js",
+        "static/admin/js/vendor/select2/i18n/km.js",
+        "static/admin/js/vendor/select2/i18n/ko.js",
+        "static/admin/js/vendor/select2/i18n/lt.js",
+        "static/admin/js/vendor/select2/i18n/lv.js",
+        "static/admin/js/vendor/select2/i18n/mk.js",
+        "static/admin/js/vendor/select2/i18n/ms.js",
+        "static/admin/js/vendor/select2/i18n/nb.js",
+        "static/admin/js/vendor/select2/i18n/ne.js",
+        "static/admin/js/vendor/select2/i18n/nl.js",
+        "static/admin/js/vendor/select2/i18n/pl.js",
+        "static/admin/js/vendor/select2/i18n/ps.js",
+        "static/admin/js/vendor/select2/i18n/pt-BR.js",
+        "static/admin/js/vendor/select2/i18n/pt.js",
+        "static/admin/js/vendor/select2/i18n/ro.js",
+        "static/admin/js/vendor/select2/i18n/ru.js",
+        "static/admin/js/vendor/select2/i18n/sk.js",
+        "static/admin/js/vendor/select2/i18n/sl.js",
+        "static/admin/js/vendor/select2/i18n/sq.js",
+        "static/admin/js/vendor/select2/i18n/sr-Cyrl.js",
+        "static/admin/js/vendor/select2/i18n/sr.js",
+        "static/admin/js/vendor/select2/i18n/sv.js",
+        "static/admin/js/vendor/select2/i18n/th.js",
+        "static/admin/js/vendor/select2/i18n/tk.js",
+        "static/admin/js/vendor/select2/i18n/tr.js",
+        "static/admin/js/vendor/select2/i18n/uk.js",
+        "static/admin/js/vendor/select2/i18n/vi.js",
+        "static/admin/js/vendor/select2/i18n/zh-CN.js",
+        "static/admin/js/vendor/select2/i18n/zh-TW.js",
+        "static/admin/js/vendor/select2/select2.full.js",
+        "static/admin/js/vendor/select2/select2.full.min.js",
+        "static/admin/js/vendor/xregexp/LICENSE.txt",
+        "static/admin/js/vendor/xregexp/xregexp.js",
+        "static/admin/js/vendor/xregexp/xregexp.min.js",
+        "static/fonts/Poppins-Bold.ttf",
+        "static/rest_framework/css/bootstrap-theme.min.css",
+        "static/rest_framework/css/bootstrap-theme.min.css.map",
+        "static/rest_framework/css/bootstrap-tweaks.css",
+        "static/rest_framework/css/bootstrap.min.css",
+        "static/rest_framework/css/bootstrap.min.css.map",
+        "static/rest_framework/css/default.css",
+        "static/rest_framework/css/font-awesome-4.0.3.css",
+        "static/rest_framework/css/prettify.css",
+        "static/rest_framework/docs/css/base.css",
+        "static/rest_framework/docs/css/highlight.css",
+        "static/rest_framework/docs/css/jquery.json-view.min.css",
+        "static/rest_framework/docs/img/favicon.ico",
+        "static/rest_framework/docs/img/grid.png",
+        "static/rest_framework/docs/js/api.js",
+        "static/rest_framework/docs/js/highlight.pack.js",
+        "static/rest_framework/docs/js/jquery.json-view.min.js",
+        "static/rest_framework/fonts/fontawesome-webfont.eot",
+        "static/rest_framework/fonts/fontawesome-webfont.svg",
+        "static/rest_framework/fonts/fontawesome-webfont.ttf",
+        "static/rest_framework/fonts/fontawesome-webfont.woff",
+        "static/rest_framework/fonts/glyphicons-halflings-regular.eot",
+        "static/rest_framework/fonts/glyphicons-halflings-regular.svg",
+        "static/rest_framework/fonts/glyphicons-halflings-regular.ttf",
+        "static/rest_framework/fonts/glyphicons-halflings-regular.woff",
+        "static/rest_framework/fonts/glyphicons-halflings-regular.woff2",
+        "static/rest_framework/img/glyphicons-halflings-white.png",
+        "static/rest_framework/img/glyphicons-halflings.png",
+        "static/rest_framework/img/grid.png",
+        "static/rest_framework/js/ajax-form.js",
+        "static/rest_framework/js/bootstrap.min.js",
+        "static/rest_framework/js/coreapi-0.1.1.js",
+        "static/rest_framework/js/csrf.js",
+        "static/rest_framework/js/default.js",
+        "static/rest_framework/js/jquery-3.7.1.min.js",
+        "static/rest_framework/js/load-ajax-form.js",
+        "static/rest_framework/js/prettify-min.js",
+        "templates/admin/base_site.html",
+        "ws/__init__.py",
+        "ws/admin.py",
+        "ws/apps.py",
+        "ws/consumers.py",
+        "ws/jwt_middleware.py",
+        "ws/migrations/0001_initial.py",
+        "ws/migrations/__init__.py",
+        "ws/models.py",
+        "ws/routing.py",
+        "ws/tests.py",
+        "ws/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "7986ceccfce5a8418ad8a96527a075beef268210",
+      "date": "2026-04-06",
+      "subject": "update admin panel URL for security enhancement",
+      "body": "",
+      "files": [
+        "management_projet_backend/urls.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "6a3dd1ff7c73ebb91f28efdbaacd0a1e71d743c0",
+      "date": "2026-04-06",
+      "subject": "update API URL and port in configuration files",
+      "body": "",
+      "files": [
+        ".env.example",
+        "docker-compose.yml"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "73cd6d30428b30f29afb6ddb13bb38a29bdf3cc2",
+      "date": "2026-04-06",
+      "subject": "update CORS allowed origins to use port 3003",
+      "body": "",
+      "files": [
+        ".env.example",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/settings_test.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "8656eb1e5e4c1295b47a2b6e89b8350ac22ebc8c",
+      "date": "2026-04-06",
+      "subject": "add frontend URL to email templates for improved user navigation",
+      "body": "",
+      "files": [
+        "account/admin.py",
+        "account/templates/new_account.html",
+        "account/templates/new_password.html",
+        "account/templates/password_reset.html"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "2b99fbe4c28bd327dd348ff8cb5861bc4d3295ba",
+      "date": "2026-04-06",
+      "subject": "Force rebuild",
+      "body": "",
+      "files": []
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "526fcaa4a35daabe72626484d2a5959b9432be45",
+      "date": "2026-04-06",
+      "subject": "update environment configuration for improved email setup and frontend URL",
+      "body": "",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "5af790af78bcfdd01b25e3dacd93d46d48803a01",
+      "date": "2026-04-07",
+      "subject": "feat: unregister Group and Site models from admin if registered",
+      "body": "",
+      "files": [
+        "account/admin.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "81d0a56ae17bc5f5a227ecec8e4d580023188959",
+      "date": "2026-04-07",
+      "subject": "feat: implement historical admin views for Expense, Category, SubCategory, and Project models",
+      "body": "",
+      "files": [
+        "depense/admin.py",
+        "project/admin.py",
+        "revenu/admin.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "220557e69fbd7f92a75df65f9dcfaa5e00ce31ab",
+      "date": "2026-04-08",
+      "subject": "feat: add notification system with preferences and real-time updates",
+      "body": "",
+      "files": [
+        "account/admin.py",
+        "account/migrations/0002_customuser_permissions.py",
+        "depense/admin.py",
+        "depense/filters.py",
+        "depense/models.py",
+        "depense/tests.py",
+        "depense/views.py",
+        "management_projet_backend/celery_conf.py",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/urls.py",
+        "notification/__init__.py",
+        "notification/admin.py",
+        "notification/apps.py",
+        "notification/migrations/0001_initial.py",
+        "notification/migrations/__init__.py",
+        "notification/models.py",
+        "notification/serializers.py",
+        "notification/signals.py",
+        "notification/tasks.py",
+        "notification/urls.py",
+        "notification/views.py",
+        "project/filters.py",
+        "project/models.py",
+        "project/serializers.py",
+        "project/tests.py",
+        "project/views.py",
+        "revenu/models.py",
+        "revenu/tests.py",
+        "revenu/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "5c636ba47a31ba89ba42d5e4754b8597a5f29f05",
+      "date": "2026-04-08",
+      "subject": "chore: update .env.example by removing unnecessary blank lines",
+      "body": "",
+      "files": [
+        ".env.example"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "9ce33543babfe2d89efcb62484d620b8e4649cbc",
+      "date": "2026-04-09",
+      "subject": "chore: update Django, gevent, and pytest versions in requirements.txt",
+      "body": "",
+      "files": [
+        "requirements.txt"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "ae147176b759248ed975233b0ecb40b6dcbaac9f",
+      "date": "2026-04-10",
+      "subject": "feat: add expense taxonomy management with categories and subcategories CRUD",
+      "body": "",
+      "files": [
+        "project/serializers.py",
+        "project/urls.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "322a93e8ad1489171273cf1232599fe584917027",
+      "date": "2026-04-17",
+      "subject": "Force rebuild",
+      "body": "",
+      "files": []
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "c164cfa16d8d66c397e3091e49db6ff253aeb941",
+      "date": "2026-05-12",
+      "subject": "feat(dashboard): add service fee analytics",
+      "body": "Adds expense service fee fields and dashboard aggregates for client-facing real revenue.",
+      "files": [
+        "depense/migrations/0002_expense_service_fees.py",
+        "depense/models.py",
+        "depense/serializers.py",
+        "depense/tests.py",
+        "project/tests.py",
+        "project/urls.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "71bfc1eaddf581a336d27485443988392f7cb481",
+      "date": "2026-05-13",
+      "subject": "feat: add SSO account linking",
+      "body": "",
+      "files": [
+        ".env.example",
+        "account/migrations/0003_customuser_sso_subject.py",
+        "account/models.py",
+        "account/sso.py",
+        "account/urls.py",
+        "management_projet_backend/settings.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "319270bb87329bb153686b03ae7405cdf5de26a0",
+      "date": "2026-05-14",
+      "subject": "feat(dashboard): add client-facing costs",
+      "body": "",
+      "files": [
+        "project/tests.py",
+        "project/urls.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "68403f28c073ef8db2d01d30aaf84ffee919f46e",
+      "date": "2026-05-14",
+      "subject": "fix(dashboard): expose internal service totals",
+      "body": "",
+      "files": [
+        "project/tests.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "97b89f8201018318069c3a89d0d62226f2f9e25e",
+      "date": "2026-05-18",
+      "subject": "chore(deploy): test new production server",
+      "body": "Repo: management_projet_backend\nTarget: 148.251.138.48",
+      "files": []
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "7d432f7dc3f6133540926dee507a346d910fa649",
+      "date": "2026-05-18",
+      "subject": "chore: enforce LF line endings",
+      "body": "",
+      "files": [
+        ".gitattributes"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "cc1a92863cc1c2a7d54bb3e0e5abd6dcf7e7fd36",
+      "date": "2026-05-20",
+      "subject": "fix(email): use management project branding",
+      "body": "",
+      "files": [
+        ".env.example",
+        "account/templates/new_account.html",
+        "account/templates/new_password.html",
+        "account/templates/password_reset.html",
+        "account/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "bc23e9954ea6b845beb3ce3d3ece44000471ce18",
+      "date": "2026-05-20",
+      "subject": "feat(sso): add credential check endpoint",
+      "body": "",
+      "files": [
+        "account/sso.py",
+        "account/urls.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "33d34900be7f38a2bf2971e6e45eeaa672f7a9ef",
+      "date": "2026-06-02",
+      "subject": "fix: scope login lockouts by user",
+      "body": "",
+      "files": [
+        "management_projet_backend/settings.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "0500d6430e6f88939c46fc5436f3814e3c619190",
+      "date": "2026-06-06",
+      "subject": "feat: add project CRM modules",
+      "body": "",
+      "files": [
+        "depense/admin.py",
+        "depense/filters.py",
+        "depense/migrations/0003_expense_supplier_historicalexpense_supplier_and_more.py",
+        "depense/migrations/0004_backfill_suppliers.py",
+        "depense/models.py",
+        "depense/serializers.py",
+        "depense/urls.py",
+        "depense/views.py",
+        "project/admin.py",
+        "project/filters.py",
+        "project/migrations/0002_alter_historicalproject_status_alter_project_status_and_more.py",
+        "project/migrations/0003_seed_statuses_and_clients.py",
+        "project/models.py",
+        "project/pdf.py",
+        "project/serializers.py",
+        "project/urls.py",
+        "project/views.py",
+        "requirements.txt",
+        "revenu/admin.py",
+        "revenu/migrations/0002_revenueattachment.py",
+        "revenu/models.py",
+        "revenu/serializers.py",
+        "revenu/urls.py",
+        "revenu/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "13caa11b5b5307dcb6470c19b183daeee923ecc6",
+      "date": "2026-06-06",
+      "subject": "fix: remove project status api and pdf error",
+      "body": "",
+      "files": [
+        "project/admin.py",
+        "project/migrations/0004_remove_project_status_tables.py",
+        "project/models.py",
+        "project/pdf.py",
+        "project/serializers.py",
+        "project/urls.py",
+        "project/views.py",
+        "revenu/serializers.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "678023715180f3eb26875722ec4a6cf2684cca53",
+      "date": "2026-06-08",
+      "subject": "feat(project): add real budget tracking",
+      "body": "Add project real-budget entries for stage profitability, dashboard aggregation, API CRUD, PDF reporting, and migration coverage.",
+      "files": [
+        "project/admin.py",
+        "project/migrations/0005_historicalprojectrealbudgetentry_and_more.py",
+        "project/models.py",
+        "project/pdf.py",
+        "project/serializers.py",
+        "project/tests.py",
+        "project/urls.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "b356f39290762ba4014e7994b9e09e397ad9563c",
+      "date": "2026-06-08",
+      "subject": "Add client city fields",
+      "body": "",
+      "files": [
+        "project/admin.py",
+        "project/filters.py",
+        "project/migrations/0006_client_ville_historicalclient_ville_and_more.py",
+        "project/models.py",
+        "project/serializers.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "e760d71c54e1803b7ff82fb655ed4230f4c9b415",
+      "date": "2026-06-09",
+      "subject": "fix: support upgraded backend deps",
+      "body": "",
+      "files": [
+        "account/tests.py",
+        "requirements.txt"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "21ee3a05a11b0d6408e8956bc17ba86dfcacf1d3",
+      "date": "2026-06-10",
+      "subject": "Remove legacy expense supplier field",
+      "body": "",
+      "files": [
+        "depense/admin.py",
+        "depense/filters.py",
+        "depense/migrations/0005_remove_expense_fournisseur_and_more.py",
+        "depense/models.py",
+        "depense/serializers.py",
+        "depense/tests.py",
+        "project/pdf.py",
+        "project/serializers.py",
+        "project/tests.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "9938fc9e151904b2d46dc429b13850e4a9ed41e3",
+      "date": "2026-06-13",
+      "subject": "docs: add project README",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-login.png"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a006d778f1623a26a3a0db5cb5741b082ff7f72a",
+      "date": "2026-06-13",
+      "subject": "docs: improve README screenshots",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-showcase.png"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "0e82388362ce8c62497e274dfc51ddac9ca8d168",
+      "date": "2026-06-13",
+      "subject": "Improve portfolio README",
+      "body": "",
+      "files": [
+        "README.md",
+        "docs/screenshots/management-projet-dashboard.png",
+        "docs/screenshots/management-projet-login.png",
+        "docs/screenshots/management-projet-projects.png",
+        "docs/screenshots/management-projet-showcase.png"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "ff266acf62ff84548c5b4ae633928d9b9182a754",
+      "date": "2026-06-18",
+      "subject": "fix(admin): register project history admins",
+      "body": "",
+      "files": [
+        "project/admin.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a91de357ed271a4b4539a25f76c29614ddd36aec",
+      "date": "2026-06-27",
+      "subject": "fix(notifications): restore scheduled alerts",
+      "body": "",
+      "files": [
+        "docker-compose.yml",
+        "notification/tasks.py",
+        "notification/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "2158475a164dfd69c456bbb04a98a963b1e89ee5",
+      "date": "2026-07-08",
+      "subject": "Fix client dashboard expense totals",
+      "body": "",
+      "files": [
+        "project/tests.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "629e73c63b6c446b884871a4a9ca47a170feab8e",
+      "date": "2026-09-07",
+      "subject": "upgrade packages",
+      "body": "",
+      "files": [
+        "requirements.txt"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "93355be9df6a1f54fb1a7dde6b2bd99854c6a279",
+      "date": "2026-09-07",
+      "subject": "fix(email): migrate settings to MAILERS",
+      "body": "",
+      "files": [
+        "account/tasks.py",
+        "account/tests.py",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/settings_test.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "3edb8a6453706ec3e130df91137e3a4698fe2ed6",
+      "date": "2026-09-11",
+      "subject": "feat(reports): add branded financial PDFs",
+      "body": "Add the singleton company profile migration used by report headers. Reports intentionally expose revenue and expenses without profit, service-fee, or internal-budget values.",
+      "files": [
+        "company/__init__.py",
+        "company/admin.py",
+        "company/apps.py",
+        "company/migrations/0001_initial.py",
+        "company/migrations/__init__.py",
+        "company/models.py",
+        "company/serializers.py",
+        "company/tests.py",
+        "company/urls.py",
+        "company/views.py",
+        "core/permissions.py",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/urls.py",
+        "project/pdf.py",
+        "project/test_reports.py",
+        "project/urls.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f1c95fb47ff0ee94e05191b7a03a11fdc4ccc382",
+      "date": "2026-09-11",
+      "subject": "feat(reports): add company identity and labels",
+      "body": "Store cropped logos and bank account details for report headers.\\n\\nThe migration adds nullable fields and does not alter existing profile data.",
+      "files": [
+        "company/migrations/0002_companyprofile_logo_cropped_and_bank_account.py",
+        "company/models.py",
+        "company/serializers.py",
+        "company/tests.py",
+        "project/pdf.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a68ad93089d5fc1e5afd1f1ddb125b4bcd53e9b1",
+      "date": "2026-09-11",
+      "subject": "refactor(reports): refine PDF presentation",
+      "body": "",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "ddc665d9869d095a3cdfccf83df90a376115cd30",
+      "date": "2026-09-11",
+      "subject": "fix(reports): align totals and chart labels",
+      "body": "",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "933b3744e8fe6ef952872b6b033d257f6a2257a4",
+      "date": "2026-09-11",
+      "subject": "fix(reports): align section headings",
+      "body": "",
+      "files": [
+        "project/pdf.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f95e2efdce8428e0de5b0f900cbc8d2d1c73f01c",
+      "date": "2026-09-14",
+      "subject": "feat(reports): add detailed PDF transactions",
+      "body": "- Add client advance and expense tables to both report scopes.\n- Clarify chart scales, values, legends, and project labels.",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "629dbf853910ea5d9907f052d9e18c66b064eda1",
+      "date": "2026-09-14",
+      "subject": "style(reports): align PDF detail tables",
+      "body": "",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "7820c8d1274845ccf909c097f5977cabf6d68cc6",
+      "date": "2026-09-14",
+      "subject": "feat(reports): add cash remaining total",
+      "body": "",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "55a936dfecde0321f1d3d6b1b230800da4a4bc22",
+      "date": "2026-09-17",
+      "subject": "feat(ai): add shared CPU assistant",
+      "body": "- isolate the model behind a signed private gateway\\n- preserve protected values and translate PDF text transiently",
+      "files": [
+        ".env.example",
+        ".gitignore",
+        "ai_assistant/__init__.py",
+        "ai_assistant/apps.py",
+        "ai_assistant/authentication.py",
+        "ai_assistant/client.py",
+        "ai_assistant/exceptions.py",
+        "ai_assistant/protection.py",
+        "ai_assistant/serializers.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "ai_assistant/throttles.py",
+        "ai_assistant/urls.py",
+        "ai_assistant/views.py",
+        "deploy/ai-gateway.nginx.conf",
+        "docker-compose.yml",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/settings_test.py",
+        "management_projet_backend/urls.py",
+        "project/pdf.py",
+        "project/test_reports.py",
+        "scripts/download_ai_model.sh",
+        "scripts/render_ai_pdf_qa.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "b674f3b8558eda82c950a2f6fc117af86140efbc",
+      "date": "2026-09-17",
+      "subject": "fix(ai): switch to CPU fallback",
+      "body": "",
+      "files": [
+        ".env.example",
+        "ai_assistant/tests.py",
+        "docker-compose.yml",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py",
+        "scripts/download_ai_model.sh"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "b6f2e7875e3db2571112c0e79f78eaa480d943ce",
+      "date": "2026-09-17",
+      "subject": "fix(docker): exclude runtime data",
+      "body": "",
+      "files": [
+        ".dockerignore"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "c7912551a0145f0576ba6414e3f43d75015de800",
+      "date": "2026-09-17",
+      "subject": "fix(docker): build without runtime secrets",
+      "body": "",
+      "files": [
+        "Dockerfile"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "d84788f33a6e584adf50291611e45a7e6b9476f9",
+      "date": "2026-09-17",
+      "subject": "fix(ai): preserve URL punctuation",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "9a865dc8d1fc01e04fdde7e91e8ea0df1ba82e38",
+      "date": "2026-09-17",
+      "subject": "fix(ai): improve translation prompt",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "510e006d625126a674500d1b15a86093d79819c6",
+      "date": "2026-09-17",
+      "subject": "feat(ai): add OPUS translation service",
+      "body": "",
+      "files": [
+        ".dockerignore",
+        ".env.example",
+        "ai_assistant/client.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "deploy/opus/Dockerfile",
+        "deploy/opus/server.py",
+        "docker-compose.yml",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py",
+        "scripts/download_opus_models.sh"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "c722c88023118a93c15d2f2992903f71f457d352",
+      "date": "2026-09-17",
+      "subject": "fix(ai): harden translation placeholders",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f1494387fad52fcd26e2dd57ec02fb4b7a6b1d6d",
+      "date": "2026-09-17",
+      "subject": "fix(ai): improve OPUS translation quality",
+      "body": "",
+      "files": [
+        "deploy/opus/server.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "5e6d4df92caa3aba282fc648d67620967e2126d8",
+      "date": "2026-09-17",
+      "subject": "fix(ai): version OPUS decoding cache",
+      "body": "",
+      "files": [
+        ".env.example",
+        "ai_assistant/tests.py",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "796b53aa6dd30256e260cde4118095fceec8e9c2",
+      "date": "2026-09-17",
+      "subject": "fix(ai): use neutral protected markers",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "762859255a3065a8893b5b5f77a6ee20b492d43e",
+      "date": "2026-09-17",
+      "subject": "fix(ai): preserve numeric translation context",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "48f673afb4220b0ad29f9a26b0ed6e8cd9a5492c",
+      "date": "2026-09-17",
+      "subject": "fix(ai): preserve translation grammar",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "91db4a5cce90a99652a9d5409e8c477fff55c139",
+      "date": "2026-09-17",
+      "subject": "fix(ai): preserve date grammar",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "cb0e5bf2272264490684e11c86363ecf71a78b7a",
+      "date": "2026-09-17",
+      "subject": "fix(ai): harden protected name tokens",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "38d77fb619e9e37d0c7138205a154d9b44ac7ed2",
+      "date": "2026-09-17",
+      "subject": "fix(ai): allow protected unit boundaries",
+      "body": "",
+      "files": [
+        "ai_assistant/protection.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f6285955cea40638ba15712f7baaae9d5a572ef6",
+      "date": "2026-09-17",
+      "subject": "docs(ai): record production acceptance",
+      "body": "",
+      "files": [
+        "docs/ai-assistant.md"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "8ee7736751470fe7ea8f2be7c0ad10ddddcb7cb2",
+      "date": "2026-09-17",
+      "subject": "feat(reports): translate project details",
+      "body": "",
+      "files": [
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f3c884e05f952e1fc02993f0c529fa494e5e67de",
+      "date": "2026-09-17",
+      "subject": "fix(reports): polish translated PDFs",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a1e9da2940e1ab1fe5bb5a95094178b7dfc7b188",
+      "date": "2026-09-17",
+      "subject": "fix(reports): avoid translation timeout",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "project/pdf.py",
+        "project/test_reports.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a2b90e5be37fe2d9035e2eb86a128e641b226b73",
+      "date": "2026-09-17",
+      "subject": "fix(reports): refine English terminology",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "bef245d86e17d0f5461608de7d215e1373f9a36a",
+      "date": "2026-09-17",
+      "subject": "fix(ai): bound OPUS generation time",
+      "body": "",
+      "files": [
+        "deploy/opus/server.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "53c6b5e810049b9b54bd76525fdad1aae1c83eef",
+      "date": "2026-09-17",
+      "subject": "fix(ai): preserve OPUS placeholders",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "c41faada182f68126bf78a4134696598d7afc389",
+      "date": "2026-09-17",
+      "subject": "fix(ai): isolate protected translation values",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "c282114624d88cfcbc6a3e3afe1ced80a215c851",
+      "date": "2026-09-17",
+      "subject": "fix(reports): preserve target-language text",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "83d50e7840e6bce3db47bb5c756544ddc4fe5107",
+      "date": "2026-09-17",
+      "subject": "fix(reports): polish French design label",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "71d562a95fefc05de27ff14141d4e93c7423560d",
+      "date": "2026-09-17",
+      "subject": "fix(reports): split translation strategies",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "053d5afe26d9edae442bfa03426c81dd6b009e1c",
+      "date": "2026-09-17",
+      "subject": "fix(ai): tune OPUS by direction",
+      "body": "",
+      "files": [
+        "ai_assistant/tests.py",
+        "deploy/opus/server.py",
+        "docs/ai-assistant.md",
+        "management_projet_backend/settings.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a3612cd1fea1ef55edbf7514c00a2f0028e7978a",
+      "date": "2026-09-17",
+      "subject": "fix(ai): stabilize English placeholders",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "b4f58c5ec3d9915f6f1367161e18f6dcf3570726",
+      "date": "2026-09-17",
+      "subject": "fix(reports): polish final PDF terms",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "b71de372885abfdd916ef651f8feb199a3b59dcc",
+      "date": "2026-09-17",
+      "subject": "fix(ws): prevent idle Redis timeouts",
+      "body": "",
+      "files": [
+        "management_projet_backend/settings.py",
+        "ws/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "8f4d4d8116d01e9b99b37c69aba2c4d160bb6dd9",
+      "date": "2026-09-17",
+      "subject": "fix(reports): polish project PDF terms",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "265272bd83ec7ff0398bfad10754b07d0b6c0d0f",
+      "date": "2026-09-18",
+      "subject": "feat: upgraded packages & fix celery_conf",
+      "body": "",
+      "files": [
+        "management_projet_backend/celery_conf.py",
+        "requirements.txt"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "9e52856fe7643b6bf2d4cae7f263a53ab681a3ec",
+      "date": "2026-09-22",
+      "subject": "fix(dashboard): handle missing budgets",
+      "body": "",
+      "files": [
+        "project/serializers.py",
+        "project/tests.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "48497c6e54ac3611d836d71e0e34284b81b8af8a",
+      "date": "2026-10-03",
+      "subject": "feat(quotes): add project estimates",
+      "body": "Add quote records, validated budgets, expense links, and optional PDF comparisons.\n\nApply the new devis and depense migrations before using the module. Document the proxy limit required for 250 MiB attachments.",
+      "files": [
+        "depense/filters.py",
+        "depense/migrations/0006_expense_quote_historicalexpense_quote.py",
+        "depense/models.py",
+        "depense/serializers.py",
+        "depense/views.py",
+        "deploy/management-projet-upload-limits.inc",
+        "deploy/quote-upload-limits.md",
+        "devis/__init__.py",
+        "devis/admin.py",
+        "devis/apps.py",
+        "devis/filters.py",
+        "devis/migrations/0001_initial.py",
+        "devis/migrations/__init__.py",
+        "devis/models.py",
+        "devis/serializers.py",
+        "devis/services.py",
+        "devis/tests.py",
+        "devis/urls.py",
+        "devis/views.py",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/urls.py",
+        "project/pdf.py",
+        "project/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a20d603068d9f3f5d9c225c315aaf1d3a437cc9e",
+      "date": "2026-10-06",
+      "subject": "fix(lists): sort results before pagination",
+      "body": "",
+      "files": [
+        "depense/views.py",
+        "devis/views.py",
+        "management_projet_backend/ordering.py",
+        "management_projet_backend/test_ordering.py",
+        "management_projet_backend/utils.py",
+        "project/views.py",
+        "revenu/views.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "6c2f513b04fac600b84f893d124c9718e500a99f",
+      "date": "2026-10-06",
+      "subject": "fix(admin): serve current versioned static assets",
+      "body": "Keep generated Django assets outside the host static mount and use hashed URLs. Preserve media, source fonts and AI service configuration.",
+      "files": [
+        ".gitignore",
+        "docker-compose.yml",
+        "management_projet_backend/settings.py",
+        "management_projet_backend/test_static_assets.py"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "d3225b23717739d265baf32cbec741614de97744",
+      "date": "2026-10-07",
+      "subject": "feat(ai): share PDF translation with other apps",
+      "body": "Add signed batch translation and Dutch model routing. Include a\npreview-first spelling correction command with a private journal.",
+      "files": [
+        "ai_assistant/management/__init__.py",
+        "ai_assistant/management/commands/__init__.py",
+        "ai_assistant/management/commands/ai_correct_texts.py",
+        "ai_assistant/serializers.py",
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py",
+        "ai_assistant/urls.py",
+        "ai_assistant/views.py",
+        "deploy/ai-gateway.nginx.conf"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "a8c983c0612c6f07072d7296ca0a8d7a628d3444",
+      "date": "2026-10-07",
+      "subject": "fix(ai): route gateway and recover correction jobs",
+      "body": "",
+      "files": [
+        "ai_assistant/management/commands/ai_correct_texts.py",
+        "ai_assistant/test_correction_command.py",
+        "ai_assistant/tests.py",
+        "ai_assistant/views.py",
+        "deploy/ai-gateway.nginx.conf"
+      ]
+    },
+    {
+      "repository": "management_projet_backend",
+      "commit": "f8d88217b8b6c01f6055f65c272caed75f592174",
+      "date": "2026-10-09",
+      "subject": "fix(ai): preserve language when rewriting",
+      "body": "",
+      "files": [
+        "ai_assistant/service.py",
+        "ai_assistant/tests.py"
+      ]
+    }
+  ],
+  "versioning": {
+    "status": "reconstructed",
+    "convention": "Product milestones, not public API compatibility. Major: new business workflow/module. Minor: added capabilities. Patch: corrections, maintenance and documentation. One entry per date; reset lower components when advancing a higher component. Dependency upgrades alone are patch releases.",
+    "milestones": [
+      {
+        "date": "2026-04-06",
+        "version": "1.0.0",
+        "title": "Project management",
+        "evidence": [
+          "management_projet_frontend:14cafb278626c454f8c604867e1a3dcadd6e6a6e",
+          "management_projet_frontend:5cafdcc3a63d96cdf6b107abe9d119a1197425a0",
+          "management_projet_frontend:04e8b2bada1f7c5fa5a6f4ffdfb7514654e4fe05",
+          "management_projet_backend:03eedfab0c1d63e7c4723d8c6006b62987d286ff"
+        ]
+      },
+      {
+        "date": "2026-06-06",
+        "version": "2.0.0",
+        "title": "Clients and suppliers",
+        "evidence": [
+          "management_projet_frontend:16b98eb09574abb4ddf4f69d5873a3ad46d0fa04",
+          "management_projet_backend:0500d6430e6f88939c46fc5436f3814e3c619190"
+        ]
+      },
+      {
+        "date": "2026-09-11",
+        "version": "3.0.0",
+        "title": "Branded PDF reports",
+        "evidence": [
+          "management_projet_frontend:9f2d7a9a15584958165968be52eda6e2631bce49",
+          "management_projet_backend:3edb8a6453706ec3e130df91137e3a4698fe2ed6"
+        ]
+      },
+      {
+        "date": "2026-10-03",
+        "version": "4.0.0",
+        "title": "Quotes and approved budgets",
+        "evidence": [
+          "management_projet_frontend:5e18a079849f0b2753a568facc24ec8c92a51613",
+          "management_projet_backend:48497c6e54ac3611d836d71e0e34284b81b8af8a"
+        ]
+      }
+    ],
+    "date_classifications": [
+      {
+        "date": "2026-04-06",
+        "version": "1.0.0",
+        "classification": "major",
+        "reason": "Project management"
+      },
+      {
+        "date": "2026-04-07",
+        "version": "1.1.0",
+        "classification": "minor",
+        "reason": "History and visual identity"
+      },
+      {
+        "date": "2026-04-08",
+        "version": "1.2.0",
+        "classification": "minor",
+        "reason": "Real-time notifications"
+      },
+      {
+        "date": "2026-04-09",
+        "version": "1.2.1",
+        "classification": "patch",
+        "reason": "Component compatibility"
+      },
+      {
+        "date": "2026-04-10",
+        "version": "1.3.0",
+        "classification": "minor",
+        "reason": "Expense categories"
+      },
+      {
+        "date": "2026-04-15",
+        "version": "1.4.0",
+        "classification": "minor",
+        "reason": "Totals and category selection"
+      },
+      {
+        "date": "2026-04-17",
+        "version": "1.4.1",
+        "classification": "patch",
+        "reason": "Session continuity"
+      },
+      {
+        "date": "2026-05-12",
+        "version": "1.5.0",
+        "classification": "minor",
+        "reason": "Project analytics"
+      },
+      {
+        "date": "2026-05-13",
+        "version": "1.6.0",
+        "classification": "minor",
+        "reason": "Centralised sign-in"
+      },
+      {
+        "date": "2026-05-14",
+        "version": "1.7.0",
+        "classification": "minor",
+        "reason": "Client dashboard"
+      },
+      {
+        "date": "2026-05-18",
+        "version": "1.7.1",
+        "classification": "patch",
+        "reason": "Hosting preparation"
+      },
+      {
+        "date": "2026-05-20",
+        "version": "1.8.0",
+        "classification": "minor",
+        "reason": "Sign-in verification"
+      },
+      {
+        "date": "2026-06-02",
+        "version": "1.8.1",
+        "classification": "patch",
+        "reason": "Filters and access"
+      },
+      {
+        "date": "2026-06-06",
+        "version": "2.0.0",
+        "classification": "major",
+        "reason": "Clients and suppliers"
+      },
+      {
+        "date": "2026-06-08",
+        "version": "2.1.0",
+        "classification": "minor",
+        "reason": "Actual project budgets"
+      },
+      {
+        "date": "2026-06-09",
+        "version": "2.1.1",
+        "classification": "patch",
+        "reason": "Compatibility and visual cues"
+      },
+      {
+        "date": "2026-06-10",
+        "version": "2.2.0",
+        "classification": "minor",
+        "reason": "Attachments and budget tracking"
+      },
+      {
+        "date": "2026-06-12",
+        "version": "2.2.1",
+        "classification": "patch",
+        "reason": "Technical reliability"
+      },
+      {
+        "date": "2026-06-13",
+        "version": "2.2.2",
+        "classification": "patch",
+        "reason": "Project documentation"
+      },
+      {
+        "date": "2026-06-18",
+        "version": "2.3.0",
+        "classification": "minor",
+        "reason": "Project notes"
+      },
+      {
+        "date": "2026-06-19",
+        "version": "2.3.1",
+        "classification": "patch",
+        "reason": "Interface maintenance"
+      },
+      {
+        "date": "2026-06-27",
+        "version": "2.3.2",
+        "classification": "patch",
+        "reason": "Scheduled alerts"
+      },
+      {
+        "date": "2026-07-08",
+        "version": "2.3.3",
+        "classification": "patch",
+        "reason": "Dashboard totals"
+      },
+      {
+        "date": "2026-07-29",
+        "version": "2.3.4",
+        "classification": "patch",
+        "reason": "Dependency maintenance"
+      },
+      {
+        "date": "2026-09-07",
+        "version": "2.3.5",
+        "classification": "patch",
+        "reason": "Compatibility and email"
+      },
+      {
+        "date": "2026-09-11",
+        "version": "3.0.0",
+        "classification": "major",
+        "reason": "Branded PDF reports"
+      },
+      {
+        "date": "2026-09-14",
+        "version": "3.1.0",
+        "classification": "minor",
+        "reason": "Detailed reports"
+      },
+      {
+        "date": "2026-09-17",
+        "version": "3.2.0",
+        "classification": "minor",
+        "reason": "Writing assistance and translation"
+      },
+      {
+        "date": "2026-09-18",
+        "version": "3.2.1",
+        "classification": "patch",
+        "reason": "Server maintenance"
+      },
+      {
+        "date": "2026-09-22",
+        "version": "3.2.2",
+        "classification": "patch",
+        "reason": "Budget indicators"
+      },
+      {
+        "date": "2026-09-23",
+        "version": "3.3.0",
+        "classification": "minor",
+        "reason": "Returning to lists"
+      },
+      {
+        "date": "2026-10-03",
+        "version": "4.0.0",
+        "classification": "major",
+        "reason": "Quotes and approved budgets"
+      },
+      {
+        "date": "2026-10-06",
+        "version": "4.0.1",
+        "classification": "patch",
+        "reason": "List sorting"
+      },
+      {
+        "date": "2026-10-07",
+        "version": "4.1.0",
+        "classification": "minor",
+        "reason": "Shared translation"
+      },
+      {
+        "date": "2026-10-09",
+        "version": "4.2.0",
+        "classification": "minor",
+        "reason": "Changelog, updates and dark mode"
+      }
+    ],
+    "current_release": "4.2.0",
+    "current_release_note": "The 9 October entry combines the committed rewrite correction with this implementation. Its changelog row starts as a draft until frontend health is verified."
+  }
+}

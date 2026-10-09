@@ -1,0 +1,481 @@
+[
+  {
+    "date": "2026-04-06",
+    "version": "1.0.0",
+    "title_fr": "Gestion des projets",
+    "title_en": "Project management",
+    "changes_fr": [
+      "Centralisez vos projets, budgets, recettes et dépenses dans une interface en français et en anglais.",
+      "Connectez-vous à votre espace et retrouvez vos préférences de langue ainsi que les informations de maintenance."
+    ],
+    "changes_en": [
+      "Manage projects, budgets, revenue and expenses in French and English.",
+      "Sign in to your workspace with remembered language preferences and maintenance information."
+    ]
+  },
+  {
+    "date": "2026-04-07",
+    "version": "1.1.0",
+    "title_fr": "Historique et identité visuelle",
+    "title_en": "History and visual identity",
+    "changes_fr": [
+      "Consultez les modifications des projets et des dépenses dans l’administration.",
+      "Retrouvez l’identité de Gestion des projets sur les écrans de connexion et de maintenance."
+    ],
+    "changes_en": [
+      "Review project and expense changes in the administration area.",
+      "See the Project Management identity on sign-in and maintenance screens."
+    ]
+  },
+  {
+    "date": "2026-04-08",
+    "version": "1.2.0",
+    "title_fr": "Notifications en temps réel",
+    "title_en": "Real-time notifications",
+    "changes_fr": [
+      "Recevez des alertes sur les budgets, les échéances et les changements de statut.",
+      "Réglez vos préférences de notification et suivez les messages non lus."
+    ],
+    "changes_en": [
+      "Receive alerts about budgets, deadlines and status changes.",
+      "Adjust notification preferences and track unread messages."
+    ]
+  },
+  {
+    "date": "2026-04-09",
+    "version": "1.2.1",
+    "title_fr": "Compatibilité des composants",
+    "title_en": "Component compatibility",
+    "changes_fr": [
+      "Mise à niveau des composants de l’interface et des dépendances du serveur."
+    ],
+    "changes_en": [
+      "Updated interface components and server dependencies."
+    ]
+  },
+  {
+    "date": "2026-04-10",
+    "version": "1.3.0",
+    "title_fr": "Catégories de dépenses",
+    "title_en": "Expense categories",
+    "changes_fr": [
+      "Créez, modifiez et supprimez les catégories et sous-catégories utilisées pour classer vos dépenses.",
+      "Les formulaires affichent des messages de validation plus précis."
+    ],
+    "changes_en": [
+      "Create, edit and delete categories and subcategories used to organise expenses.",
+      "Forms show more precise validation messages."
+    ]
+  },
+  {
+    "date": "2026-04-15",
+    "version": "1.4.0",
+    "title_fr": "Totaux et sélection des catégories",
+    "title_en": "Totals and category selection",
+    "changes_fr": [
+      "Retrouvez les montants totaux directement dans les listes de recettes et de dépenses.",
+      "Recherchez les catégories par leur code et sélectionnez plus facilement les sous-catégories."
+    ],
+    "changes_en": [
+      "See total amounts directly in revenue and expense lists.",
+      "Search categories by code and select subcategories more easily."
+    ]
+  },
+  {
+    "date": "2026-04-17",
+    "version": "1.4.1",
+    "title_fr": "Continuité de session",
+    "title_en": "Session continuity",
+    "changes_fr": [
+      "Les requêtes peuvent récupérer le jeton de la session active lorsque son initialisation est encore en cours."
+    ],
+    "changes_en": [
+      "Requests can retrieve the active session token while initialisation is still in progress."
+    ]
+  },
+  {
+    "date": "2026-05-12",
+    "version": "1.5.0",
+    "title_fr": "Analyse des projets",
+    "title_en": "Project analytics",
+    "changes_fr": [
+      "Explorez les indicateurs des projets avec des graphiques et des vues tabulaires.",
+      "Suivez les frais de service dans les analyses prévues à cet effet."
+    ],
+    "changes_en": [
+      "Explore project indicators through charts and table views.",
+      "Track service fees in the corresponding analytics views."
+    ]
+  },
+  {
+    "date": "2026-05-13",
+    "version": "1.6.0",
+    "title_fr": "Connexion centralisée",
+    "title_en": "Centralised sign-in",
+    "changes_fr": [
+      "Accédez à l’application depuis le portail avec la connexion centralisée et l’association des comptes.",
+      "Le choix de langue affiche des repères visuels français et anglais."
+    ],
+    "changes_en": [
+      "Access the app from the portal through centralised sign-in and account linking.",
+      "The language selector displays French and English visual cues."
+    ]
+  },
+  {
+    "date": "2026-05-14",
+    "version": "1.7.0",
+    "title_fr": "Tableau de bord client",
+    "title_en": "Client dashboard",
+    "changes_fr": [
+      "Consultez une présentation harmonisée des graphiques et des coûts destinés aux clients.",
+      "Les analyses internes affichent les totaux de service attendus."
+    ],
+    "changes_en": [
+      "View consistent charts and client-facing costs.",
+      "Internal analytics display the expected service totals."
+    ]
+  },
+  {
+    "date": "2026-05-18",
+    "version": "1.7.1",
+    "title_fr": "Préparation de l’hébergement",
+    "title_en": "Hosting preparation",
+    "changes_fr": [
+      "La configuration de déploiement et les fichiers du projet ont été harmonisés."
+    ],
+    "changes_en": [
+      "Deployment configuration and project files were standardised."
+    ]
+  },
+  {
+    "date": "2026-05-20",
+    "version": "1.8.0",
+    "title_fr": "Vérification de connexion",
+    "title_en": "Sign-in verification",
+    "changes_fr": [
+      "La connexion centralisée dispose d’une vérification des identifiants.",
+      "Les courriels utilisent l’identité de Gestion des projets et le formulaire utilisateur a été simplifié."
+    ],
+    "changes_en": [
+      "Centralised sign-in supports credential verification.",
+      "Emails use the Project Management identity and the user form has been simplified."
+    ]
+  },
+  {
+    "date": "2026-06-02",
+    "version": "1.8.1",
+    "title_fr": "Filtres et accès",
+    "title_en": "Filters and access",
+    "changes_fr": [
+      "Le filtre de projet du tableau de bord se réinitialise correctement.",
+      "Les blocages après échec de connexion sont limités à l’utilisateur concerné."
+    ],
+    "changes_en": [
+      "The dashboard project filter resets correctly.",
+      "Lockouts after failed sign-in attempts are scoped to the affected user."
+    ]
+  },
+  {
+    "date": "2026-06-06",
+    "version": "2.0.0",
+    "title_fr": "Clients et fournisseurs",
+    "title_en": "Clients and suppliers",
+    "changes_fr": [
+      "Gérez des annuaires de clients et de fournisseurs réutilisables dans vos projets.",
+      "Retrouvez les pièces jointes, les échéanciers de paiement et les informations détaillées des projets."
+    ],
+    "changes_en": [
+      "Manage reusable client and supplier directories for projects.",
+      "Access attachments, payment schedules and detailed project information."
+    ]
+  },
+  {
+    "date": "2026-06-08",
+    "version": "2.1.0",
+    "title_fr": "Budget réel des projets",
+    "title_en": "Actual project budgets",
+    "changes_fr": [
+      "Saisissez et consultez les postes du budget réel avec les informations de fournisseur associées.",
+      "Renseignez la ville du client et retrouvez un accès au tableau de bord dans le menu des projets.",
+      "La sélection des pièces jointes est de nouveau accessible."
+    ],
+    "changes_en": [
+      "Enter and review actual budget items with their associated supplier information.",
+      "Record the client city and open the dashboard from the project menu.",
+      "The attachment file picker is available again."
+    ]
+  },
+  {
+    "date": "2026-06-09",
+    "version": "2.1.1",
+    "title_fr": "Compatibilité et repères visuels",
+    "title_en": "Compatibility and visual cues",
+    "changes_fr": [
+      "Mise à jour des dépendances, des ressources du logo et du badge de notification."
+    ],
+    "changes_en": [
+      "Updated dependencies, logo assets and the notification badge."
+    ]
+  },
+  {
+    "date": "2026-06-10",
+    "version": "2.2.0",
+    "title_fr": "Pièces jointes et suivi du budget",
+    "title_en": "Attachments and budget tracking",
+    "changes_fr": [
+      "Consultez les pièces jointes depuis les fiches détaillées.",
+      "Les brouillons de budget réel sont enregistrés avec le projet et les montants sont actualisés après modification.",
+      "Les dépenses utilisent les fournisseurs de l’annuaire."
+    ],
+    "changes_en": [
+      "View attachments from detail pages.",
+      "Actual budget drafts are saved with the project and amounts refresh after changes.",
+      "Expenses use suppliers from the directory."
+    ]
+  },
+  {
+    "date": "2026-06-12",
+    "version": "2.2.1",
+    "title_fr": "Fiabilité technique",
+    "title_en": "Technical reliability",
+    "changes_fr": [
+      "Les vérifications automatiques et les dépendances de l’interface ont été corrigées et actualisées."
+    ],
+    "changes_en": [
+      "Automated checks and interface dependencies were corrected and updated."
+    ]
+  },
+  {
+    "date": "2026-06-13",
+    "version": "2.2.2",
+    "title_fr": "Documentation du projet",
+    "title_en": "Project documentation",
+    "changes_fr": [
+      "La documentation de présentation a été complétée avec des captures de l’application."
+    ],
+    "changes_en": [
+      "Project documentation was expanded with application screenshots."
+    ]
+  },
+  {
+    "date": "2026-06-18",
+    "version": "2.3.0",
+    "title_fr": "Notes de projet",
+    "title_en": "Project notes",
+    "changes_fr": [
+      "Rédigez des notes de projet sur plusieurs lignes.",
+      "L’historique des projets est accessible dans l’administration."
+    ],
+    "changes_en": [
+      "Write project notes across multiple lines.",
+      "Project history is available in the administration area."
+    ]
+  },
+  {
+    "date": "2026-06-19",
+    "version": "2.3.1",
+    "title_fr": "Entretien de l’interface",
+    "title_en": "Interface maintenance",
+    "changes_fr": [
+      "Les dépendances de l’interface ont été actualisées."
+    ],
+    "changes_en": [
+      "Interface dependencies were updated."
+    ]
+  },
+  {
+    "date": "2026-06-27",
+    "version": "2.3.2",
+    "title_fr": "Alertes planifiées",
+    "title_en": "Scheduled alerts",
+    "changes_fr": [
+      "Le fonctionnement des alertes planifiées a été rétabli."
+    ],
+    "changes_en": [
+      "Scheduled alerts were restored."
+    ]
+  },
+  {
+    "date": "2026-07-08",
+    "version": "2.3.3",
+    "title_fr": "Totaux du tableau de bord",
+    "title_en": "Dashboard totals",
+    "changes_fr": [
+      "Les totaux de dépenses du tableau de bord client ont été corrigés et le libellé des frais de service clarifié."
+    ],
+    "changes_en": [
+      "Client dashboard expense totals were corrected and the service fee label clarified."
+    ]
+  },
+  {
+    "date": "2026-07-29",
+    "version": "2.3.4",
+    "title_fr": "Maintenance des dépendances",
+    "title_en": "Dependency maintenance",
+    "changes_fr": [
+      "Les bibliothèques de l’interface ont été mises à jour."
+    ],
+    "changes_en": [
+      "Interface libraries were updated."
+    ]
+  },
+  {
+    "date": "2026-09-07",
+    "version": "2.3.5",
+    "title_fr": "Compatibilité et courriels",
+    "title_en": "Compatibility and email",
+    "changes_fr": [
+      "Les dépendances ont été actualisées et l’envoi des courriels adapté à la configuration du serveur."
+    ],
+    "changes_en": [
+      "Dependencies were updated and email delivery adapted to the server configuration."
+    ]
+  },
+  {
+    "date": "2026-09-11",
+    "version": "3.0.0",
+    "title_fr": "Rapports PDF personnalisés",
+    "title_en": "Branded PDF reports",
+    "changes_fr": [
+      "Téléchargez des rapports globaux ou par projet, avec les recettes et les dépenses présentées séparément.",
+      "Personnalisez l’identité de l’entreprise, son logo et ses informations dans les rapports.",
+      "L’accès aux rapports respecte les autorisations d’impression."
+    ],
+    "changes_en": [
+      "Download global or project reports with revenue and expenses presented separately.",
+      "Customise company identity, logo and details in reports.",
+      "Report access respects printing permissions."
+    ]
+  },
+  {
+    "date": "2026-09-14",
+    "version": "3.1.0",
+    "title_fr": "Détail des rapports",
+    "title_en": "Detailed reports",
+    "changes_fr": [
+      "Les PDF détaillent les avances clients, les dépenses et le reste en caisse.",
+      "Les tableaux, graphiques et noms des fichiers téléchargés ont été précisés."
+    ],
+    "changes_en": [
+      "PDFs detail client advances, expenses and remaining cash.",
+      "Tables, charts and download filenames were refined."
+    ]
+  },
+  {
+    "date": "2026-09-17",
+    "version": "3.2.0",
+    "title_fr": "Aide à la rédaction et traduction",
+    "title_en": "Writing assistance and translation",
+    "changes_fr": [
+      "Prévisualisez les corrections et les traductions de texte avant de les appliquer.",
+      "Générez des rapports traduits avec une indication de progression, en conservant les valeurs protégées.",
+      "La connexion temps réel et la présentation des suggestions ont été fiabilisées."
+    ],
+    "changes_en": [
+      "Preview text corrections and translations before applying them.",
+      "Generate translated reports with progress feedback while preserving protected values.",
+      "Real-time connectivity and suggestion presentation were improved."
+    ]
+  },
+  {
+    "date": "2026-09-18",
+    "version": "3.2.1",
+    "title_fr": "Maintenance du serveur",
+    "title_en": "Server maintenance",
+    "changes_fr": [
+      "Les dépendances et la configuration des tâches en arrière-plan ont été actualisées."
+    ],
+    "changes_en": [
+      "Dependencies and background task configuration were updated."
+    ]
+  },
+  {
+    "date": "2026-09-22",
+    "version": "3.2.2",
+    "title_fr": "Indicateurs de budget",
+    "title_en": "Budget indicators",
+    "changes_fr": [
+      "Les graphiques utilisent les indicateurs corrigés et gèrent les projets sans budget renseigné."
+    ],
+    "changes_en": [
+      "Charts use corrected metrics and handle projects without a recorded budget."
+    ]
+  },
+  {
+    "date": "2026-09-23",
+    "version": "3.3.0",
+    "title_fr": "Retour aux listes",
+    "title_en": "Returning to lists",
+    "changes_fr": [
+      "Retrouvez votre page de résultats lorsque vous revenez à une liste.",
+      "Le socle technique de l’interface et le typage des lignes de projet ont été actualisés."
+    ],
+    "changes_en": [
+      "Return to the same results page when navigating back to a list.",
+      "The interface foundation and project row typing were updated."
+    ]
+  },
+  {
+    "date": "2026-10-03",
+    "version": "4.0.0",
+    "title_fr": "Devis et budgets validés",
+    "title_en": "Quotes and approved budgets",
+    "changes_fr": [
+      "Créez des devis par projet et fournisseur, avec leurs montants, statuts et pièces jointes.",
+      "Reliez les dépenses aux devis validés et comparez les budgets, les consommations et les montants restants.",
+      "Ajoutez les comparaisons de devis aux rapports de projet lorsque vous le souhaitez."
+    ],
+    "changes_en": [
+      "Create quotes by project and supplier, including amounts, statuses and attachments.",
+      "Link expenses to approved quotes and compare budgets, spending and remaining amounts.",
+      "Optionally include quote comparisons in project reports."
+    ]
+  },
+  {
+    "date": "2026-10-06",
+    "version": "4.0.1",
+    "title_fr": "Tri des listes",
+    "title_en": "List sorting",
+    "changes_fr": [
+      "Le tri des colonnes s’applique à l’ensemble des résultats avant leur pagination.",
+      "Les ressources de l’administration et les dépendances de l’interface ont été actualisées."
+    ],
+    "changes_en": [
+      "Column sorting applies to all results before pagination.",
+      "Administration assets and interface dependencies were updated."
+    ]
+  },
+  {
+    "date": "2026-10-07",
+    "version": "4.1.0",
+    "title_fr": "Traduction partagée",
+    "title_en": "Shared translation",
+    "changes_fr": [
+      "Le service de traduction de documents peut être utilisé par les autres applications autorisées.",
+      "Le routage de l’assistant et la reprise des corrections ont été fiabilisés."
+    ],
+    "changes_en": [
+      "The document translation service can be used by other authorised applications.",
+      "Assistant routing and correction recovery were improved."
+    ]
+  },
+  {
+    "date": "2026-10-09",
+    "version": "4.2.0",
+    "title_fr": "Nouveautés, mises à jour et mode sombre",
+    "title_en": "Changelog, updates and dark mode",
+    "changes_fr": [
+      "Consultez l’historique des évolutions en français et en anglais depuis le lien Changelog.",
+      "Soyez averti lorsqu’une nouvelle version est disponible et choisissez quand recharger après avoir enregistré votre travail.",
+      "Activez le mode sombre depuis la navigation ou la connexion ; votre choix est conservé.",
+      "La reformulation de texte conserve la langue de départ."
+    ],
+    "changes_en": [
+      "Browse the release history in French and English from the Changelog link.",
+      "Get notified when a new version is available and choose when to reload after saving your work.",
+      "Enable dark mode from navigation or sign-in; your preference is remembered.",
+      "Text rewriting preserves the original language."
+    ],
+    "is_published": false
+  }
+]
