@@ -174,6 +174,73 @@ def test_translation_prompt_requires_natural_language_and_preserves_imperatives(
     assert "imperatives must remain instructions and imperatives" in instruction
 
 
+@pytest.mark.parametrize("action", ["fix_grammar", "professionalize"])
+@pytest.mark.parametrize(
+    ("text", "language"),
+    [
+        ("Salut, envoie les plans demain stp.", "fr"),
+        ("Please send the plans tomorrow.", "en"),
+        ("CASA DI LUSSO", "auto"),
+    ],
+)
+def test_rewrite_prompt_uses_detected_source_language(action, text, language):
+    client = QueueClient(
+        json.dumps({"suggested_text": text, "detected_language": "fr"})
+    )
+    AiAssistantService(client=client).assist(
+        action=action,
+        text=text,
+        source_language="auto",
+        context="project_description",
+        application="design_workflow",
+    )
+    instruction = client.calls[0]["messages"][0]["content"]
+    assert f"Declared source language: {language}." in instruction
+    assert "Keep the source language unchanged." in instruction
+
+
+def test_rewrite_retries_when_the_model_changes_language():
+    client = QueueClient(
+        json.dumps(
+            {
+                "suggested_text": "Please send the plans tomorrow.",
+                "detected_language": "fr",
+            }
+        ),
+        json.dumps(
+            {
+                "suggested_text": "Veuillez transmettre les plans demain.",
+                "detected_language": "fr",
+            }
+        ),
+    )
+    result = AiAssistantService(client=client).assist(
+        action="professionalize",
+        text="Salut, envoie les plans demain stp.",
+        source_language="auto",
+        context="project_description",
+        application="design_workflow",
+    )
+    assert result["suggested_text"] == "Veuillez transmettre les plans demain."
+    assert len(client.calls) == 2
+
+
+def test_rewrite_rejects_repeated_language_changes():
+    response = json.dumps(
+        {"suggested_text": "Please send the plans tomorrow.", "detected_language": "fr"}
+    )
+    client = QueueClient(response, response)
+    with pytest.raises(InvalidModelResponse):
+        AiAssistantService(client=client).assist(
+            action="professionalize",
+            text="Salut, envoie les plans demain stp.",
+            source_language="auto",
+            context="project_description",
+            application="design_workflow",
+        )
+    assert len(client.calls) == 2
+
+
 def test_service_rejects_changed_placeholder_after_one_retry():
     client = QueueClient(
         json.dumps({"suggested_text": "Nom supprimé", "detected_language": "fr"}),
@@ -790,14 +857,38 @@ def test_private_pdf_batch_rejects_oversized_input_before_model_call():
     translate.assert_not_called()
 
 
-@pytest.mark.parametrize("endpoint, service_method, payload", [
-    ("internal-assist", "assist", {"action": "fix_grammar", "text": "Texte corrige"}),
-    ("internal-translate", "translate_many", {"texts": ["Chaise"], "target_language": "en"}),
-])
-@override_settings(AI_ASSISTANT_ENABLED=True, AI_ASSISTANT_SERVICE_KEYS={"facturation": "test-secret"})
-def test_private_errors_identify_rejected_model_answers(endpoint, service_method, payload):
+@pytest.mark.parametrize(
+    "endpoint, service_method, payload",
+    [
+        (
+            "internal-assist",
+            "assist",
+            {"action": "fix_grammar", "text": "Texte corrige"},
+        ),
+        (
+            "internal-translate",
+            "translate_many",
+            {"texts": ["Chaise"], "target_language": "en"},
+        ),
+    ],
+)
+@override_settings(
+    AI_ASSISTANT_ENABLED=True, AI_ASSISTANT_SERVICE_KEYS={"facturation": "test-secret"}
+)
+def test_private_errors_identify_rejected_model_answers(
+    endpoint, service_method, payload
+):
     body = json.dumps(payload, separators=(",", ":")).encode()
-    with patch(f"ai_assistant.views.AiAssistantService.{service_method}", side_effect=InvalidModelResponse()):
-        response = APIClient().generic("POST", reverse(f"ai_assistant:{endpoint}"), data=body, content_type="application/json", **signed_service_headers(body))
+    with patch(
+        f"ai_assistant.views.AiAssistantService.{service_method}",
+        side_effect=InvalidModelResponse(),
+    ):
+        response = APIClient().generic(
+            "POST",
+            reverse(f"ai_assistant:{endpoint}"),
+            data=body,
+            content_type="application/json",
+            **signed_service_headers(body),
+        )
     assert response.status_code == 502
     assert response.data["code"] == "ai_invalid_response"

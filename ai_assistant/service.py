@@ -17,7 +17,7 @@ from .protection import protect_text
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "14"
+PROMPT_VERSION = "15"
 
 FRENCH_LANGUAGE_HINTS = frozenset(
     {
@@ -483,7 +483,7 @@ class AiAssistantService:
                             "role": "system",
                             "content": self._instruction(
                                 action,
-                                source_language,
+                                detected_source or source_language,
                                 target_language,
                                 context,
                                 application,
@@ -508,6 +508,14 @@ class AiAssistantService:
                     raise InvalidModelResponse()
                 suggested_text = protected.restore(payload["suggested_text"])
                 if not suggested_text.strip():
+                    raise InvalidModelResponse()
+                suggested_language = self._detect_supported_language(suggested_text)
+                if (
+                    action != "translate"
+                    and detected_source
+                    and suggested_language
+                    and suggested_language != detected_source
+                ):
                     raise InvalidModelResponse()
                 detected_language = (
                     source_language
