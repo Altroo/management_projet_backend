@@ -21,6 +21,7 @@ This is a production-oriented business backend. It models real operational workf
 - core
 - notification
 - ws
+- chat_ai
 
 ## Key Capabilities
 
@@ -30,6 +31,8 @@ This is a production-oriented business backend. It models real operational workf
 - JWT/session auth, SSO subject support, django-filter, django-axes, and history-aware records.
 - Realtime notifications/websocket runtime through Channels, Daphne, Redis, and Celery-ready dependencies.
 - pytest coverage around project, revenue, expense, supplier, and dashboard behavior.
+
+- Chat AI Assistant: native authorized searches/financial summaries, owned conversations, bilingual knowledge, and explicitly confirmed audited changes. Deployment remains feature-gated; measured status is in [AI_PROGRESS.md](docs/AI_PROGRESS.md).
 
 ## Stack
 

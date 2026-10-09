@@ -1,0 +1,32 @@
+{
+  "application_id": "management_projet",
+  "document_id": "expense-create",
+  "approved": true,
+  "title": "Enregistrer une dépense",
+  "content": "Dans « Dépenses », ajoutez une dépense et sélectionnez son projet. Renseignez la date, la description et le montant total. Les catégories, sous-catégories, fournisseur et devis permettent de préciser la dépense. Les frais de service peuvent être fixes ou en pourcentage. Enregistrez la fiche.\nIn “Expenses”, add an expense and select its project. Enter the date, description and total amount. Categories, subcategories, supplier and quote refine the expense. Service fees can be fixed or percentage based. Save the record.",
+  "localized_content": {
+    "fr": "Dans « Dépenses », ajoutez une dépense et sélectionnez son projet. Renseignez la date, la description et le montant total. Les catégories, sous-catégories, fournisseur et devis permettent de préciser la dépense. Les frais de service peuvent être fixes ou en pourcentage. Enregistrez la fiche.",
+    "en": "In “Expenses”, add an expense and select its project. Enter the date, description and total amount. Categories, subcategories, supplier and quote refine the expense. Service fees can be fixed or percentage based. Save the record."
+  },
+  "keywords": [
+    "create",
+    "expense",
+    "spending",
+    "créer",
+    "dépense",
+    "fournisseur",
+    "devis",
+    "service"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read",
+    "create"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

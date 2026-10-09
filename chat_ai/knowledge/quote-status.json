@@ -1,0 +1,31 @@
+{
+  "application_id": "management_projet",
+  "document_id": "quote-status",
+  "approved": true,
+  "title": "Devis et budget prévisionnel",
+  "content": "Un devis peut être Reçu, Validé ou Refusé. Le budget prévisionnel additionne les montants TTC des devis validés du projet. Les dépenses peuvent être liées à un devis. Un devis lié à des dépenses ne peut pas être supprimé tant que ces liens existent.\nA quote can be received, validated or rejected. The estimated budget sums the totals including tax of validated project quotes. Expenses may reference a quote. A quote linked to expenses cannot be deleted while those links exist.",
+  "localized_content": {
+    "fr": "Un devis peut être Reçu, Validé ou Refusé. Le budget prévisionnel additionne les montants TTC des devis validés du projet. Les dépenses peuvent être liées à un devis. Un devis lié à des dépenses ne peut pas être supprimé tant que ces liens existent.",
+    "en": "A quote can be received, validated or rejected. The estimated budget sums the totals including tax of validated project quotes. Expenses may reference a quote. A quote linked to expenses cannot be deleted while those links exist."
+  },
+  "keywords": [
+    "quote",
+    "estimate",
+    "devis",
+    "validated",
+    "rejected",
+    "received",
+    "budget",
+    "TTC"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

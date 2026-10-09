@@ -64,6 +64,7 @@ urlpatterns = [
     path("api/depense/", include("depense.urls")),
     path("api/devis/", include("devis.urls")),
     path("api/notifications/", include("notification.urls")),
+    path("api/ai/v1/", include("chat_ai.urls")),
     path("api/ai/", include("ai_assistant.urls")),
     # Maintenance state (unauthenticated)
     path("api/ws/maintenance/", GetMaintenanceView.as_view(), name="ws-maintenance"),

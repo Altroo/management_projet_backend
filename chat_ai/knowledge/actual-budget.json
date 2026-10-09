@@ -1,0 +1,34 @@
+{
+  "application_id": "management_projet",
+  "document_id": "actual-budget",
+  "approved": true,
+  "title": "Budget réel par étape",
+  "content": "Le budget réel se consulte depuis la fiche projet. Chaque ligne précise l’étape, le montant facturé au client et le montant payé au fournisseur. Le bénéfice et la marge sont calculés à partir de ces montants. Ce tableau est distinct des revenus et dépenses enregistrés.\nThe actual budget is viewed from the project record. Each line specifies the stage, amount invoiced to the customer and amount paid to the supplier. Profit and margin are calculated from those amounts. This table is separate from recorded receipts and expenses.",
+  "localized_content": {
+    "fr": "Le budget réel se consulte depuis la fiche projet. Chaque ligne précise l’étape, le montant facturé au client et le montant payé au fournisseur. Le bénéfice et la marge sont calculés à partir de ces montants. Ce tableau est distinct des revenus et dépenses enregistrés.",
+    "en": "The actual budget is viewed from the project record. Each line specifies the stage, amount invoiced to the customer and amount paid to the supplier. Profit and margin are calculated from those amounts. This table is separate from recorded receipts and expenses."
+  },
+  "keywords": [
+    "actual",
+    "real",
+    "budget",
+    "entry",
+    "stage",
+    "client",
+    "supplier",
+    "budget",
+    "réel",
+    "étape",
+    "montant"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

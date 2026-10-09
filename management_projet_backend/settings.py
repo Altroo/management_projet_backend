@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "devis.apps.DevisConfig",
     "notification.apps.NotificationConfig",
     "ai_assistant.apps.AiAssistantConfig",
+    "chat_ai.apps.ChatAIConfig",
     "axes",
 ]
 
@@ -349,3 +350,13 @@ AXES_LOCKOUT_CALLABLE = None  # Use default 403 response
 # Get real IP from X-Forwarded-For header (behind nginx proxy)
 AXES_IPWARE_PROXY_COUNT = 1
 AXES_IPWARE_PROXY_ORDER = "left-most"
+
+# Central Chat AI Assistant; existing translation/grammar settings stay independent.
+CHAT_AI_ASSISTANT_ENABLED = config('CHAT_AI_ASSISTANT_ENABLED', default=False, cast=bool)
+CHAT_AI_MODEL_URL = config('CHAT_AI_MODEL_URL', default='http://chat-ai-model:18090/v1')
+CHAT_AI_MODEL_ID = config('CHAT_AI_MODEL_ID', default='chat-ai-shared')
+CHAT_AI_MODEL_KEY = config('CHAT_AI_MODEL_KEY', default='')
+CHAT_AI_MODEL_TIMEOUT = config('CHAT_AI_MODEL_TIMEOUT', default=120, cast=int)
+CHAT_AI_MODEL_MAX_TOKENS = config('CHAT_AI_MODEL_MAX_TOKENS', default=512, cast=int)
+CHAT_AI_RETENTION_DAYS = config('CHAT_AI_RETENTION_DAYS', default=30, cast=int)
+CHAT_AI_KNOWLEDGE_PATH = BASE_DIR / 'chat_ai' / 'knowledge'

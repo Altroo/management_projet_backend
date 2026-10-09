@@ -1,0 +1,13 @@
+# Native Management Projet chat interface
+
+`ChatAIAssistant` is mounted once in the existing authenticated dashboard root layout under `NEXT_PUBLIC_CHAT_AI_ASSISTANT_ENABLED`. Profile/token/native read access are required. Login/public routes have no button. Capabilities belong to the authenticated identity; logout/session expiry removes private chat state.
+
+`ChatAIFloatingButton` is fixed bottom-right, 56px, 24px desktop/16px mobile with safe-area handling. Its scoped palette exactly matches Facturation's current assistant: white icon, theme-derived blue accent, light message accents, white surfaces and matching border/input colors. Both assistants use the native translucent primary token for the accent; no application-wide theme was changed. Existing TextButton, DarkTooltip, ActionModals, typography and resource forms are reused.
+
+The desktop panel is 440x630px, bounded by viewport margins; mobile fills the visual viewport with safe areas and keyboard-aware height. Conversation and drafts persist across routes/minimization. Native dialogs, menus and mobile drawers take priority: the chat shell hides temporarily while a visible native modal owns focus/accessibility, retaining state for its return.
+
+There are clearly labelled new-conversation/history controls, separate user/assistant message boxes, loading/cancel/retry states, multiline input, Enter/Shift+Enter behavior, Escape/focus handling, safe plain-text responses, structured record/financial/PDF/action cards and owned history. Suggestions send on click; slash choices populate the draft with explanatory usage and examples. The assistant has no language picker; current-message language determines answers independently of the native interface language.
+
+Verified route cards use the native router. All fifteen named form/detail return controls now push their explicit native list route, including assistant-opened records and user details. The legacy category form names and opens the existing expenses list; the application has no standalone category list route. The generic not-found back action remains a browser-history action because it does not name a list. Schedules/actual-budget entries navigate to their project rather than nonexistent detail pages. Native permissions gate card edit/delete/PDF actions; server checks remain decisive. Confirmed writes invalidate native RTK Query resource/dashboard tags, including RealBudget. PDF requests reuse existing JWT refresh.
+
+Current frontend/unit/browser results and remaining model limitations are in AI_TESTING.md and AI_PROGRESS.md. The feature remains disabled by default in deployment configuration.

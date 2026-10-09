@@ -1,0 +1,33 @@
+{
+  "application_id": "management_projet",
+  "document_id": "project-create",
+  "approved": true,
+  "title": "Créer un projet",
+  "content": "Ouvrez « Projets », puis le bouton d’ajout. Renseignez le nom du projet, le budget total, les dates de début et de fin et le client. Complétez les autres champs nécessaires, puis cliquez sur « Enregistrer ». Votre droit de création est vérifié par le serveur.\nOpen “Projects” and use the add button. Enter the project name, total budget, start and end dates, and customer. Complete the other required fields, then select “Save”. The server checks your create permission.",
+  "localized_content": {
+    "fr": "Ouvrez « Projets », puis le bouton d’ajout. Renseignez le nom du projet, le budget total, les dates de début et de fin et le client. Complétez les autres champs nécessaires, puis cliquez sur « Enregistrer ». Votre droit de création est vérifié par le serveur.",
+    "en": "Open “Projects” and use the add button. Enter the project name, total budget, start and end dates, and customer. Complete the other required fields, then select “Save”. The server checks your create permission."
+  },
+  "keywords": [
+    "create",
+    "project",
+    "créer",
+    "projet",
+    "nouveau",
+    "budget",
+    "dates",
+    "chef",
+    "client"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read",
+    "create"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

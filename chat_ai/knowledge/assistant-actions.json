@@ -1,0 +1,34 @@
+{
+  "application_id": "management_projet",
+  "document_id": "assistant-actions",
+  "approved": true,
+  "title": "Actions et historique de l’assistant",
+  "content": "Les raccourcis sont facultatifs : /projets, /devis, /clients, /fournisseurs, /depenses, /revenus, /echeances et /budgets ciblent un module. /voir recherche par description. /modifier et /supprimer respectent vos permissions et demandent de choisir une fiche puis de confirmer toute action exécutée par l’assistant. Une commande seule explique son utilisation. Les changements sont attribués à votre compte dans l’historique.\nShortcuts are optional: /projets, /devis, /clients, /fournisseurs, /depenses, /revenus, /echeances and /budgets select a module. /voir searches by description. /modifier and /supprimer respect your permissions and require choosing a record and confirming any assistant-executed action. Sending a command alone explains its use. Changes are attributed to your account in the history.",
+  "localized_content": {
+    "fr": "Les raccourcis sont facultatifs : /projets, /devis, /clients, /fournisseurs, /depenses, /revenus, /echeances et /budgets ciblent un module. /voir recherche par description. /modifier et /supprimer respectent vos permissions et demandent de choisir une fiche puis de confirmer toute action exécutée par l’assistant. Une commande seule explique son utilisation. Les changements sont attribués à votre compte dans l’historique.",
+    "en": "Shortcuts are optional: /projets, /devis, /clients, /fournisseurs, /depenses, /revenus, /echeances and /budgets select a module. /voir searches by description. /modifier and /supprimer respect your permissions and require choosing a record and confirming any assistant-executed action. Sending a command alone explains its use. Changes are attributed to your account in the history."
+  },
+  "keywords": [
+    "assistant",
+    "shortcuts",
+    "help",
+    "slash",
+    "edit",
+    "delete",
+    "confirmation",
+    "history",
+    "modifier",
+    "supprimer",
+    "raccourci"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

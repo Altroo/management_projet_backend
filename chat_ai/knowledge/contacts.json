@@ -1,0 +1,30 @@
+{
+  "application_id": "management_projet",
+  "document_id": "contacts",
+  "approved": true,
+  "title": "Clients et fournisseurs",
+  "content": "Les clients et fournisseurs sont recherchables depuis leurs listes. Une fiche client comprend le nom, le téléphone, l’e-mail, la ville et l’adresse. Une fiche fournisseur comprend le nom, le contact et la spécialité. Ouvrez une fiche autorisée pour consulter les informations liées.\nCustomers and suppliers can be searched from their lists. Customer fields include name, phone, email, city and address. Supplier fields include name, contact and specialty. Open an authorized record to view related information.",
+  "localized_content": {
+    "fr": "Les clients et fournisseurs sont recherchables depuis leurs listes. Une fiche client comprend le nom, le téléphone, l’e-mail, la ville et l’adresse. Une fiche fournisseur comprend le nom, le contact et la spécialité. Ouvrez une fiche autorisée pour consulter les informations liées.",
+    "en": "Customers and suppliers can be searched from their lists. Customer fields include name, phone, email, city and address. Supplier fields include name, contact and specialty. Open an authorized record to view related information."
+  },
+  "keywords": [
+    "customer",
+    "client",
+    "supplier",
+    "fournisseur",
+    "contact",
+    "specialty",
+    "spécialité"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

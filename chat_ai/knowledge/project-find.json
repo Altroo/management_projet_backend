@@ -1,0 +1,30 @@
+{
+  "application_id": "management_projet",
+  "document_id": "project-find",
+  "approved": true,
+  "title": "Retrouver un projet",
+  "content": "Ouvrez « Projets » et utilisez la recherche ou les filtres disponibles. Vous pouvez rechercher un nom de projet ou un client. Dans l’assistant, décrivez le projet recherché ; si plusieurs projets correspondent, choisissez la bonne fiche parmi les résultats.\nOpen “Projects” and use the search or available filters. Search by project name or customer. In the assistant, describe the project you want; if several match, choose the correct record from the results.",
+  "localized_content": {
+    "fr": "Ouvrez « Projets » et utilisez la recherche ou les filtres disponibles. Vous pouvez rechercher un nom de projet ou un client. Dans l’assistant, décrivez le projet recherché ; si plusieurs projets correspondent, choisissez la bonne fiche parmi les résultats.",
+    "en": "Open “Projects” and use the search or available filters. Search by project name or customer. In the assistant, describe the project you want; if several match, choose the correct record from the results."
+  },
+  "keywords": [
+    "find",
+    "search",
+    "project",
+    "rechercher",
+    "retrouver",
+    "projet",
+    "client"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

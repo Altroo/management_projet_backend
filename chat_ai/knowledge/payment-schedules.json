@@ -1,0 +1,33 @@
+{
+  "application_id": "management_projet",
+  "document_id": "payment-schedules",
+  "approved": true,
+  "title": "Échéancier de paiements",
+  "content": "L’échéancier se consulte depuis la fiche du projet. Une ligne indique une date prévue, un montant prévu et une description. Le tableau compare les montants prévus et les revenus enregistrés aux dates concernées. Une échéance ne prouve pas un encaissement.\nPayment schedules are viewed from the project record. Each line has an expected date, expected amount and description. The table compares expected amounts and receipts recorded on the relevant dates. A scheduled payment does not prove receipt.",
+  "localized_content": {
+    "fr": "L’échéancier se consulte depuis la fiche du projet. Une ligne indique une date prévue, un montant prévu et une description. Le tableau compare les montants prévus et les revenus enregistrés aux dates concernées. Une échéance ne prouve pas un encaissement.",
+    "en": "Payment schedules are viewed from the project record. Each line has an expected date, expected amount and description. The table compares expected amounts and receipts recorded on the relevant dates. A scheduled payment does not prove receipt."
+  },
+  "keywords": [
+    "schedule",
+    "payment",
+    "due",
+    "date",
+    "expected",
+    "actual",
+    "échéance",
+    "échéancier",
+    "prévue",
+    "paiement"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

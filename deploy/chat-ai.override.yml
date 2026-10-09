@@ -1,0 +1,15 @@
+# Prepared only: join the EXISTING centralized Colibri service; no model/public port.
+services:
+  web:
+    networks:
+      - backend
+      - chat-ai-internal
+    environment:
+      CHAT_AI_ASSISTANT_ENABLED: ${CHAT_AI_ASSISTANT_ENABLED:-false}
+      CHAT_AI_MODEL_URL: ${CHAT_AI_MODEL_URL:-http://chat-ai-model:18090/v1}
+      CHAT_AI_MODEL_ID: ${CHAT_AI_MODEL_ID:?Set the accepted shared model release}
+      CHAT_AI_MODEL_KEY: ${CHAT_AI_MODEL_KEY:?Set the private inference key outside Git}
+networks:
+  chat-ai-internal:
+    external: true
+    name: ${CHAT_AI_SHARED_NETWORK:?Set the existing private model network}

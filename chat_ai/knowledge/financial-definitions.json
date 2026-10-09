@@ -1,0 +1,36 @@
+{
+  "application_id": "management_projet",
+  "document_id": "financial-definitions",
+  "approved": true,
+  "title": "Comprendre les montants",
+  "content": "Les revenus sont les montants enregistrés dans « Revenus ». Les dépenses sont les montants enregistrés dans « Dépenses ». Le bénéfice du tableau de bord est revenus moins dépenses ; les frais de service sont présentés séparément. Le budget saisi, les devis validés et les montants du budget réel ne sont pas des encaissements. Les montants sont en MAD. Précisez le projet et la période pour une question financière.\nReceipts are amounts recorded in “Revenues”. Expenses are amounts recorded in “Expenses”. Dashboard profit is receipts minus expenses; service fees are displayed separately. Entered budgets, validated quotes and actual-budget amounts are not receipts. Amounts are in MAD. Specify the project and reporting period for a financial question.",
+  "localized_content": {
+    "fr": "Les revenus sont les montants enregistrés dans « Revenus ». Les dépenses sont les montants enregistrés dans « Dépenses ». Le bénéfice du tableau de bord est revenus moins dépenses ; les frais de service sont présentés séparément. Le budget saisi, les devis validés et les montants du budget réel ne sont pas des encaissements. Les montants sont en MAD. Précisez le projet et la période pour une question financière.",
+    "en": "Receipts are amounts recorded in “Revenues”. Expenses are amounts recorded in “Expenses”. Dashboard profit is receipts minus expenses; service fees are displayed separately. Entered budgets, validated quotes and actual-budget amounts are not receipts. Amounts are in MAD. Specify the project and reporting period for a financial question."
+  },
+  "keywords": [
+    "financial",
+    "profit",
+    "margin",
+    "revenue",
+    "receipt",
+    "expense",
+    "benefit",
+    "budget",
+    "frais",
+    "encaissement",
+    "dépense",
+    "bénéfice",
+    "marge"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

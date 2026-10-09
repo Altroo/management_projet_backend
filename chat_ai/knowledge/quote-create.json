@@ -1,0 +1,30 @@
+{
+  "application_id": "management_projet",
+  "document_id": "quote-create",
+  "approved": true,
+  "title": "Créer un devis fournisseur",
+  "content": "Dans « Devis », utilisez le bouton d’ajout, sélectionnez le projet et le fournisseur, puis renseignez le numéro, la date, la description, le montant HT et la TVA. Le montant TTC est calculé. Enregistrez le devis. Seuls les devis validés alimentent le budget prévisionnel.\nIn “Quotes”, use the add button, select the project and supplier, and enter the number, date, description, amount excluding tax and VAT. The total including tax is calculated. Save the quote. Only validated quotes contribute to the estimated budget.",
+  "localized_content": {
+    "fr": "Dans « Devis », utilisez le bouton d’ajout, sélectionnez le projet et le fournisseur, puis renseignez le numéro, la date, la description, le montant HT et la TVA. Le montant TTC est calculé. Enregistrez le devis. Seuls les devis validés alimentent le budget prévisionnel.",
+    "en": "In “Quotes”, use the add button, select the project and supplier, and enter the number, date, description, amount excluding tax and VAT. The total including tax is calculated. Save the quote. Only validated quotes contribute to the estimated budget."
+  },
+  "keywords": [
+    "create",
+    "quote",
+    "estimate",
+    "devis",
+    "fournisseur",
+    "créer"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read",
+    "create"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

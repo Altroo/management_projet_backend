@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'printf "Deployment failed at line %s; inspect live services. Git receipt is not deployment success.\n" "$LINENO" >&2' ERR
+# Operator template: configure private sourceWorkTree, healthURL and backupDir in the bare repository.
+# Keep AI feature flags disabled until separate feature/model activation is approved.
+target="$(git config --get chatAI.sourceWorkTree)"
+repo="$(git rev-parse --absolute-git-dir)"
+health_url="$(git config --get chatAI.healthURL)"
+backup_dir="$(git config --get chatAI.backupDir)"
+[[ "$target" == /* && -d "$target" && "$health_url" == https://* ]] || exit 1
+[[ "$backup_dir" == /* && "$backup_dir" != "$target" && "$backup_dir" != "$target/"* ]] || exit 1
+exec 9>"$repo/deploy.lock"
+flock 9
+while read -r oldrev newrev ref; do
+  [[ "$ref" == refs/heads/main ]] || continue
+  [[ "$newrev" == "$(git --git-dir="$repo" rev-parse refs/heads/main)" ]] || continue
+  git --work-tree="$target" --git-dir="$repo" checkout -f main
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+  cd "$target"
+  compose=(docker compose --project-directory "$target" -f "$target/docker-compose.yml")
+  if [[ -f "$target/docker-compose.assistant.yml" ]]; then
+    compose+=(-f "$target/docker-compose.assistant.yml")
+  fi
+  "${compose[@]}" config --quiet
+  install -d -m 700 "$backup_dir"
+  attempt_id="${newrev:0:12}-$(date -u +%Y%m%dT%H%M%S%NZ)"
+  images="$backup_dir/rollback-$attempt_id.images.tsv"
+  (umask 077; : > "$images")
+  # oldrev is a received Git revision, not proof of the currently deployed image.
+  for service in web celery celery-beat; do
+    running="$("${compose[@]}" ps -q "$service")"
+    if [[ -n "$running" ]]; then
+      image="$(docker inspect --format '{{.Image}}' "$running")"
+      printf '%s\t%s\t%s\n' "$service" "$running" "$image" >> "$images"
+      docker image tag "$image" "management-projet-backend-rollback:$service-$attempt_id"
+    fi
+  done
+  "${compose[@]}" build web celery celery-beat
+  # Back up through trusted container environment; no passwords enter logs or Git.
+  backup="$backup_dir/database-$attempt_id.dump"
+  [[ ! -e "$backup" ]] || { printf 'Backup already exists; do not overwrite it.\n' >&2; exit 1; }
+  (umask 077; "${compose[@]}" exec -T db sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$backup")
+  "${compose[@]}" exec -T db pg_restore --list < "$backup" > /dev/null
+  "${compose[@]}" run --rm --no-deps --interactive=false -T web python manage.py check
+  "${compose[@]}" run --rm --no-deps --interactive=false -T web python manage.py migrate --noinput
+  "${compose[@]}" run --rm --no-deps --interactive=false -T web python manage.py migrate --check
+  "${compose[@]}" run --rm --no-deps --interactive=false -T web python manage.py sync_ai_knowledge
+  "${compose[@]}" up --no-deps --no-build --wait --wait-timeout 180 web celery celery-beat
+  "${compose[@]}" exec -T web python manage.py migrate --check
+  # The existing private gateway serves several applications; refresh DNS gracefully.
+  "${compose[@]}" exec -T ai-gateway nginx -t
+  "${compose[@]}" exec -T ai-gateway nginx -s reload
+  curl --fail --silent --show-error --output /dev/null "$health_url"
+  printf 'Management Projet backend deployment verified: %s\n' "$newrev"
+done

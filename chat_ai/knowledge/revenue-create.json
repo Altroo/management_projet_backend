@@ -1,0 +1,32 @@
+{
+  "application_id": "management_projet",
+  "document_id": "revenue-create",
+  "approved": true,
+  "title": "Enregistrer un revenu",
+  "content": "Dans « Revenus », ajoutez un revenu et sélectionnez le projet concerné. Renseignez la date, la description et le montant encaissé, puis enregistrez. Un revenu enregistré et une échéance prévisionnelle sont deux informations différentes.\nIn “Revenues”, add a receipt and select the relevant project. Enter the date, description and received amount, then save. A recorded receipt and an expected payment schedule are different information.",
+  "localized_content": {
+    "fr": "Dans « Revenus », ajoutez un revenu et sélectionnez le projet concerné. Renseignez la date, la description et le montant encaissé, puis enregistrez. Un revenu enregistré et une échéance prévisionnelle sont deux informations différentes.",
+    "en": "In “Revenues”, add a receipt and select the relevant project. Enter the date, description and received amount, then save. A recorded receipt and an expected payment schedule are different information."
+  },
+  "keywords": [
+    "create",
+    "revenue",
+    "receipt",
+    "créer",
+    "revenu",
+    "encaissement",
+    "date",
+    "montant"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read",
+    "create"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "application_id": "management_projet",
+  "document_id": "project-status",
+  "approved": true,
+  "title": "Statuts des projets",
+  "content": "Les statuts proposés sont : Pas commencé, En attente de démarrage, En cours, En attente, En pause, Complété, Livré et Annulé. Ils décrivent l’avancement renseigné sur la fiche projet. Ils ne constituent pas une preuve de paiement.\nProject statuses describe the progress entered on the project record: not started, awaiting start, in progress, pending, paused, completed, delivered and cancelled. They do not prove that a payment was received.",
+  "localized_content": {
+    "fr": "Les statuts proposés sont : Pas commencé, En attente de démarrage, En cours, En attente, En pause, Complété, Livré et Annulé. Ils décrivent l’avancement renseigné sur la fiche projet. Ils ne constituent pas une preuve de paiement.",
+    "en": "Project statuses describe the progress entered on the project record: not started, awaiting start, in progress, pending, paused, completed, delivered and cancelled. They do not prove that a payment was received."
+  },
+  "keywords": [
+    "project",
+    "status",
+    "statut",
+    "projet",
+    "pause",
+    "cours",
+    "livraison"
+  ],
+  "category": "workflow",
+  "required_capabilities": [
+    "read"
+  ],
+  "source_metadata": [
+    "project/models.py",
+    "project/views.py",
+    "devis/services.py",
+    "frontend/src/translations/fr.ts"
+  ]
+}

@@ -188,3 +188,14 @@ models/
 
 # Local PDF QA artifacts
 tmp/
+
+# Private assistant runtime and evaluation artifacts
+.env*
+*.key
+*.pem
+training/evaluations/
+training/checkpoints/
+training/adapters/
+.auth/
+.playwright-mcp/
+.DS_Store
