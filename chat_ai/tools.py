@@ -33,9 +33,12 @@ def registry():
     return ChatAIToolRegistry([ChatAITool(n,d,s,{'type':'object'},n,application='management_projet',required_capabilities=c,authorization='fresh native flags and single-workspace scope',classification='proposal' if n=='prepare_change' else 'read',audit_classification='business_proposal' if n=='prepare_change' else 'business_read') for n,d,s,c in specs])
 
 class ChatAIToolExecutor:
-    def __init__(self,user_id,company_id,request_id,state=None,context=None,audit=True):
+    def __init__(self,user_id,company_id,request_id,state=None,context=None,audit=True,instruction=None):
         self.user_id,self.company_id,self.request_id=user_id,company_id,request_id
         self.state=state or {};self.context=context or {};self.audit=audit
+        # Conversation planning supplies the validated current user instruction.
+        # Missing instructions never bypass target validation.
+        self.instruction=instruction
     def authorize(self):return authorize(self.user_id,self.company_id)
     authorize_context=authorize
     def capabilities(self):return capabilities(self.authorize())

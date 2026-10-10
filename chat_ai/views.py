@@ -261,7 +261,7 @@ class RecordSelectionView(ChatView):
         state=conv.references
         if state.get('resource')!=data['resource'] or data['identifier'] not in state.get('ids',[]) or state.get('expires_at','')<timezone.now().isoformat():raise ChatAIError('CONTEXT_EXPIRED')
         request_id=uuid.uuid4()
-        executor=ChatAIToolExecutor(request.user.pk,conv.company_id,request_id)
+        executor=ChatAIToolExecutor(request.user.pk,conv.company_id,request_id,state=state)
         if data['operation']=='delete':card=executor.execute('prepare_change',{'resource':data['resource'],'identifier':data['identifier'],'operation':'delete'})
         else:card=executor.execute('navigate',{'resource':data['resource']+'_edit','identifier':data['identifier']})
         authorize_delivery(request.user.pk,id,cards=[card])

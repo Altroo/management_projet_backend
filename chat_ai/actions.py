@@ -47,6 +47,8 @@ def prepare(executor,resource,identifier,operation,changes):
     caps=executor.capabilities()
     if ('delete' if operation=='delete' else 'update') not in caps:raise ChatAIError('PERMISSION_DENIED')
     if resource not in RESOURCES or not RESOURCES[resource].editable:raise ChatAIError('INVALID_ARGUMENTS')
+    from .targets import trusted_target
+    if not trusted_target(resource,identifier,instruction=executor.instruction or '',context=executor.context,state=executor.state,now=timezone.now()):raise ChatAIError('CONTEXT_EXPIRED')
     obj=executor.record(resource,identifier)
     if operation=='delete':
         if changes:raise ChatAIError('INVALID_ARGUMENTS')

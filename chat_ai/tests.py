@@ -22,6 +22,13 @@ from .services import ChatAIConversationService,get_conversation,replay_message,
 from .shortcuts import shortcut_action,shortcut_catalog,financial_action,greeting_action
 from .planner import SYSTEM,shortlist
 
+
+
+def propose_change(executor,args):
+    # Existing mutation fixtures first resolve the target, as real selection does.
+    executor.execute('get_record',{'resource':args['resource'],'identifier':args['identifier']})
+    return executor.execute('prepare_change',args)
+
 @override_settings(CHAT_AI_ASSISTANT_ENABLED=True,CHAT_AI_MODEL_ID='fixture-model')
 class AssistantTests(TestCase):
     @classmethod
@@ -39,7 +46,7 @@ class AssistantTests(TestCase):
         cls.revenue=Revenue.objects.create(project=cls.project,date=date(2026,10,3),description='Deposit',montant=100)
         cls.schedule=ProjectPaymentSchedule.objects.create(project=cls.project,due_date=date(2026,10,5),expected_amount=200,description='Stage one')
         cls.budget=ProjectRealBudgetEntry.objects.create(project=cls.project,date=date(2026,10,6),stage='Paint',montant_client=80,montant_fournisseur=50)
-    def executor(self,user=None,state=None,context=None):return ChatAIToolExecutor((user or self.reader).pk,1,uuid.uuid4(),state,context)
+    def executor(self,user=None,state=None,context=None,instruction=None):return ChatAIToolExecutor((user or self.reader).pk,1,uuid.uuid4(),state,context,instruction=instruction)
     def conversation(self,user=None):
         user=user or self.reader
         return Conversation.objects.create(user=user,company_id=1,authorization_stamp=authorization_stamp(user.pk,1),expires_at=timezone.now()+timedelta(days=1))
@@ -181,20 +188,44 @@ class AssistantTests(TestCase):
         for cmd in ['/voir','/bilan','/pdf','/aide']:
             with self.subTest(cmd=cmd):self.assertTrue(shortcut_action(cmd,self.executor())['message'])
     def test_described_shortcut_needs_planner(self):self.assertIsNone(shortcut_action('/devis projet Atlas client Demo',self.executor()))
+    def test_model_cannot_propose_a_guessed_existing_quote(self):
+        conversation=self.conversation(self.writer)
+        action={'tool':'prepare_change','arguments':{'resource':'quote','identifier':self.quote.pk,'operation':'delete'}}
+        with patch('chat_ai.services.close_old_connections'),patch('chat_ai.services.get_model') as model:
+            model.return_value.choose.return_value=(action,{})
+            self.assert_code('CONTEXT_EXPIRED',lambda:ChatAIConversationService().run(self.writer.pk,conversation.pk,'Supprime le devis de peinture du fournisseur décrit.',uuid.uuid4(),{},lambda *args:None,threading.Event()))
+        self.assertFalse(PendingAction.objects.exists())
+        self.assertTrue(Quote.objects.filter(pk=self.quote.pk).exists())
+    def test_planner_explicit_target_can_be_proposed(self):
+        executor=self.executor(self.writer,instruction=f'Delete quote ID {self.quote.pk}.')
+        card=executor.execute('prepare_change',{'resource':'quote','identifier':self.quote.pk,'operation':'delete'})
+        self.assertEqual(card['record_id'],self.quote.pk);self.assertTrue(Quote.objects.filter(pk=self.quote.pk).exists())
+    def test_planner_current_target_can_be_proposed(self):
+        executor=self.executor(self.writer,context={'resource':'client','identifier':self.customer.pk},instruction='Modifie la ville de ce client en Fès.')
+        card=executor.execute('prepare_change',{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
+        self.assertEqual(card['record_id'],self.customer.pk)
+    def test_planner_saved_target_requires_fresh_matching_resource(self):
+        for resource,expiry,allowed in [('client',timezone.now()+timedelta(minutes=1),True),('quote',timezone.now()+timedelta(minutes=1),False),('client',timezone.now()-timedelta(seconds=1),False)]:
+            with self.subTest(resource=resource,allowed=allowed):
+                state={'resource':resource,'ids':[self.customer.pk],'expires_at':expiry.isoformat()}
+                executor=self.executor(self.writer,state=state,instruction='Modifie la ville du résultat sélectionné en Fès.')
+                args={'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}}
+                if allowed:self.assertEqual(executor.execute('prepare_change',args)['record_id'],self.customer.pk)
+                else:self.assert_code('CONTEXT_EXPIRED',lambda:executor.execute('prepare_change',args))
     def test_confirmation_owner(self):
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
+        card=propose_change(self.executor(self.writer),{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
         self.assert_code('NOT_FOUND',lambda:confirm(self.request(self.other),card['action_id']))
     def test_confirmation_expiry_and_stale(self):
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
+        card=propose_change(self.executor(self.writer),{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
         self.customer.ville='Casablanca';self.customer.save()
         self.assert_code('CONTEXT_EXPIRED',lambda:confirm(self.request(),card['action_id']))
     def test_confirmation_permission_revoked(self):
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'client','identifier':self.customer.pk,'operation':'delete'})
+        card=propose_change(self.executor(self.writer),{'resource':'client','identifier':self.customer.pk,'operation':'delete'})
         self.writer.can_delete=False;self.writer.save()
         self.assert_code('PERMISSION_DENIED',lambda:confirm(self.request(),card['action_id']))
     def test_confirmation_replay_once_and_audit(self):
         executor=self.executor(self.writer)
-        card=executor.execute('prepare_change',{'resource':'supplier','identifier':self.supplier.pk,'operation':'update','changes':{'contact':'New Demo Contact'}})
+        card=propose_change(executor,{'resource':'supplier','identifier':self.supplier.pk,'operation':'update','changes':{'contact':'New Demo Contact'}})
         self.assertFalse(AuditEvent.objects.filter(tool='confirmed_update').exists())
         self.assertEqual(Supplier.objects.get(pk=self.supplier.pk).contact,'Demo Contact')
         confirm(self.request(),card['action_id']);self.supplier.refresh_from_db();self.assertEqual(self.supplier.contact,'New Demo Contact')
@@ -203,15 +234,15 @@ class AssistantTests(TestCase):
         self.assert_code('CONTEXT_EXPIRED',lambda:confirm(self.request(),card['action_id']))
         PendingAction.objects.filter(pk=card['action_id']).delete();self.assertIn('effectuée',replay_confirmation(executor,{'confirmation_id':card['action_id']})['message'])
     def test_protected_quote_delete_native(self):
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'quote','identifier':self.quote.pk,'operation':'delete'})
+        card=propose_change(self.executor(self.writer),{'resource':'quote','identifier':self.quote.pk,'operation':'delete'})
         self.assert_code('ACTION_REJECTED',lambda:confirm(self.request(),card['action_id']));self.assertTrue(Quote.objects.filter(pk=self.quote.pk).exists())
     def test_delete_user_history_survives_chat_cleanup(self):
-        executor=self.executor(self.writer);card=executor.execute('prepare_change',{'resource':'revenue','identifier':self.revenue.pk,'operation':'delete'})
+        executor=self.executor(self.writer);card=propose_change(executor,{'resource':'revenue','identifier':self.revenue.pk,'operation':'delete'})
         confirm(self.request(),card['action_id']);self.assertFalse(Revenue.objects.filter(pk=self.revenue.pk).exists())
         self.assertEqual(Revenue.history.filter(id=self.revenue.pk,history_type='-').first().history_user_id,self.writer.pk)
         call_command('purge_ai_history',verbosity=0);self.assertTrue(AuditEvent.objects.filter(tool='confirmed_delete',actor_id=self.writer.pk).exists())
     def test_quote_expense_preview_atomic(self):
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'expense','identifier':self.expense.pk,'operation':'update','changes':{'notes':'Demo note'}})
+        card=propose_change(self.executor(self.writer),{'resource':'expense','identifier':self.expense.pk,'operation':'update','changes':{'notes':'Demo note'}})
         self.assertEqual(card['changes']['notes'],'Demo note')
     def test_unknown_change_field(self):self.assert_code('INVALID_ARGUMENTS',lambda:self.executor(self.writer).execute('prepare_change',{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'is_staff':'true'}}))
     def test_pdf_history_preserves_action(self):
@@ -264,7 +295,7 @@ class AssistantTests(TestCase):
         objects={'project':(self.project,'description'),'client':(self.customer,'ville'),'supplier':(self.supplier,'contact'),'quote':(self.quote,'description'),'expense':(self.expense,'notes'),'revenue':(self.revenue,'notes'),'payment_schedule':(self.schedule,'notes'),'budget_entry':(self.budget,'notes')}
         for resource,(obj,field) in objects.items():
             with self.subTest(resource=resource):
-                card=self.executor(self.writer).execute('prepare_change',{'resource':resource,'identifier':obj.pk,'operation':'update','changes':{field:'Changed demo value'}})
+                card=propose_change(self.executor(self.writer),{'resource':resource,'identifier':obj.pk,'operation':'update','changes':{field:'Changed demo value'}})
                 confirm(self.request(),card['action_id']);obj.refresh_from_db();self.assertEqual(getattr(obj,field),'Changed demo value');self.assertEqual(obj.history.first().history_user_id,self.writer.pk)
     def test_api_conversation_json_message_and_retrieval(self):
         response=self.api().post('/api/ai/v1/conversations/',{'company_id':1},format='json');self.assertEqual(response.status_code,201)
@@ -279,7 +310,7 @@ class AssistantTests(TestCase):
         self.assertEqual(result.status_code,400)
     def test_pending_preview_revalidates_quote_business_rules(self):
         self.expense.quote=None;self.expense.save()
-        card=self.executor(self.writer).execute('prepare_change',{'resource':'quote','identifier':self.quote.pk,'operation':'update','changes':{'status':'rejected'}})
+        card=propose_change(self.executor(self.writer),{'resource':'quote','identifier':self.quote.pk,'operation':'update','changes':{'status':'rejected'}})
         self.expense.quote=self.quote;self.expense.save()
         self.assert_code('CONTEXT_EXPIRED',lambda:replay_confirmation(self.executor(self.writer),{'confirmation_id':card['action_id']}))
 
@@ -311,7 +342,7 @@ class ConfirmationConcurrencyTests(TransactionTestCase):
         self.client_record=Client.objects.create(nom='Race Demo',ville='Rabat')
     def exercise_waiting_confirmation(self,expire=False):
         executor=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4())
-        card=executor.execute('prepare_change',{'resource':'client','identifier':self.client_record.pk,'operation':'update','changes':{'ville':'Tanger'}})
+        card=propose_change(executor,{'resource':'client','identifier':self.client_record.pk,'operation':'update','changes':{'ville':'Tanger'}})
         passed_first_auth=threading.Event();outcome=[];real_authorize=__import__('chat_ai.actions',fromlist=['authorize']).authorize
         real_now=timezone.now;advanced=threading.Event();far_future=real_now()+timedelta(minutes=6)
         def observed_authorize(*args,**kwargs):
@@ -340,7 +371,7 @@ class ConfirmationConcurrencyTests(TransactionTestCase):
     def test_project_child_changes_while_confirmation_waits(self):
         project=Project.objects.create(nom='Race Project',budget_total=1000,date_debut=date(2026,1,1),date_fin=date(2026,12,31))
         child=Revenue.objects.create(project=project,date=date(2026,1,1),montant=100,description='Initial')
-        executor=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4());card=executor.execute('prepare_change',{'resource':'project','identifier':project.pk,'operation':'delete'})
+        executor=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4());card=propose_change(executor,{'resource':'project','identifier':project.pk,'operation':'delete'})
         first_auth=threading.Event();outcome=[];real_authorize=__import__('chat_ai.actions',fromlist=['authorize']).authorize
         def observed(*args,**kwargs):result=real_authorize(*args,**kwargs);first_auth.set();return result
         def worker():
@@ -358,7 +389,7 @@ class ConfirmationConcurrencyTests(TransactionTestCase):
 
     @override_settings(CHAT_AI_ASSISTANT_ENABLED=True)
     def test_api_confirmation_lock_deadline_rolls_back(self):
-        card=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4()).execute('prepare_change',{'resource':'client','identifier':self.client_record.pk,'operation':'update','changes':{'ville':'Tanger'}})
+        card=propose_change(ChatAIToolExecutor(self.user.pk,1,uuid.uuid4()),{'resource':'client','identifier':self.client_record.pk,'operation':'update','changes':{'ville':'Tanger'}})
         outcome=[]
         def worker():
             try:
@@ -381,7 +412,7 @@ class ConfirmationConcurrencyTests(TransactionTestCase):
         project=Project.objects.create(nom='Replay Deadline',budget_total=1000,date_debut=date(2026,1,1),date_fin=date(2026,12,31))
         quote=Quote.objects.create(project=project,supplier=Supplier.objects.create(nom='Deadline Demo'),number='DEADLINE-DEMO',date=date(2026,1,1),amount_ht=100,amount_tva=20,status='validated')
         expense=Expense.objects.create(project=project,quote=quote,supplier=quote.supplier,date=date(2026,1,1),montant=50,description='Replay demo')
-        card=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4()).execute('prepare_change',{'resource':'expense','identifier':expense.pk,'operation':'update','changes':{'notes':'Reviewed'}})
+        card=propose_change(ChatAIToolExecutor(self.user.pk,1,uuid.uuid4()),{'resource':'expense','identifier':expense.pk,'operation':'update','changes':{'notes':'Reviewed'}})
         conv=Conversation.objects.create(user=self.user,company_id=1,authorization_stamp=authorization_stamp(self.user.pk,1),expires_at=timezone.now()+timedelta(days=1))
         Message.objects.create(conversation=conv,role='assistant',text='Review this action.',action={'confirmation_id':card['action_id']})
         outcome=[]
@@ -403,8 +434,8 @@ class ConfirmationConcurrencyTests(TransactionTestCase):
         quote=Quote.objects.create(project=project,supplier=Supplier.objects.create(nom='Competing Demo'),number='COMPETING-DEMO',date=date(2026,1,1),amount_ht=100,amount_tva=20,status='validated')
         expense=Expense.objects.create(project=project,quote=quote,supplier=quote.supplier,date=date(2026,1,1),montant=50,description='Competing demo')
         executor=ChatAIToolExecutor(self.user.pk,1,uuid.uuid4())
-        edit=executor.execute('prepare_change',{'resource':'expense','identifier':expense.pk,'operation':'update','changes':{'notes':'Changed'}})
-        delete=executor.execute('prepare_change',{'resource':'project','identifier':project.pk,'operation':'delete'})
+        edit=propose_change(executor,{'resource':'expense','identifier':expense.pk,'operation':'update','changes':{'notes':'Changed'}})
+        delete=propose_change(executor,{'resource':'project','identifier':project.pk,'operation':'delete'})
         expense_locked=threading.Event();project_waiting=threading.Event();outcomes={}
         real_validate=__import__('chat_ai.actions',fromlist=['validated_update']).validated_update
         def validation(resource,obj,changes):
