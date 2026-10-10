@@ -22,6 +22,7 @@ def suggestions(user,language='fr'):
 def shortcut_action(text,executor=None,interface_language='fr'):
     if not text.startswith('/'):return None
     parts=text.split(maxsplit=1);command=ALIASES.get(parts[0].casefold(),parts[0].casefold());arg=parts[1].strip() if len(parts)>1 else ''
+    if command=='/' and not arg:command='/aide'
     language=message_language(text,interface_language);en=language=='en'
     catalog=shortcut_catalog(executor.authorize(),language);item=next((x for x in catalog if x['command']==command),None)
     if not item:

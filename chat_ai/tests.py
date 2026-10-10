@@ -187,6 +187,15 @@ class AssistantTests(TestCase):
     def test_bare_shortcut_help(self):
         for cmd in ['/voir','/bilan','/pdf','/aide']:
             with self.subTest(cmd=cmd):self.assertTrue(shortcut_action(cmd,self.executor())['message'])
+    def test_bare_slash_returns_authorized_help(self):
+        for language in ('en','fr'):
+            with self.subTest(language=language):
+                result=shortcut_action('/',self.executor(),language)
+                self.assertEqual(result,shortcut_action('/aide',self.executor(),language))
+                self.assertEqual(result['tool'],'clarify')
+                self.assertIn('/projets',result['message'])
+                self.assertNotIn('/supprimer',result['message'])
+                self.assertNotIn('/modifier',result['message'])
     def test_described_shortcut_needs_planner(self):self.assertIsNone(shortcut_action('/devis projet Atlas client Demo',self.executor()))
     def test_model_cannot_propose_a_guessed_existing_quote(self):
         conversation=self.conversation(self.writer)
