@@ -18,7 +18,7 @@ from .models import Conversation,Message,AuditEvent,PendingAction,KnowledgeDocum
 from .security import authorization_stamp
 from .tools import ChatAIToolExecutor,registry
 from .actions import confirm,replay_confirmation
-from .services import ChatAIConversationService,get_conversation,replay_message,stored_action
+from .services import ChatAIConversationService,get_conversation,replay_message,stored_action,planner_references
 from .shortcuts import shortcut_action,shortcut_catalog,financial_action,greeting_action
 from .planner import SYSTEM,shortlist
 
@@ -221,6 +221,123 @@ class AssistantTests(TestCase):
                 args={'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}}
                 if allowed:self.assertEqual(executor.execute('prepare_change',args)['record_id'],self.customer.pk)
                 else:self.assert_code('CONTEXT_EXPIRED',lambda:executor.execute('prepare_change',args))
+    def test_search_then_second_result_edit_uses_trusted_order(self):
+        Client.objects.create(nom='Demo Second', ville='Fès')
+        for text in ('Change the second result’s city to Tanger.',
+                     'Modifie la ville du deuxième résultat en Tanger.'):
+            with self.subTest(text=text):
+                conversation = self.conversation(self.writer)
+                with patch('chat_ai.services.close_old_connections'), patch('chat_ai.services.get_model') as model:
+                    model.return_value.choose.return_value = (
+                        {'tool': 'search_records', 'arguments': {'resource': 'client', 'query': 'Demo'}}, {})
+                    search = ChatAIConversationService().run(self.writer.pk, conversation.pk,
+                        'Find customers named Demo.', uuid.uuid4(), {}, lambda *args: None, threading.Event())
+                    displayed = [item['id'] for item in search['cards'][0]['items']]
+                    self.assertEqual(len(displayed), 2)
+                    def choose(messages, tools, cancel):
+                        context = json.loads(messages[0]['content'].split('Trusted context: ', 1)[1])
+                        self.assertEqual(context['previous_result_type'], 'client')
+                        self.assertEqual(context['previous_result_identifiers'], displayed)
+                        self.assertEqual(context['previous_result_count'], 2)
+                        self.assertIn('prepare_change', [tool.name for tool in tools])
+                        return {'tool': 'prepare_change', 'arguments': {
+                            'resource': context['previous_result_type'],
+                            'identifier': context['previous_result_identifiers'][1],
+                            'operation': 'update', 'changes': {'ville': 'Tanger'}}}, {}
+                    model.return_value.choose.side_effect = choose
+                    response = ChatAIConversationService().run(self.writer.pk, conversation.pk,
+                        text, uuid.uuid4(), {}, lambda *args: None, threading.Event())
+                self.assertEqual(response['cards'][0]['type'], 'confirmation')
+                self.assertEqual(response['cards'][0]['record_id'], displayed[1])
+                self.assertEqual(response['cards'][0]['changes'], {'ville': 'Tanger'})
+                self.assertFalse(Client.objects.filter(ville='Tanger').exists())
+
+    def test_expired_or_missing_results_never_shift_planner_ordinals(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing):
+                conversation = self.conversation(self.writer)
+                first = Client.objects.create(nom=f'Temporary selection {missing}', ville='Rabat')
+                conversation.references = {'resource': 'client', 'ids': [first.pk, self.customer.pk],
+                    'expires_at': (timezone.now() + timedelta(minutes=5 if missing else -5)).isoformat()}
+                conversation.save(update_fields=['references'])
+                if missing:
+                    first.delete()
+                def choose(messages, tools, cancel):
+                    context = json.loads(messages[0]['content'].split('Trusted context: ', 1)[1])
+                    self.assertIsNone(context['previous_result_type'])
+                    self.assertEqual(context['previous_result_count'], 0)
+                    self.assertEqual(context['previous_result_identifiers'], [])
+                    self.assertNotIn('previous_results', [tool.name for tool in tools])
+                    return {'tool': 'clarify', 'message': 'Please find the record again.'}, {}
+                with patch('chat_ai.services.close_old_connections'), patch('chat_ai.services.get_model') as model:
+                    model.return_value.choose.side_effect = choose
+                    ChatAIConversationService().run(self.writer.pk, conversation.pk,
+                        'Change the second result’s city to Tanger.', uuid.uuid4(), {}, lambda *args: None, threading.Event())
+                conversation.refresh_from_db()
+                self.assertEqual(conversation.references, {})
+                self.assertFalse(PendingAction.objects.exists())
+
+    def test_planner_reference_validation_rejects_malformed_state(self):
+        valid = {'resource': 'client', 'ids': [self.customer.pk],
+                 'expires_at': (timezone.now() + timedelta(minutes=5)).isoformat()}
+        for changes in ({'resource': 'other_application'}, {'resource': {}}, {'ids': [True]}, {'ids': ['1']},
+                        {'ids': [self.customer.pk] * 2}, {'ids': list(range(1, 12))},
+                        {'expires_at': None}, {'expires_at': 'invalid'},
+                        {'expires_at': '2099-01-01T00:00:00'}):
+            with self.subTest(changes=changes):
+                executor = self.executor(self.writer, state={**valid, **changes})
+                with patch.object(executor, 'read_records') as read:
+                    self.assertEqual(planner_references(executor), {})
+                    read.assert_not_called()
+                self.assertEqual(executor.state, {})
+        from datetime import timezone as datetime_timezone
+        offset = (timezone.now() + timedelta(minutes=5)).astimezone(datetime_timezone(timedelta(hours=-5)))
+        executor = self.executor(self.writer, state={**valid, 'expires_at': offset.isoformat()})
+        self.assertEqual(planner_references(executor)['ids'], [self.customer.pk])
+
+    def test_follow_up_permission_revocation_before_and_during_planning(self):
+        for before in (True, False):
+            with self.subTest(before=before):
+                CustomUser.objects.filter(pk=self.writer.pk).update(can_view=True, can_edit=True)
+                conversation = self.conversation(self.writer)
+                conversation.references = {'resource': 'client', 'ids': [self.customer.pk],
+                    'expires_at': (timezone.now() + timedelta(minutes=5)).isoformat()}
+                conversation.save(update_fields=['references'])
+                def choose(messages, tools, cancel):
+                    context = json.loads(messages[0]['content'].split('Trusted context: ', 1)[1])
+                    CustomUser.objects.filter(pk=self.writer.pk).update(can_edit=False)
+                    return {'tool': 'prepare_change', 'arguments': {'resource': 'client',
+                        'identifier': context['previous_result_identifiers'][0],
+                        'operation': 'update', 'changes': {'ville': 'Tanger'}}}, {}
+                with patch('chat_ai.services.close_old_connections'), patch('chat_ai.services.get_model') as model:
+                    model.return_value.choose.side_effect = choose
+                    if before:
+                        CustomUser.objects.filter(pk=self.writer.pk).update(can_view=False)
+                    self.assert_code('PERMISSION_DENIED', lambda: ChatAIConversationService().run(
+                        self.writer.pk, conversation.pk, 'Change the first result’s city to Tanger.',
+                        uuid.uuid4(), {}, lambda *args: None, threading.Event()))
+                    if before:
+                        model.assert_not_called()
+                self.assertFalse(PendingAction.objects.exists())
+                self.customer.refresh_from_db()
+                self.assertEqual(self.customer.ville, 'Rabat')
+
+    def test_planner_saved_ids_do_not_authorize_other_targets(self):
+        other = Client.objects.create(nom='Outside selection', ville='Rabat')
+        for resource, identifier in (('client', other.pk), ('supplier', self.supplier.pk)):
+            with self.subTest(resource=resource):
+                conversation = self.conversation(self.writer)
+                conversation.references = {'resource': 'client', 'ids': [self.customer.pk],
+                    'expires_at': (timezone.now() + timedelta(minutes=5)).isoformat()}
+                conversation.save(update_fields=['references'])
+                with patch('chat_ai.services.close_old_connections'), patch('chat_ai.services.get_model') as model:
+                    model.return_value.choose.return_value = ({'tool': 'prepare_change', 'arguments': {
+                        'resource': resource, 'identifier': identifier, 'operation': 'delete'}}, {})
+                    self.assert_code('CONTEXT_EXPIRED', lambda: ChatAIConversationService().run(
+                        self.writer.pk, conversation.pk, 'Delete the first result.', uuid.uuid4(),
+                        {}, lambda *args: None, threading.Event()))
+                self.assertFalse(PendingAction.objects.exists())
+
     def test_confirmation_owner(self):
         card=propose_change(self.executor(self.writer),{'resource':'client','identifier':self.customer.pk,'operation':'update','changes':{'ville':'Fès'}})
         self.assert_code('NOT_FOUND',lambda:confirm(self.request(self.other),card['action_id']))

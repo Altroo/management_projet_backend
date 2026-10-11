@@ -16,19 +16,61 @@ from .labels import FIELD_LABELS
 from .knowledge import ChatAIKnowledgeService
 RESOURCE={'type':'string','enum':list(RESOURCES)}
 DATE={'type':'string','pattern':r'^\d{4}-\d{2}-\d{2}$'}
-SEARCH=object_schema({'resource':RESOURCE,'query':STRING,'project_name':STRING,'client_name':STRING,'supplier_name':STRING,'status':STRING,'date_from':DATE,'date_to':DATE,'limit':{'type':'integer','minimum':1,'maximum':10},'offset':{'type':'integer','minimum':0,'maximum':100}},['resource'])
+# EN labels mirror native frontend translations and assistant result fields.
+FIELD_LABELS_EN = {
+    'nom':'Name','description':'Description','notes':'Notes','telephone':'Phone',
+    'email':'Email','ville':'City','adresse':'Address','contact':'Contact','specialite':'Specialty',
+    'number':'Quote number','date':'Date','status':'Status','chef_de_projet':'Project manager',
+    'date_debut':'Start date','date_fin':'End date','budget_total':'Total budget',
+    'montant':'Amount','amount_ht':'Amount excluding tax','amount_tva':'VAT',
+    'due_date':'Due date','expected_amount':'Expected amount','stage':'Project stage',
+    'montant_client':'Amount invoiced to customer','montant_fournisseur':'Amount paid to supplier',
+    'element':'Expense item',
+}
+STATUS_LABELS_EN = {
+    'Complété':'Completed','En cours':'In Progress','Pas commencé':'Not Started',
+    'En attente':'On Hold','En pause':'Paused','Annulé':'Cancelled',
+    'En attente de démarrage':'Waiting to start','Livré':'Delivered',
+    'received':'Received','validated':'Validated','rejected':'Rejected',
+}
+
+
+def native_status_description():
+    parts=[]
+    for resource in ('project','quote'):
+        model=RESOURCES[resource].model
+        choices=model.STATUS_CHOICES if resource=='project' else model._meta.get_field('status').choices
+        parts.append(resource+': '+', '.join(f'{value} = {label} / {STATUS_LABELS_EN.get(value, label)}' for value,label in choices))
+    return '; '.join(parts)+'. No status filter for other resources.'
+
+
+def editable_description():
+    return '; '.join(resource+': '+', '.join(field+' = '+('Nom du projet / Project name' if resource=='project' and field=='nom' else FIELD_LABELS[field]+' / '+FIELD_LABELS_EN[field]) for field in spec.editable)
+                    for resource,spec in RESOURCES.items() if spec.editable)
+
+
+SEARCH=object_schema({
+    'resource':{**RESOURCE,'description':'budget_entry means individual Budget réel rows, not the allocated project budget total.'},
+    'query':{**STRING,'description':'Text search: project name, manager, customer name/email/city (not project description); quote number/description/project/supplier/category; expense description/project/supplier/item; revenue description/project; client name/email/phone/city; supplier name/contact/specialty; payment_schedule description/notes; budget_entry stage/description/notes; category/subcategory name.'},
+    'project_name':{**STRING,'description':'Project name; supported for project, quote, expense, revenue, payment_schedule, budget_entry.'},
+    'client_name':{**STRING,'description':'Customer name; supported for client and the resources supporting project_name.'},
+    'supplier_name':{**STRING,'description':'Supplier name; supported only for supplier, quote, expense.'},
+    'status':{**STRING,'description':native_status_description()},
+    'date_from':{**DATE,'description':'Inclusive ISO start date; only project (start date), quote, expense, revenue, budget_entry (date), payment_schedule (due date).'},
+    'date_to':{**DATE,'description':'Inclusive ISO end date; same resources/date fields as date_from.'},
+    'limit':{'type':'integer','minimum':1,'maximum':10},'offset':{'type':'integer','minimum':0,'maximum':100}},['resource'])
 METRICS=['revenue','expenses','profit','service_fees','budget','estimates']
 
 def registry():
     specs=[
-     ('search_records','Find records by description and combined project/customer/supplier/status/date filters.',SEARCH,('read',)),
+     ('search_records','Find individual records. All supplied filters combine with AND; use supported filters only. Clarify any unsupported requested condition, never silently drop it.',SEARCH,('read',)),
      ('get_record','Retrieve a known record or the authorized current-page record.',object_schema({'resource':RESOURCE,'identifier':ID},['resource']),('read',)),
-     ('financial_summary','Authoritative native financial metric. Explicit metric required; never guess profit. All-time or local period, optional exact project.',object_schema({'metric':{'type':'string','enum':METRICS},'period':{'type':'string','enum':['all_time','current_month','current_year','previous_month','previous_year','custom']},'project_name':STRING,'project_id':ID,'date_from':DATE,'date_to':DATE},['metric']),('read',)),
+     ('financial_summary','Authoritative native financial totals. Explicit metric required; never guess profit. budget is the allocated project budget total, not individual budget_entry rows. budget and estimates require all_time; estimates also requires a project. Other metrics support local periods. Never invent project_id; use a supplied project name or a trusted known ID.',object_schema({'metric':{'type':'string','enum':METRICS},'period':{'type':'string','enum':['all_time','current_month','current_year','previous_month','previous_year','custom']},'project_name':STRING,'project_id':ID,'date_from':DATE,'date_to':DATE},['metric']),('read',)),
      ('navigate','Approved native list, record, edit or new-form route. No arbitrary URL.',object_schema({'resource':{'type':'string','enum':list(ROUTES)+list(DETAILS)+[x+'_edit' for x in DETAILS]+[x+'_new' for x in DETAILS]},'identifier':ID},['resource']),('read',)),
      ('knowledge','Retrieve reviewed permission-aware application procedures and labels.',object_schema({'query':STRING},['query']),('read',)),
      ('previous_results','Resolve only saved results; index is one-based. No context means this tool is unavailable.',object_schema({'operation':{'type':'string','enum':['open','list']},'index':{'type':'integer','minimum':1,'maximum':10}},['operation']),('read',)),
      ('project_report','Offer the native project PDF; print permission required.',object_schema({'identifier':ID},['identifier']),('read','print')),
-     ('prepare_change','Propose a known record edit/delete for exact-target confirmation; cannot execute.',object_schema({'resource':{'type':'string','enum':[n for n,r in RESOURCES.items() if r.editable]},'identifier':ID,'operation':{'type':'string','enum':['update','delete']},'changes':{'type':'object','maxProperties':8,'propertyNames':{'enum':sorted({x for r in RESOURCES.values() for x in r.editable})},'additionalProperties':{'type':['string','null'],'maxLength':1000}}},['resource','identifier','operation']),('read',)),
+     ('prepare_change','Propose a known record edit/delete for exact-target confirmation; cannot execute.',object_schema({'resource':{'type':'string','enum':[n for n,r in RESOURCES.items() if r.editable]},'identifier':ID,'operation':{'type':'string','enum':['update','delete']},'changes':{'type':'object','maxProperties':8,'propertyNames':{'enum':sorted({x for r in RESOURCES.values() for x in r.editable})},'additionalProperties':{'type':['string','null'],'maxLength':1000},'description':'Only explicitly requested fields/values for this resource. Use ISO dates and decimal strings. '+editable_description()}},['resource','identifier','operation']),('read',)),
     ]
     return ChatAIToolRegistry([ChatAITool(n,d,s,{'type':'object'},n,application='management_projet',required_capabilities=c,authorization='fresh native flags and single-workspace scope',classification='proposal' if n=='prepare_change' else 'read',audit_classification='business_proposal' if n=='prepare_change' else 'business_read') for n,d,s,c in specs])
 
