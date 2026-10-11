@@ -1,8 +1,6 @@
 """Proposals from the planner require a target supplied by trusted request state."""
-from chat_ai_assistant.selection_context import ordinal_target_matches
+from chat_ai_assistant.selection_context import ordinal_target_matches, explicit_target_matches
 from datetime import datetime
-import re
-import unicodedata
 
 ALIASES = {
     'project': r'projet|project', 'client': r'client|customer',
@@ -17,6 +15,11 @@ def trusted_target(resource, identifier, *, instruction, context, state, now):
     if type(identifier) is not int or identifier < 1 or not isinstance(instruction, str):
         return False
     ordinal = ordinal_target_matches(instruction, resource, identifier, state, now, ALIASES)
+    if ordinal is False:
+        return False
+    explicit = explicit_target_matches(instruction, resource, identifier, ALIASES, ('project', 'client', 'supplier', 'expense', 'revenue', 'payment_schedule', 'budget_entry'))
+    if explicit is not None:
+        return explicit
     if ordinal is not None:
         return ordinal
     if context.get('resource') == resource and type(context.get('identifier')) is int and context['identifier'] == identifier:
@@ -30,14 +33,4 @@ def trusted_target(resource, identifier, *, instruction, context, state, now):
                 return True
         except (TypeError, ValueError):
             pass
-    aliases = ALIASES.get(resource)
-    if not aliases:
-        return False
-    words = ''.join(char for char in unicodedata.normalize('NFKD', instruction.casefold()) if not unicodedata.combining(char))
-    # Quotes have a separate business number; bare numbers must be searched.
-    marker = r'(?:id|identifiant)\s*[:#]?\s*'
-    if resource != 'quote':
-        marker = r'(?:' + marker + r'|(?:numero|number|no\.|n[°o])\s*[:#]?\s*|#\s*)?'
-    # A complete ID token excludes leading-zero, decimal and compound references.
-    pattern = r'\b(?:' + aliases + r')(?:s)?\s+' + marker + r'([1-9][0-9]*)(?=$|\s|[.!?;,:](?:\s|$))'
-    return any(int(match.group(1)) == identifier for match in re.finditer(pattern, words))
+    return False
