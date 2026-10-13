@@ -31,4 +31,4 @@ reportlab==5.0.1
 
 # Central Chat AI Assistant shared core, locally built and checksummed.
 jsonschema==4.26.0
-./vendor/chat_ai_assistant-0.2.2-py3-none-any.whl
+./vendor/chat_ai_assistant-0.2.3-py3-none-any.whl
