@@ -19,11 +19,15 @@ from celery.schedules import crontab
 app.autodiscover_tasks(
     packages=[
         "account.tasks",
+        "ai_assistant.tasks",
         "notification.tasks",
     ]
 )
 
 app.conf.beat_schedule = {
+    "prepare-pending-pdf-translations": {
+        "task": "ai_assistant.translate_pending_pdf_texts", "schedule": 60.0,
+    },
     "check-project-notifications-every-hour": {
         "task": "notification.tasks.check_project_notifications",
         "schedule": crontab(minute=0),

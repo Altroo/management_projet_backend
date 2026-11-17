@@ -9,7 +9,8 @@ from xml.sax.saxutils import escape
 from django.conf import settings
 from django.utils import timezone
 
-from ai_assistant.service import AiAssistantService
+from ai_assistant.pdf_sources import NAMESPACE, specifications
+from ai_assistant.pdf_translation import load_pdf_translations
 from company.views import get_company_profile
 from depense.models import Expense
 from project.models import ProjectPaymentSchedule
@@ -414,15 +415,10 @@ def _translate_report_content(data, project, language):
     for row in data["payment_schedule_rows"]:
         fields.extend((row.description, row.notes))
 
-    translations = AiAssistantService().translate_many(
-        fields,
-        target_language=language,
-        context="project",
-        polish=True,
-    )
+    translations = load_pdf_translations(NAMESPACE, specifications(fields), language)
 
     def translated(value):
-        return translations.get(value.strip(), value) if value and value.strip() else value
+        return translations.get(value, value) if value and value.strip() else value
 
     if project:
         project.description = translated(project.description)
@@ -2065,7 +2061,13 @@ def _chart_money(value):
 
 
 def _text(value):
-    return escape(str(value or "-"))
+    import re
+    lines = str(value or "-").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    def escaped(line):
+        line = line.expandtabs(4)
+        leading = len(line) - len(line.lstrip(" "))
+        return "&#160;" * leading + escape(line[leading:])
+    return "<br/>".join(escaped(line) for line in lines)
 
 
 def _short(value, length):
@@ -2077,6 +2079,11 @@ def _estimate_comparison(project, language, width, styles):
     from devis.services import project_estimate_summary
 
     data = project_estimate_summary(project)
+    if settings.AI_PDF_TRANSLATION_ENABLED:
+        translations = load_pdf_translations(
+            NAMESPACE, specifications([row["category_name"] for row in data["by_category"]]), language)
+        for row in data["by_category"]:
+            row["category_name"] = translations.get(row["category_name"], row["category_name"])
     english = language == "en"
     title = (
         "Estimated budget / actual spending"

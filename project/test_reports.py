@@ -276,19 +276,17 @@ def test_pdf_translation_batches_only_human_authored_text_and_preserves_amounts(
         "Après validation": "After approval",
     }
     with patch(
-        "project.pdf.AiAssistantService.translate_many", return_value=translations
+        "project.pdf.load_pdf_translations", return_value=translations
     ) as translate_many:
         buffer = build_financial_report_pdf(project=project, language="en")
 
-    sent_texts = [value for value in translate_many.call_args.args[0] if value]
+    specs = translate_many.call_args.args[1]
+    sent_texts = [spec.text for spec in specs]
     assert buffer.read(5) == b"%PDF-"
     assert "Projet Rapport" not in sent_texts
     assert all("1800" not in value and "5000" not in value for value in sent_texts)
-    assert translate_many.call_args.kwargs == {
-        "target_language": "en",
-        "context": "project",
-        "polish": True,
-    }
+    assert translate_many.call_args.args[2] == "en"
+
 
 
 @override_settings(AI_PDF_TRANSLATION_ENABLED=True)
@@ -317,11 +315,11 @@ def test_all_projects_translates_and_displays_project_description_and_notes():
     }
 
     with patch(
-        "project.pdf.AiAssistantService.translate_many", return_value=translations
+        "project.pdf.load_pdf_translations", return_value=translations
     ) as translate_many:
         _translate_report_content(data, None, "en")
 
-    sent_texts = [value for value in translate_many.call_args.args[0] if value]
+    sent_texts = [spec.text for spec in translate_many.call_args.args[1]]
     report_project = data["project_rows"][0]["project"]
     assert "Rénovation complète de la villa" in sent_texts
     assert "Livraison prévue en décembre" in sent_texts
@@ -342,7 +340,7 @@ def test_pdf_endpoint_returns_error_instead_of_mixed_language_document():
     project.description = "Texte à traduire"
     project.save(update_fields=["description"])
     with patch(
-        "project.pdf.AiAssistantService.translate_many",
+        "project.pdf.load_pdf_translations",
         side_effect=InvalidModelResponse(),
     ):
         response = make_user().get(

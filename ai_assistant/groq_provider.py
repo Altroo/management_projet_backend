@@ -218,7 +218,7 @@ class GroqTextService:
         if any(len(text) > 1800 for text in texts):
             combined = {}
             for text in texts:
-                chunks = split_text(text, 1800)
+                chunks = split_text(text, 1800, protected_terms)
                 if len(chunks) == 1 and len(chunks[0]) > 1800:
                     document = Document(text, protected_terms)
                     if document.model_lines:
@@ -475,14 +475,14 @@ class GroqTextService:
         }
 
 
-def split_text(text, limit):
+def split_text(text, limit, names=()):
     """Partition without dropping whitespace or splitting a protected value."""
     from .groq_integrity import value_spans
 
     chunks = []
     remaining = text
     while len(remaining) > limit:
-        spans = value_spans(remaining)
+        spans = value_spans(remaining, names)
         candidates = [
             match.end()
             for match in re.finditer(r"(?<=[.!?;])\s+|\s+", remaining[: limit + 1])
@@ -491,7 +491,9 @@ def split_text(text, limit):
         if not candidates:
             # A very long unbroken URL/reference remains one opaque value.
             break
-        boundary = candidates[-1]
+        preferred = [match.end() for match in re.finditer(r"(?<=[.!?;])\s+|\n+", remaining[:limit + 1])
+                     if match.end() >= limit // 2 and match.end() in candidates]
+        boundary = preferred[-1] if preferred else candidates[-1]
         chunks.append(remaining[:boundary])
         remaining = remaining[boundary:]
     chunks.append(remaining)

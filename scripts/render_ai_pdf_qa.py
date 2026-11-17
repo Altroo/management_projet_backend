@@ -171,8 +171,9 @@ def main():
         with (
             override_settings(AI_PDF_TRANSLATION_ENABLED=True),
             patch("project.pdf._report_data", return_value=data),
+            patch("ai_assistant.service.AiAssistantService._known_names", return_value={project.nom}),
             patch(
-                "project.pdf.AiAssistantService.translate_many",
+                "project.pdf.load_pdf_translations",
                 return_value=translations,
             ),
         ):

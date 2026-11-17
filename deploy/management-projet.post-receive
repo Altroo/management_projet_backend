@@ -50,6 +50,8 @@ while read -r oldrev newrev ref; do
   # The existing private gateway serves several applications; refresh DNS gracefully.
   "${compose[@]}" exec -T ai-gateway nginx -t
   "${compose[@]}" exec -T ai-gateway nginx -s reload
-  curl --fail --silent --show-error --output /dev/null "$health_url"
+  docker exec nginx nginx -t
+  docker exec nginx nginx -s reload
+  curl --http1.1 -H 'Connection: close' --retry 6 --retry-delay 2 --retry-all-errors --fail --silent --show-error --output /dev/null "$health_url"
   printf 'Management Projet backend deployment verified: %s\n' "$newrev"
 done

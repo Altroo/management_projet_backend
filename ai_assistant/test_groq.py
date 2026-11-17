@@ -492,3 +492,11 @@ def test_owner_and_contractor_can_both_appear_when_present_in_source():
     from .groq_integrity import validate_meaning
     validate_meaning('The project owner appoints the contractor.','The project owner appoints the contractor.','en')
     validate_meaning('De opdrachtgever stelt de aannemer aan.','The project owner appoints the contractor.','en')
+
+
+def test_long_text_prefers_sentence_boundaries_and_protects_names():
+    text = "Texte court. " + "Un long nom officiel " + "suite " * 15
+    chunks = split_text(text, 40, ["Un long nom officiel"])
+    assert "".join(chunks) == text
+    assert any("Un long nom officiel" in part for part in chunks)
+    assert split_text("Longue phrase achevée. Et une autre phrase assez longue.", 30)[0] == "Longue phrase achevée. "
