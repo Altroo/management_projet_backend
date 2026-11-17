@@ -99,8 +99,11 @@ class GroqClient:
             job["id"] for job in jobs
         ]
         prompt_tokens = math.ceil(
-            (len(json.dumps(messages, ensure_ascii=False)) + len(json.dumps(schema)))
-            / 2
+            (
+                len(json.dumps(messages, ensure_ascii=False).encode("utf-8"))
+                + len(json.dumps(schema).encode("utf-8"))
+            )
+            / 3
         )
         max_completion = min(
             settings.GROQ_MAX_COMPLETION_TOKENS, settings.GROQ_TPM - prompt_tokens - 100
@@ -315,7 +318,7 @@ class GroqTextService:
                 count = len(
                     json.dumps(item[1]["document"].model_lines, ensure_ascii=False)
                 )
-                if group and size + count > 2200:
+                if group and size + count > 4000:
                     groups.append(group)
                     group = []
                     size = 0

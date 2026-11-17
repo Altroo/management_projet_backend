@@ -390,13 +390,63 @@ def test_http_client_constrains_batch_size_and_keeps_credentials_out_of_payload(
 def test_gateway_throttle_keeps_retry_header_after_custom_exception_handler():
     from rest_framework.test import APIRequestFactory
     from .views import InternalAssistantView
+
     class DeferredView(InternalAssistantView):
         authentication_classes = []
         permission_classes = []
         throttle_classes = []
-        def get(self,request):
+
+        def get(self, request):
             raise GroqQuotaDeferred(wait=86400)
-    response=DeferredView.as_view()(APIRequestFactory().get('/'))
+
+    response = DeferredView.as_view()(APIRequestFactory().get("/"))
     assert response.status_code == 429
-    assert response['Retry-After'] == '86400'
-    assert response.data['retry_after'] == 86400
+    assert response["Retry-After"] == "86400"
+    assert response.data["retry_after"] == 86400
+
+
+def test_normal_article_batches_share_one_bounded_provider_request():
+    class BatchClient:
+        calls = []
+
+        def complete(self, jobs, **kwargs):
+            self.calls.append(jobs)
+            return {
+                "items": [
+                    {
+                        "id": job["id"],
+                        "source_language": "fr",
+                        "translations": {
+                            "fr": [],
+                            "en": [
+                                {
+                                    "id": line["id"],
+                                    "text": "Wooden chair with natural finish.",
+                                }
+                                for line in job["lines"]
+                            ],
+                            "nl": [
+                                {
+                                    "id": line["id"],
+                                    "text": "Houten stoel met natuurlijke afwerking.",
+                                }
+                                for line in job["lines"]
+                            ],
+                        },
+                    }
+                    for job in jobs
+                ]
+            }
+
+    client = BatchClient()
+    texts = [
+        "Chaise en chêne massif avec finition naturelle pour salle de réunion et espace de travail, avec dossier et assise confortables. "
+        + chr(65 + index)
+        for index in range(15)
+    ]
+    result = GroqTextService(client).translate_many(
+        texts, target_language="en", application="facturation"
+    )
+    assert len(result) == 15
+    assert len(client.calls) == 1
+    assert len(client.calls[0]) == 15
