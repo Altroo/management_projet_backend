@@ -42,6 +42,7 @@ class InternalAssistRequestSerializer(AssistRequestSerializer):
 
 
 class InternalTranslationRequestSerializer(serializers.Serializer):
+    background = serializers.BooleanField(default=False)
     texts = serializers.ListField(
         child=serializers.CharField(
             max_length=5000, trim_whitespace=False, allow_blank=True

@@ -377,6 +377,21 @@ class AiAssistantService:
         application="management_projet",
         protected_terms=(),
     ):
+        from .groq_provider import GroqTextService, enabled_for
+
+        if enabled_for(application):
+            names = set(protected_terms)
+            if application == "management_projet":
+                names.update(self._known_names())
+            return GroqTextService(cache=self.cache).assist(
+                action=action,
+                text=text,
+                source_language=source_language,
+                target_language=target_language,
+                context=context,
+                application=application,
+                protected_terms=names,
+            )
         started = time.monotonic()
         detected_source = (
             source_language
@@ -554,7 +569,22 @@ class AiAssistantService:
         application="management_projet",
         protected_terms=(),
         polish=False,
+        background=False,
     ):
+        from .groq_provider import GroqTextService, enabled_for
+
+        if enabled_for(application):
+            names = set(protected_terms)
+            if application == "management_projet":
+                names.update(self._known_names())
+            return GroqTextService(cache=self.cache).translate_many(
+                texts,
+                target_language=target_language,
+                context=context,
+                application=application,
+                protected_terms=names,
+                background=background,
+            )
         started = time.monotonic()
         unique_texts = list(
             dict.fromkeys(text.strip() for text in texts if text and text.strip())

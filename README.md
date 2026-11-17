@@ -79,3 +79,33 @@ python -m pytest --cov
 ## Portfolio Note
 
 The repository is public for portfolio review. Screenshots are redacted, and sensitive production values are intentionally hidden.
+
+
+## Shared business-text provider
+
+The signed private AI gateway supports Groq for translation, grammar correction,
+and professional rewriting. Enable each reviewed consumer explicitly with
+`AI_GROQ_APPLICATIONS` (comma-separated service names). An enabled consumer fails
+closed when credentials are missing; other consumers retain their configured
+provider. Keep `GROQ_API_KEY` in the gateway environment only, never in frontend
+configuration or Git. This does not enable or modify the independent chat AI.
+
+Default model: `openai/gpt-oss-120b`. Redis atomically shares conservative request
+and token budgets across all consumers. Defaults are 28 requests/minute,
+900/day, 7000 tokens/minute and 180000/day. Background refreshes can use 80% of
+the daily allowance, leaving capacity for user actions. Provider throttles defer
+background work; no automatic paid upgrade or local translation fallback occurs.
+Quotas can vary by Groq account; configure the limits below the account allowance.
+
+The provider preserves line breaks, blank lines, indentation and list markers
+outside model output. It masks names, dimensions, references, amounts and units,
+validates restored values and critical construction terminology, and caches
+validated masked templates for 30 days. Source French remains authoritative.
+No source text, provider response bodies or credentials are logged. Model output
+still needs human review for contractual use; validation is not a proof of every
+possible semantic equivalence.
+
+Run provider checks with `pytest ai_assistant/test_groq.py ai_assistant/tests.py`.
+These use mocked API responses and an ephemeral local Redis instance; they do not
+spend provider quota. Historical PDF refreshes remain in each consumer's Celery
+queue and can take days under a shared free allowance.

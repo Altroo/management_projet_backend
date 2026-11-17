@@ -43,6 +43,9 @@ class InternalAssistantView(APIView):
         response = super().handle_exception(exc)
         if isinstance(exc, InvalidModelResponse):
             response.data["code"] = "ai_invalid_response"
+        if response.status_code == 429:
+            response.data["code"] = "ai_rate_limited"
+            response.data["retry_after"] = max(1, int(getattr(exc, "wait", 60) or 60))
         return response
 
 
@@ -86,5 +89,10 @@ class InternalTranslationView(InternalAssistantView):
             texts, **payload, application=str(request.auth), polish=True
         )
         return Response(
-            {"translations": [translations.get(text.strip(), text) for text in texts]}
+            {
+                "translations": [
+                    translations.get(text, translations.get(text.strip(), text))
+                    for text in texts
+                ]
+            }
         )

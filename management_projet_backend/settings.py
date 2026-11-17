@@ -251,6 +251,24 @@ AI_TRANSLATION_MODEL_ID = config(
 AI_TRANSLATION_TIMEOUT_SECONDS = config(
     "AI_TRANSLATION_TIMEOUT_SECONDS", default=90, cast=int
 )
+# Shared Groq gateway. Enable applications individually after their verification.
+GROQ_API_KEY = config("GROQ_API_KEY", default="")
+GROQ_MODEL = config("GROQ_MODEL", default="openai/gpt-oss-120b")
+AI_GROQ_APPLICATIONS = {
+    value.strip()
+    for value in config("AI_GROQ_APPLICATIONS", default="").split(",")
+    if value.strip()
+}
+GROQ_TIMEOUT_SECONDS = config("GROQ_TIMEOUT_SECONDS", default=60, cast=int)
+GROQ_MAX_COMPLETION_TOKENS = config(
+    "GROQ_MAX_COMPLETION_TOKENS", default=3200, cast=int
+)
+GROQ_RPM = config("GROQ_RPM", default=28, cast=int)
+GROQ_RPD = config("GROQ_RPD", default=900, cast=int)
+GROQ_TPM = config("GROQ_TPM", default=7000, cast=int)
+GROQ_TPD = config("GROQ_TPD", default=180000, cast=int)
+GROQ_BACKGROUND_SHARE = config("GROQ_BACKGROUND_SHARE", default=0.8, cast=float)
+
 AI_PDF_TRANSLATION_ENABLED = config(
     "AI_PDF_TRANSLATION_ENABLED", default=AI_ASSISTANT_ENABLED, cast=bool
 )
@@ -352,11 +370,13 @@ AXES_IPWARE_PROXY_COUNT = 1
 AXES_IPWARE_PROXY_ORDER = "left-most"
 
 # Central Chat AI Assistant; existing translation/grammar settings stay independent.
-CHAT_AI_ASSISTANT_ENABLED = config('CHAT_AI_ASSISTANT_ENABLED', default=False, cast=bool)
-CHAT_AI_MODEL_URL = config('CHAT_AI_MODEL_URL', default='http://chat-ai-model:18090/v1')
-CHAT_AI_MODEL_ID = config('CHAT_AI_MODEL_ID', default='chat-ai-shared')
-CHAT_AI_MODEL_KEY = config('CHAT_AI_MODEL_KEY', default='')
-CHAT_AI_MODEL_TIMEOUT = config('CHAT_AI_MODEL_TIMEOUT', default=120, cast=int)
-CHAT_AI_MODEL_MAX_TOKENS = config('CHAT_AI_MODEL_MAX_TOKENS', default=512, cast=int)
-CHAT_AI_RETENTION_DAYS = config('CHAT_AI_RETENTION_DAYS', default=30, cast=int)
-CHAT_AI_KNOWLEDGE_PATH = BASE_DIR / 'chat_ai' / 'knowledge'
+CHAT_AI_ASSISTANT_ENABLED = config(
+    "CHAT_AI_ASSISTANT_ENABLED", default=False, cast=bool
+)
+CHAT_AI_MODEL_URL = config("CHAT_AI_MODEL_URL", default="http://chat-ai-model:18090/v1")
+CHAT_AI_MODEL_ID = config("CHAT_AI_MODEL_ID", default="chat-ai-shared")
+CHAT_AI_MODEL_KEY = config("CHAT_AI_MODEL_KEY", default="")
+CHAT_AI_MODEL_TIMEOUT = config("CHAT_AI_MODEL_TIMEOUT", default=120, cast=int)
+CHAT_AI_MODEL_MAX_TOKENS = config("CHAT_AI_MODEL_MAX_TOKENS", default=512, cast=int)
+CHAT_AI_RETENTION_DAYS = config("CHAT_AI_RETENTION_DAYS", default=30, cast=int)
+CHAT_AI_KNOWLEDGE_PATH = BASE_DIR / "chat_ai" / "knowledge"
