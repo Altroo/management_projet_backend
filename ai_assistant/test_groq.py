@@ -486,3 +486,9 @@ def test_document_number_label_is_not_a_temperature_value():
         )
         == "Zegelnummer: ML-IT2243469"
     )
+
+
+def test_owner_and_contractor_can_both_appear_when_present_in_source():
+    from .groq_integrity import validate_meaning
+    validate_meaning('The project owner appoints the contractor.','The project owner appoints the contractor.','en')
+    validate_meaning('De opdrachtgever stelt de aannemer aan.','The project owner appoints the contractor.','en')

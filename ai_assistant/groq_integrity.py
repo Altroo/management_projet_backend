@@ -252,7 +252,7 @@ def validate_meaning(source, target, language, action="translate"):
                     "La réponse IA a modifié le responsable des travaux."
                 )
             if re.search(r"contractor", target, re.I) and not re.search(
-                r"entrepreneur|contractant", source, re.I
+                r"entrepreneur|contractant|contractor|aannemer", source, re.I
             ):
                 raise InvalidModelResponse(
                     "La réponse IA a inversé une responsabilité."
