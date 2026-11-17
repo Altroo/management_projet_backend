@@ -385,3 +385,18 @@ def test_http_client_constrains_batch_size_and_keeps_credentials_out_of_payload(
     assert schema["minItems"] == schema["maxItems"] == 2
     assert schema["items"]["properties"]["id"]["enum"] == ["a", "b"]
     budget.settle.assert_called_once()
+
+
+def test_gateway_throttle_keeps_retry_header_after_custom_exception_handler():
+    from rest_framework.test import APIRequestFactory
+    from .views import InternalAssistantView
+    class DeferredView(InternalAssistantView):
+        authentication_classes = []
+        permission_classes = []
+        throttle_classes = []
+        def get(self,request):
+            raise GroqQuotaDeferred(wait=86400)
+    response=DeferredView.as_view()(APIRequestFactory().get('/'))
+    assert response.status_code == 429
+    assert response['Retry-After'] == '86400'
+    assert response.data['retry_after'] == 86400
