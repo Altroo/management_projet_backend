@@ -31,9 +31,10 @@ PATTERNS = (
         r"\b(?=[\w/-]*[^\W\d_])(?=[\w/-]*[\d⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉])\w+(?:[-/]\w+)*\b"
     ),
     re.compile(rf"(?<!\w){AMOUNT}(?:[ \t]*%)?"),
-    re.compile(r"\b(?:MAD|DHS?|EUR|USD)\b|[$€£%°]", re.I),
+    re.compile(r"\b(?:MAD|DHS?|EUR|USD)\b|[$€£%]|(?<![Nn])°", re.I),
     re.compile(r"\b(?:mm|cm|m)[²³23]\b", re.I),
     re.compile(r"\bSOFT[ -]+CLOSE\b", re.I),
+    re.compile(r"\b(?:ISPM|ISO|DIN|ASTM|NF|EN)[ -]?\d+(?::\d{4})?\b", re.I),
     re.compile(r"\b(?:Blanc Europe|White Ceramic)\b"),
     re.compile(r"(?<!\w)\w{400,}(?!\w)"),
     re.compile(
@@ -281,6 +282,16 @@ def validate_meaning(source, target, language, action="translate"):
                 "La traduction a changé une toiture-terrasse en jardin."
             )
     if language == "nl":
+        if re.search(r"origine préférentielle UE", source, re.I) and not re.search(
+            r"preferenti[eë]le.{0,15}EU|EU.{0,15}preferenti[eë]le", target, re.I
+        ):
+            raise InvalidModelResponse(
+                "La traduction a changé l’origine préférentielle."
+            )
+        if re.search(r"N[°º].*scellé", source, re.I) and not re.search(
+            r"zegelnummer|nummer.{0,20}zegel", target, re.I
+        ):
+            raise InvalidModelResponse("La traduction a changé le numéro de scellé.")
         if re.search(r"trop[ -]plein", source, re.I) and re.search(
             r"\boverflow\b", target, re.I
         ):

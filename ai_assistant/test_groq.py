@@ -450,3 +450,39 @@ def test_normal_article_batches_share_one_bounded_provider_request():
     assert len(result) == 15
     assert len(client.calls) == 1
     assert len(client.calls[0]) == 15
+
+
+def test_trade_standard_identifier_is_preserved_as_one_value():
+    document = Document("Emballages conformes ISPM 15.")
+    assert document.lines[0].replacements == {"ZXQVAL00000X": "ISPM 15"}
+    assert (
+        document.restore(
+            [{"id": "0", "text": "Verpakkingen conform ZXQVAL00000X."}],
+            "nl",
+            "translate",
+        )
+        == "Verpakkingen conform ISPM 15."
+    )
+
+
+@pytest.mark.parametrize(
+    "source,target",
+    [
+        ("Origine préférentielle UE.", "Voorkeurseu-herkomst."),
+        ("N° scellé : code.", "N° verzegeld: code."),
+    ],
+)
+def test_trade_document_meaning_errors_are_rejected(source, target):
+    with pytest.raises(InvalidModelResponse):
+        Document(source).restore([{"id": "0", "text": target}], "nl", "translate")
+
+
+def test_document_number_label_is_not_a_temperature_value():
+    document = Document("N° scellé : ML-IT2243469")
+    assert list(document.lines[0].replacements.values()) == ["ML-IT2243469"]
+    assert (
+        document.restore(
+            [{"id": "0", "text": "Zegelnummer: ZXQVAL00000X"}], "nl", "translate"
+        )
+        == "Zegelnummer: ML-IT2243469"
+    )
