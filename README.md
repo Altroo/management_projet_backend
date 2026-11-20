@@ -93,8 +93,11 @@ configuration or Git. This does not enable or modify the independent chat AI.
 Default model: `openai/gpt-oss-120b`. Redis atomically shares conservative request
 and token budgets across all consumers. Defaults are 28 requests/minute,
 900/day, 7000 tokens/minute and 180000/day. Background refreshes can use 80% of
-the daily allowance, leaving capacity for user actions. Provider throttles defer
-background work; no automatic paid upgrade or local translation fallback occurs.
+the daily allowance, leaving capacity for user actions. Text actions switch to
+the existing internal models when Groq reports a quota limit. PDF batches also
+switch when Groq times out or is unavailable. Facturation handles its PDF
+fallback in its own worker. Keep the `ai-model` and `ai-translation` services
+available for the gateway's fallback.
 Quotas can vary by Groq account; configure the limits below the account allowance.
 
 The provider preserves line breaks, blank lines, indentation and list markers
@@ -112,6 +115,6 @@ queue and can take days under a shared free allowance.
 
 
 ### Saved PDF translations (4.2.3)
-Management Projet uses the shared Groq service when `management_projet` is included in `AI_GROQ_APPLICATIONS`. Keep the key in the server's private environment. Saving report text stores durable pending translation rows in the same transaction, then queues Celery work after commit. The existing worker and scheduler drain pending work every minute without changing notification schedules. No model request runs on a save or PDF rendering path. Original fields and monetary values stay unchanged. PDFs wait for validated stored French/English text; quota waits return an informational pending status.
+Management Projet uses the shared Groq service when `management_projet` is included in `AI_GROQ_APPLICATIONS`. Keep the key in the server's private environment. Saving report text stores durable pending translation rows in the same transaction, then queues Celery work after commit. The existing worker and scheduler drain pending work every minute. No model request runs on a save or PDF rendering path. PDFs use validated stored French and English text and preserve original fields and monetary values.
 
 Queue historical report content with `python manage.py translate_pdf_content`; inspect progress with `--status`. The resumable backfill shares the global free-tier budget and leaves capacity for interactive requests. Failed rows retain error codes without logging text. Existing unrelated chat AI flags and models remain unchanged.

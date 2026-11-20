@@ -75,10 +75,11 @@ def enabled_for(application):
 
 
 class GroqClient:
-    def __init__(self, budget=None):
+    def __init__(self, budget=None, *, deadline=None):
         if not getattr(settings, "GROQ_API_KEY", ""):
             raise AssistantDisabled()
         self.budget = budget or GroqBudget()
+        self.deadline = deadline
 
     def complete(self, jobs, background=False, correction=None):
         messages = [
@@ -129,6 +130,11 @@ class GroqClient:
         }
         encoded = json.dumps(body, ensure_ascii=False).encode()
         estimate = prompt_tokens + max_completion
+        timeout = settings.GROQ_TIMEOUT_SECONDS
+        if self.deadline is not None:
+            timeout = min(timeout, self.deadline - time.monotonic())
+            if timeout <= 0:
+                raise ModelTimeout()
         reservation = self.budget.reserve(estimate, background)
         req = request.Request(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -141,9 +147,7 @@ class GroqClient:
             method="POST",
         )
         try:
-            with request.urlopen(
-                req, timeout=settings.GROQ_TIMEOUT_SECONDS
-            ) as response:
+            with request.urlopen(req, timeout=timeout) as response:
                 result = json.loads(response.read(2 * 1024 * 1024).decode())
         except error.HTTPError as exc:
             if exc.code == 429:
@@ -182,9 +186,10 @@ class GroqClient:
 class GroqTextService:
     cache_ttl = 60 * 60 * 24 * 30
 
-    def __init__(self, client=None, cache=None):
+    def __init__(self, client=None, cache=None, *, deadline=None):
         self.client = client
         self.cache = cache or caches["ai_assistant"]
+        self.deadline = deadline
 
     def _key(self, document, action, source_language, context, application):
         payload = [
@@ -346,7 +351,7 @@ class GroqTextService:
                 last_error = None
                 for attempt in range(2):
                     try:
-                        payload = (self.client or GroqClient()).complete(
+                        payload = (self.client or GroqClient(deadline=self.deadline)).complete(
                             jobs,
                             background=background,
                             correction=str(last_error.detail) if last_error else None,

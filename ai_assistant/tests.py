@@ -16,6 +16,7 @@ from account.models import CustomUser
 from project.models import Project
 
 from .exceptions import InvalidModelResponse, ModelTimeout, ModelUnavailable
+from .groq_budget import GroqQuotaDeferred
 from .protection import protect_text
 from .service import AiAssistantService
 from .throttles import AiAssistantRateThrottle
@@ -315,6 +316,82 @@ def test_translation_uses_specialist_and_reports_its_model():
         "Livraison pour XAAAX le XAABX.",
     ]
     assert llama_client.calls == []
+
+
+@override_settings(
+    AI_GROQ_APPLICATIONS={
+        "facturation", "reservation", "gestion_magasin",
+        "design_workflow", "management_projet", "contracts",
+    },
+    AI_TRANSLATION_SPECIALIST_ENABLED=True,
+    AI_TRANSLATION_MODEL_ID="internal-translation",
+    AI_MODEL_ID="internal-editor",
+)
+@pytest.mark.parametrize(
+    "action, expected",
+    [
+        ("translate", "Send the invoice to Maison Atlas."),
+        ("fix_grammar", "Merci d'envoyer la facture à Maison Atlas."),
+        ("professionalize", "Veuillez envoyer la facture à Maison Atlas."),
+    ],
+)
+@pytest.mark.parametrize(
+    "application",
+    ["facturation", "reservation", "gestion_magasin", "design_workflow", "management_projet", "contracts"],
+)
+def test_text_actions_use_internal_models_when_groq_quota_is_exhausted(application, action, expected):
+    is_translation = action == "translate"
+    original = "Merci d'envoyé la facture à Maison Atlas."
+    specialist = QueueTranslationClient(["Send the invoice to XAAAX."])
+    editor = QueueClient(
+        json.dumps(
+            {
+                "suggested_text": expected.replace("Maison Atlas", "XACME0000X"),
+                "detected_language": "fr",
+            }
+        )
+    )
+    service = AiAssistantService(client=editor, translation_client=specialist)
+    with patch(
+        "ai_assistant.groq_provider.GroqTextService.assist",
+        side_effect=GroqQuotaDeferred(wait=25_000),
+    ) as groq:
+        result = service.assist(
+            action=action,
+            text=original,
+            source_language="fr",
+            target_language="en" if is_translation else None,
+            context="document",
+            application=application,
+            protected_terms=["Maison Atlas"],
+        )
+    groq.assert_called_once()
+    assert result["suggested_text"] == expected
+    assert result["model"] == ("internal-translation" if is_translation else "internal-editor")
+    assert len(specialist.calls) == int(is_translation)
+    assert len(editor.calls) == int(not is_translation)
+
+
+@override_settings(
+    AI_GROQ_APPLICATIONS={"reservation", "gestion_magasin", "management_projet", "contracts"},
+    AI_TRANSLATION_SPECIALIST_ENABLED=True,
+)
+@pytest.mark.parametrize("application", ["reservation", "gestion_magasin", "management_projet", "contracts"])
+@pytest.mark.parametrize("failure", [GroqQuotaDeferred(wait=25_000), ModelTimeout(), ModelUnavailable()])
+def test_pdf_fallback_preserves_layout_and_protected_values(application, failure):
+    original = "  • Livrer 120*120cm.\r\n\r\n\t- Marbre non compris.  \n"
+    expected = "  • Deliver 120*120cm.\r\n\r\n\t- Marble not included.  \n"
+    translator = QueueTranslationClient(["Deliver XAAAX.", "Marble not included."])
+    with patch("ai_assistant.groq_provider.GroqTextService.translate_many", side_effect=failure):
+        result = AiAssistantService(translation_client=translator).translate_many(
+            [original],
+            target_language="en",
+            context="report_pdf",
+            application=application,
+        )
+    assert result == {original: expected}
+    assert len(translator.calls) == 1
+    assert all("120" not in text for text in translator.calls[0]["texts"])
 
 
 def test_opus_translates_fragments_around_protected_values():

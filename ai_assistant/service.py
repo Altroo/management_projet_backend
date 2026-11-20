@@ -13,6 +13,8 @@ from project.models import Client, Project, Supplier
 
 from .client import LlamaCppClient, OpusTranslationClient
 from .exceptions import InvalidModelResponse, ModelTimeout, ModelUnavailable
+from .groq_budget import GroqQuotaDeferred
+from .groq_integrity import Document
 from .protection import protect_text
 
 logger = logging.getLogger(__name__)
@@ -383,15 +385,18 @@ class AiAssistantService:
             names = set(protected_terms)
             if application == "management_projet":
                 names.update(self._known_names())
-            return GroqTextService(cache=self.cache).assist(
-                action=action,
-                text=text,
-                source_language=source_language,
-                target_language=target_language,
-                context=context,
-                application=application,
-                protected_terms=names,
-            )
+            try:
+                return GroqTextService(cache=self.cache).assist(
+                    action=action,
+                    text=text,
+                    source_language=source_language,
+                    target_language=target_language,
+                    context=context,
+                    application=application,
+                    protected_terms=names,
+                )
+            except GroqQuotaDeferred:
+                pass
         started = time.monotonic()
         detected_source = (
             source_language
@@ -574,17 +579,64 @@ class AiAssistantService:
         from .groq_provider import GroqTextService, enabled_for
 
         if enabled_for(application):
+            texts = tuple(texts)
             names = set(protected_terms)
             if application == "management_projet":
                 names.update(self._known_names())
-            return GroqTextService(cache=self.cache).translate_many(
-                texts,
-                target_language=target_language,
-                context=context,
-                application=application,
-                protected_terms=names,
-                background=background,
+            try:
+                return GroqTextService(
+                    cache=self.cache, deadline=time.monotonic() + 15
+                ).translate_many(
+                    texts,
+                    target_language=target_language,
+                    context=context,
+                    application=application,
+                    protected_terms=names,
+                    background=background,
+                )
+            except (GroqQuotaDeferred, ModelTimeout, ModelUnavailable):
+                if application == "facturation" and context == "invoice_pdf":
+                    # The Facturation worker has its own local multilingual models.
+                    raise
+                return self._translate_documents_locally(
+                    texts, target_language, context, application, names, polish
+                )
+        return self._translate_many_locally(
+            texts, target_language, context, application, protected_terms, polish
+        )
+
+    def _translate_documents_locally(
+        self, texts, target_language, context, application, names, polish
+    ):
+        unique_texts = dict.fromkeys(
+            text for text in texts if isinstance(text, str) and text.strip()
+        )
+        documents = [Document(text, names) for text in unique_texts]
+        bodies = {}
+        markers = set()
+        for document in documents:
+            for line in document.lines:
+                if line.needs_model:
+                    bodies[line.body] = None
+                    markers.update(line.replacements)
+        translated = self._translate_many_locally(
+            bodies, target_language, context, application, markers, polish
+        )
+        return {
+            document.text: document.restore(
+                [
+                    {"id": line["id"], "text": translated.get(line["text"].strip())}
+                    for line in document.model_lines
+                ],
+                target_language,
+                "translate",
             )
+            for document in documents
+        }
+
+    def _translate_many_locally(
+        self, texts, target_language, context, application, protected_terms, polish
+    ):
         started = time.monotonic()
         unique_texts = list(
             dict.fromkeys(text.strip() for text in texts if text and text.strip())
